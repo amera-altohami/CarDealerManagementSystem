@@ -60,9 +60,11 @@ export function CarEdit({ carId }: CarEditProps) {
             purchasePlace: car.purchasePlace,
             titleType: car.titleType,
             status: car.status,
+            carfaxType: car.carfaxType,
             notes: car.notes,
             photo: car.photo,
             carfaxLink: car.carfaxLink,
+            carfaxPdfName: car.carfaxPdfName,
           }}
           submitLabel={t('saveChanges')}
           cancelHref={`/cars/${car.id}`}

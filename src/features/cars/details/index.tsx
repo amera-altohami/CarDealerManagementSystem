@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import {
   CarFront,
@@ -24,6 +25,11 @@ import { StatusBadge } from '@/components/status-badge'
 import { type Car } from '@/data/carsMockData'
 import { cn } from '@/lib/utils'
 import { useI18n } from '@/lib/i18n'
+import { EditTitleModal } from '../components/edit-title-modal'
+import { TitleBadge } from '../components/title-badge'
+import { TitleHistoryTable } from '../components/title-history-table'
+import { TitleManagementCard } from '../components/title-management-card'
+import { type TitleUpdateValues } from '../types/title'
 
 type CarDetailsProps = {
   car: Car
@@ -37,6 +43,39 @@ const money = new Intl.NumberFormat('en-US', {
 
 export function CarDetails({ car }: CarDetailsProps) {
   const { t, locale } = useI18n()
+  const [currentTitle, setCurrentTitle] = useState(car.currentTitle)
+  const [titleHistory, setTitleHistory] = useState(car.titleHistory)
+  const [titleModalOpen, setTitleModalOpen] = useState(false)
+  const [titleModalMode, setTitleModalMode] = useState<'edit' | 'status' | 'notes'>('edit')
+
+  const openTitleModal = (mode: 'edit' | 'status' | 'notes') => {
+    setTitleModalMode(mode)
+    setTitleModalOpen(true)
+  }
+
+  const handleSaveTitle = (values: TitleUpdateValues) => {
+    const previousTitleType = currentTitle.type
+    const nextTitle = {
+      type: values.titleType,
+      lastUpdatedAt: values.changeDate,
+      updatedBy: values.updatedBy,
+    }
+
+    setCurrentTitle(nextTitle)
+    setTitleHistory((current) => [
+      {
+        id: `title-${car.id}-${Date.now()}`,
+        previousTitleType,
+        newTitleType: values.titleType,
+        changeDate: values.changeDate,
+        updatedBy: values.updatedBy,
+        notes: values.notes.trim() || undefined,
+      },
+      ...current,
+    ])
+    setTitleModalOpen(false)
+  }
+
   return (
     <>
       <Header fixed>
@@ -67,7 +106,7 @@ export function CarDetails({ car }: CarDetailsProps) {
                 </p>
               </div>
               <div className='grid gap-3 sm:grid-cols-2 xl:grid-cols-3'>
-                <InfoCard icon={<CarFront className='h-4 w-4' />} label={t('titleTypeValue')} value={car.titleType} />
+                <InfoCard icon={<CarFront className='h-4 w-4' />} label={t('titleTypeValue')} value={<TitleBadge titleType={currentTitle.type} />} />
                 <InfoCard icon={<ShieldCheck className='h-4 w-4' />} label={t('carfax')} value='Available' />
                 <InfoCard icon={<HandCoins className='h-4 w-4' />} label={t('totalCost')} value={money.format(car.totalCost)} />
                 <InfoCard icon={<Wrench className='h-4 w-4' />} label={t('sellingPrice')} value={money.format(car.sellingPrice)} />
@@ -81,10 +120,24 @@ export function CarDetails({ car }: CarDetailsProps) {
                   </Link>
                 </Button>
                 <Button asChild variant='outline'>
-                  <a href={car.carfaxLink} target='_blank' rel='noreferrer'>
-                    <Link2 className='me-2 h-4 w-4' />
-                    Open Carfax
-                  </a>
+                  {car.carfaxType === 'pdf' ? (
+                    car.carfaxPdfUrl ? (
+                      <a href={car.carfaxPdfUrl} target='_blank' rel='noreferrer'>
+                        <Link2 className='me-2 h-4 w-4' />
+                        {car.carfaxPdfName || t('carfax')}
+                      </a>
+                    ) : (
+                      <span className='inline-flex items-center gap-2'>
+                        <Link2 className='me-2 h-4 w-4' />
+                        {car.carfaxPdfName || t('carfax')}
+                      </span>
+                    )
+                  ) : (
+                    <a href={car.carfaxLink} target='_blank' rel='noreferrer'>
+                      <Link2 className='me-2 h-4 w-4' />
+                      {t('carfax')}
+                    </a>
+                  )}
                 </Button>
               </div>
             </div>
@@ -99,6 +152,9 @@ export function CarDetails({ car }: CarDetailsProps) {
             <TabsTrigger value='inspection'>{t('inspection')}</TabsTrigger>
             <TabsTrigger value='partners'>{t('partners')}</TabsTrigger>
             <TabsTrigger value='documents'>{t('documents')}</TabsTrigger>
+            <TabsTrigger value='title-management'>
+              {locale === 'ar' ? 'إدارة الملكية' : 'Title Management'}
+            </TabsTrigger>
             <TabsTrigger value='profit'>{t('profitSummary')}</TabsTrigger>
           </TabsList>
 
@@ -108,13 +164,21 @@ export function CarDetails({ car }: CarDetailsProps) {
                 <CardTitle>{t('carBasicInformation')}</CardTitle>
               </CardHeader>
               <CardContent className='grid gap-3 text-sm'>
-                <InfoRow label='Brand' value={car.brand} />
-                <InfoRow label='Model' value={car.model} />
-                <InfoRow label='Year' value={String(car.year)} />
+                <InfoRow label={t('brand')} value={car.brand} />
+                <InfoRow label={t('model')} value={car.model} />
+                <InfoRow label={t('year')} value={String(car.year)} />
                 <InfoRow label='VIN' value={car.vin} />
-                <InfoRow label='Lot Number' value={car.lotNumber} />
-                <InfoRow label='Purchase Date' value={car.purchaseDate} />
-                <InfoRow label='Purchase Place' value={car.purchasePlace} />
+                <InfoRow label={t('lotNumber')} value={car.lotNumber} />
+                <InfoRow label={t('purchaseDate')} value={car.purchaseDate} />
+                <InfoRow label={t('purchasePlace')} value={car.purchasePlace} />
+                <InfoRow
+                  label={t('carfax')}
+                  value={
+                    car.carfaxType === 'pdf'
+                      ? car.carfaxPdfName || 'PDF uploaded'
+                      : car.carfaxLink || 'Link'
+                  }
+                />
                 <InfoRow label={t('status')} value={<StatusBadge status={car.status} />} />
               </CardContent>
             </Card>
@@ -186,11 +250,21 @@ export function CarDetails({ car }: CarDetailsProps) {
             />
           </TabsContent>
 
+          <TabsContent value='title-management' className='space-y-4'>
+            <TitleManagementCard
+              currentTitle={currentTitle}
+              onEditTitle={() => openTitleModal('edit')}
+              onUpdateTitleStatus={() => openTitleModal('status')}
+              onAddNotes={() => openTitleModal('notes')}
+            />
+            <TitleHistoryTable history={titleHistory} />
+          </TabsContent>
+
           <TabsContent value='profit' className='space-y-4'>
             <div className='grid gap-4 lg:grid-cols-[1fr_360px]'>
               <Card className='border-border/60'>
                 <CardHeader>
-                  <CardTitle>Profit Overview</CardTitle>
+                  <CardTitle>{t('profitSummary')}</CardTitle>
                 </CardHeader>
                 <CardContent className='grid gap-3 sm:grid-cols-3'>
                   <MetricCard label={t('totalCost')} value={money.format(car.totalCost)} />
@@ -203,6 +277,14 @@ export function CarDetails({ car }: CarDetailsProps) {
           </TabsContent>
         </Tabs>
       </Main>
+
+      <EditTitleModal
+        open={titleModalOpen}
+        onOpenChange={setTitleModalOpen}
+        currentTitle={currentTitle}
+        mode={titleModalMode}
+        onSave={handleSaveTitle}
+      />
     </>
   )
 }
@@ -214,7 +296,7 @@ function InfoCard({
 }: {
   icon: ReactNode
   label: string
-  value: string
+  value: ReactNode
 }) {
   return (
     <Card className='border-border/60'>

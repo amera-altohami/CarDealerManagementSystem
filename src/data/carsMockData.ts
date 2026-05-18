@@ -1,3 +1,5 @@
+import type { CurrentTitle, TitleHistoryEntry } from '@/features/cars/types/title'
+
 export type CarStatus =
   | 'purchased'
   | 'shipping'
@@ -50,11 +52,16 @@ export type Car = {
   lotNumber: string
   status: CarStatus
   titleType: CarTitleType
+  currentTitle: CurrentTitle
+  titleHistory: TitleHistoryEntry[]
   purchaseDate: string
   purchasePlace: string
+  carfaxType: 'link' | 'pdf'
+  carfaxLink: string
+  carfaxPdfName: string
+  carfaxPdfUrl: string
   notes: string
   photo: string
-  carfaxLink: string
   totalCost: number
   sellingPrice: number
   netProfit: number
@@ -116,11 +123,29 @@ export const carsMockData: Car[] = [
     lotNumber: 'LOT-2401',
     status: 'repairing',
     titleType: 'Clean',
+    currentTitle: {
+      type: 'Clean',
+      lastUpdatedAt: '2026-04-15',
+      updatedBy: 'Maya S.',
+    },
+    titleHistory: [
+      {
+        id: 'title-001-1',
+        previousTitleType: 'Clean',
+        newTitleType: 'Clean',
+        changeDate: '2026-03-18',
+        updatedBy: 'System',
+        notes: 'Initial title recorded at purchase.',
+      },
+    ],
     purchaseDate: '2026-03-18',
     purchasePlace: 'Dallas Auto Auction',
+    carfaxType: 'pdf',
+    carfaxLink: '',
+    carfaxPdfName: 'toyota-camry-2020-carfax.pdf',
+    carfaxPdfUrl: '',
     notes: 'Front bumper replacement pending. Mechanical inspection completed.',
     photo: '/images/car-placeholder.svg',
-    carfaxLink: 'https://example.com/carfax/toyota-camry-2020.pdf',
     totalCost: 13250,
     sellingPrice: 16890,
     netProfit: 3640,
@@ -164,11 +189,29 @@ export const carsMockData: Car[] = [
     lotNumber: 'LOT-2402',
     status: 'shipping',
     titleType: 'Clean',
+    currentTitle: {
+      type: 'Clean',
+      lastUpdatedAt: '2026-04-05',
+      updatedBy: 'Ali R.',
+    },
+    titleHistory: [
+      {
+        id: 'title-002-1',
+        previousTitleType: 'Clean',
+        newTitleType: 'Clean',
+        changeDate: '2026-04-02',
+        updatedBy: 'System',
+        notes: 'Initial title recorded at purchase.',
+      },
+    ],
     purchaseDate: '2026-04-02',
     purchasePlace: 'Phoenix Auction Center',
+    carfaxType: 'link',
+    carfaxLink: 'https://example.com/carfax/honda-civic-2019.pdf',
+    carfaxPdfName: '',
+    carfaxPdfUrl: '',
     notes: 'Arriving this week. Ready for intake and photography.',
     photo: '/images/car-placeholder.svg',
-    carfaxLink: 'https://example.com/carfax/honda-civic-2019.pdf',
     totalCost: 10950,
     sellingPrice: 13950,
     netProfit: 3000,
@@ -207,11 +250,37 @@ export const carsMockData: Car[] = [
     lotNumber: 'LOT-2403',
     status: 'ready-for-sale',
     titleType: 'Clean',
+    currentTitle: {
+      type: 'Rebuilt',
+      lastUpdatedAt: '2026-05-02',
+      updatedBy: 'Sara K.',
+    },
+    titleHistory: [
+      {
+        id: 'title-003-1',
+        previousTitleType: 'Clean',
+        newTitleType: 'Salvage',
+        changeDate: '2026-02-16',
+        updatedBy: 'Auction Desk',
+        notes: 'Salvage title issued after insurance review.',
+      },
+      {
+        id: 'title-003-2',
+        previousTitleType: 'Salvage',
+        newTitleType: 'Rebuilt',
+        changeDate: '2026-05-02',
+        updatedBy: 'Sara K.',
+        notes: 'Converted after repairs and inspection.',
+      },
+    ],
     purchaseDate: '2026-02-14',
     purchasePlace: 'Chicago Dealer Exchange',
+    carfaxType: 'pdf',
+    carfaxLink: '',
+    carfaxPdfName: 'bmw-x5-2021-carfax.pdf',
+    carfaxPdfUrl: '',
     notes: 'Fully detailed, photographed, and listed for sale.',
     photo: '/images/car-placeholder.svg',
-    carfaxLink: 'https://example.com/carfax/bmw-x5-2021.pdf',
     totalCost: 28740,
     sellingPrice: 32990,
     netProfit: 4250,
@@ -254,11 +323,29 @@ export const carsMockData: Car[] = [
     lotNumber: 'LOT-2404',
     status: 'sold',
     titleType: 'Rebuilt',
+    currentTitle: {
+      type: 'Rebuilt',
+      lastUpdatedAt: '2026-04-28',
+      updatedBy: 'Omar H.',
+    },
+    titleHistory: [
+      {
+        id: 'title-004-1',
+        previousTitleType: 'Salvage',
+        newTitleType: 'Rebuilt',
+        changeDate: '2026-04-28',
+        updatedBy: 'Omar H.',
+        notes: 'Converted after structural repairs were completed.',
+      },
+    ],
     purchaseDate: '2025-12-09',
     purchasePlace: 'Atlanta Insurance Auction',
+    carfaxType: 'link',
+    carfaxLink: 'https://example.com/carfax/ford-explorer-2018.pdf',
+    carfaxPdfName: '',
+    carfaxPdfUrl: '',
     notes: 'Sold last week and awaiting customer pickup documents.',
     photo: '/images/car-placeholder.svg',
-    carfaxLink: 'https://example.com/carfax/ford-explorer-2018.pdf',
     totalCost: 15410,
     sellingPrice: 18950,
     netProfit: 3540,
@@ -299,11 +386,29 @@ export const carsMockData: Car[] = [
     lotNumber: 'LOT-2405',
     status: 'purchased',
     titleType: 'Clean',
+    currentTitle: {
+      type: 'Clean',
+      lastUpdatedAt: '2026-05-10',
+      updatedBy: 'Nadia F.',
+    },
+    titleHistory: [
+      {
+        id: 'title-005-1',
+        previousTitleType: 'Clean',
+        newTitleType: 'Clean',
+        changeDate: '2026-03-10',
+        updatedBy: 'System',
+        notes: 'Initial title recorded at purchase.',
+      },
+    ],
     purchaseDate: '2026-05-11',
     purchasePlace: 'Los Angeles Auto Hub',
+    carfaxType: 'pdf',
+    carfaxLink: '',
+    carfaxPdfName: 'mercedes-c-class-2022-carfax.pdf',
+    carfaxPdfUrl: '',
     notes: 'Recently purchased. Needs intake inspection and shipping arrangement.',
     photo: '/images/car-placeholder.svg',
-    carfaxLink: 'https://example.com/carfax/mercedes-cclass-2022.pdf',
     totalCost: 41800,
     sellingPrice: 46900,
     netProfit: 5100,

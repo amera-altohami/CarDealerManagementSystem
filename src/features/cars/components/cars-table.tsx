@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState, type TouchEvent } from 'react'
+import { useNavigate } from '@tanstack/react-router'
 import { Link } from '@tanstack/react-router'
 import { EllipsisVertical, Pencil, Trash2, Eye } from 'lucide-react'
 import { ConfirmDialog } from '@/components/confirm-dialog'
@@ -24,10 +25,12 @@ type CarsTableProps = {
 
 export function CarsTable({ data }: CarsTableProps) {
   const { t } = useI18n()
+  const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState<CarStatus | 'all'>('all')
   const [rows, setRows] = useState(data)
   const [carToDelete, setCarToDelete] = useState<Car | null>(null)
+  const lastTapRef = useRef<{ carId: string; time: number }>({ carId: '', time: 0 })
 
   const filteredRows = useMemo(() => {
     const query = search.trim().toLowerCase()
@@ -44,6 +47,37 @@ export function CarsTable({ data }: CarsTableProps) {
       return matchesSearch && matchesStatus
     })
   }, [rows, search, status])
+
+  const openCarDetails = (carId: string) => {
+    navigate({ to: '/cars/$carId', params: { carId } })
+  }
+
+  const isInteractiveElement = (target: EventTarget | null) => {
+    if (!(target instanceof HTMLElement)) {
+      return false
+    }
+
+    return Boolean(target.closest('button, a, input, select, textarea, [role="button"]'))
+  }
+
+  const handleTouchEnd = (
+    event: TouchEvent<HTMLTableRowElement>,
+    carId: string
+  ) => {
+    if (isInteractiveElement(event.target)) {
+      return
+    }
+
+    const now = Date.now()
+    const isDoubleTap =
+      lastTapRef.current.carId === carId && now - lastTapRef.current.time < 300
+
+    lastTapRef.current = { carId, time: now }
+
+    if (isDoubleTap) {
+      openCarDetails(carId)
+    }
+  }
 
   return (
     <>
@@ -99,7 +133,12 @@ export function CarsTable({ data }: CarsTableProps) {
               <TableBody>
                 {filteredRows.length ? (
                   filteredRows.map((car) => (
-                    <TableRow key={car.id}>
+                    <TableRow
+                      key={car.id}
+                      className='cursor-pointer'
+                      onDoubleClick={() => openCarDetails(car.id)}
+                      onTouchEnd={(event) => handleTouchEnd(event, car.id)}
+                    >
                       <TableCell>
                         <div className='flex items-center gap-3'>
                           <img

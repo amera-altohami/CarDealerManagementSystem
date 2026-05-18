@@ -93,12 +93,12 @@ export function Dashboard() {
           />
         </div>
 
-        <div className='grid gap-4 lg:grid-cols-[1.3fr_0.9fr]'>
+        <div className='mt-6 grid gap-4 lg:grid-cols-[1.3fr_0.9fr]'>
           <LatestTransactions transactions={latestTransactionsMock} />
           <AlertsList alerts={delayedCarsMock} />
         </div>
 
-        <Card className='border-border/60'>
+        <Card className='mt-6 border-border/60'>
           <CardHeader>
             <CardTitle>{t('portfolioSnapshot')}</CardTitle>
           </CardHeader>

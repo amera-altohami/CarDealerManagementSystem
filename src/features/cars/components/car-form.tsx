@@ -19,10 +19,11 @@ import { Textarea } from '@/components/ui/textarea'
 import { carStatusOptions, titleTypeOptions } from '@/data/carsMockData'
 import { useI18n } from '@/lib/i18n'
 import { carFormSchema, type CarFormValues } from '../data/schema'
+import { buildCarFormData } from '../lib/car-form-data'
 
 type CarFormProps = {
   defaultValues?: Partial<CarFormValues>
-  onSubmit?: (values: CarFormValues) => void
+  onSubmit?: (values: CarFormValues, formData: FormData) => void
   submitLabel?: string
   cancelHref?: string
 }
@@ -37,9 +38,12 @@ const defaults: CarFormValues = {
   purchasePlace: '',
   titleType: 'Clean',
   status: 'purchased',
+  carfaxType: 'link',
+  carfaxLink: '',
+  carfaxPdfName: '',
+  carfaxPdfFile: null,
   notes: '',
   photo: '',
-  carfaxLink: '',
 }
 
 export function CarForm({
@@ -54,6 +58,8 @@ export function CarForm({
     defaultValues: { ...defaults, ...defaultValues },
     mode: 'onChange',
   })
+  const carfaxType = form.watch('carfaxType')
+  const carfaxPdfName = form.watch('carfaxPdfName')
 
   useEffect(() => {
     form.reset({ ...defaults, ...defaultValues })
@@ -64,8 +70,9 @@ export function CarForm({
       <form
         className='space-y-6'
         onSubmit={form.handleSubmit((values) => {
+          const formData = buildCarFormData(values)
           if (onSubmit) {
-            onSubmit(values)
+            onSubmit(values, formData)
             return
           }
 
@@ -277,20 +284,99 @@ export function CarForm({
             />
             <FormField
               control={form.control}
-              name='carfaxLink'
+              name='carfaxType'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('carfaxPdfOrLink')}</FormLabel>
+                  <FormLabel>{t('carfax')}</FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder='https://example.com/carfax.pdf'
-                      {...field}
-                    />
+                    <Select
+                      onValueChange={(value) => {
+                        field.onChange(value)
+                        if (value === 'link') {
+                          form.setValue('carfaxPdfName', '', {
+                            shouldDirty: true,
+                            shouldValidate: true,
+                          })
+                          form.setValue('carfaxPdfFile', null, {
+                            shouldDirty: true,
+                            shouldValidate: true,
+                          })
+                        } else {
+                          form.setValue('carfaxLink', '', {
+                            shouldDirty: true,
+                            shouldValidate: true,
+                          })
+                        }
+                      }}
+                      defaultValue={field.value}
+                    >
+                      <SelectTrigger className='w-full'>
+                        <SelectValue placeholder={t('carfax')} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value='link'>Link</SelectItem>
+                        <SelectItem value='pdf'>PDF</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </FormControl>
+                  <FormDescription>
+                    {field.value === 'pdf'
+                      ? 'Upload a PDF from your device.'
+                      : 'Paste a Carfax link.'}
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
+            {carfaxType === 'link' ? (
+              <FormField
+                control={form.control}
+                name='carfaxLink'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('carfaxPdfOrLink')}</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder='https://example.com/carfax.pdf'
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            ) : null}
+            {carfaxType === 'pdf' ? (
+              <FormField
+                control={form.control}
+                name='carfaxPdfFile'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Carfax PDF</FormLabel>
+                    <FormControl>
+                      <Input
+                        type='file'
+                        accept='application/pdf'
+                        onChange={(event) => {
+                          const file = event.target.files?.[0]
+                          field.onChange(file ?? null)
+                          form.setValue('carfaxPdfName', file?.name ?? '', {
+                            shouldDirty: true,
+                            shouldValidate: true,
+                          })
+                        }}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      {carfaxPdfName
+                        ? `Current file: ${carfaxPdfName}`
+                        : 'PDF files only.'}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            ) : null}
           </div>
         </section>
 

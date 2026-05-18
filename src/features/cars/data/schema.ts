@@ -37,9 +37,34 @@ export const carFormSchema = z.object({
     .min(2, 'Purchase place must be at least 2 characters.'),
   titleType: titleTypeSchema,
   status: statusSchema,
+  carfaxType: z.enum(['link', 'pdf']),
+  carfaxLink: z.string().optional().default(''),
+  carfaxPdfName: z.string().optional().default(''),
+  carfaxPdfFile: z.instanceof(File).optional().nullable().default(null),
   notes: z.string().optional().default(''),
   photo: z.string().optional().default(''),
-  carfaxLink: z.string().optional().default(''),
-})
+}).refine(
+  (values) =>
+    values.carfaxType === 'link'
+      ? values.carfaxLink.trim().length > 0
+      : Boolean(values.carfaxPdfFile || values.carfaxPdfName),
+  {
+    message:
+      'Please provide a Carfax link or upload a PDF file depending on the selected type.',
+    path: ['carfaxType'],
+  }
+).refine(
+  (values) => values.carfaxType !== 'link' || values.carfaxLink.trim().length > 0,
+  {
+    message: 'Please enter a Carfax link.',
+    path: ['carfaxLink'],
+  }
+).refine(
+  (values) => values.carfaxType !== 'pdf' || Boolean(values.carfaxPdfFile || values.carfaxPdfName),
+  {
+    message: 'Please upload a Carfax PDF file.',
+    path: ['carfaxPdfName'],
+  }
+)
 
 export type CarFormValues = z.infer<typeof carFormSchema>
