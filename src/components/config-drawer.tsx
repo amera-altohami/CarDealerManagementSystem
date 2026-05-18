@@ -12,6 +12,7 @@ import { IconThemeDark } from '@/assets/custom/icon-theme-dark'
 import { IconThemeLight } from '@/assets/custom/icon-theme-light'
 import { IconThemeSystem } from '@/assets/custom/icon-theme-system'
 import { cn } from '@/lib/utils'
+import { useI18n } from '@/lib/i18n'
 import { useDirection } from '@/context/direction-provider'
 import { type Collapsible, useLayout } from '@/context/layout-provider'
 import { useTheme } from '@/context/theme-provider'
@@ -32,6 +33,7 @@ export function ConfigDrawer() {
   const { resetDir } = useDirection()
   const { resetTheme } = useTheme()
   const { resetLayout } = useLayout()
+  const { t, locale } = useI18n()
 
   const handleReset = () => {
     setOpen(true)
@@ -43,20 +45,20 @@ export function ConfigDrawer() {
   return (
     <Sheet>
       <SheetTrigger asChild>
-        <Button
-          size='icon'
-          variant='ghost'
-          aria-label='Open theme settings'
-          className='rounded-full'
-        >
+          <Button
+            size='icon'
+            variant='ghost'
+          aria-label={t('themeSettings')}
+            className='rounded-full'
+          >
           <Settings aria-hidden='true' />
         </Button>
       </SheetTrigger>
       <SheetContent className='flex flex-col'>
         <SheetHeader className='pb-0 text-start'>
-          <SheetTitle>Theme Settings</SheetTitle>
+          <SheetTitle>{t('themeSettings')}</SheetTitle>
           <SheetDescription>
-            Adjust the appearance and layout to suit your preferences.
+            {t('themeSettingsDesc')}
           </SheetDescription>
         </SheetHeader>
         <div className='space-y-6 overflow-y-auto px-4'>
@@ -69,9 +71,13 @@ export function ConfigDrawer() {
           <Button
             variant='destructive'
             onClick={handleReset}
-            aria-label='Reset all settings to default values'
+            aria-label={
+              locale === 'ar'
+                ? 'إعادة ضبط جميع الإعدادات إلى القيم الافتراضية'
+                : 'Reset all settings to default values'
+            }
           >
-            Reset
+            {t('reset')}
           </Button>
         </SheetFooter>
       </SheetContent>
@@ -173,36 +179,41 @@ function RadioGroupItem({
 }
 
 function ThemeConfig() {
+  const { t, locale } = useI18n()
   const { defaultTheme, theme, setTheme } = useTheme()
   return (
     <div>
       <SectionTitle
-        title='Theme'
+      title={t('theme')}
         showReset={theme !== defaultTheme}
         onReset={() => setTheme(defaultTheme)}
-        resetAriaLabel='Reset theme preference to default'
+        resetAriaLabel={
+          locale === 'ar'
+            ? 'إعادة ضبط المظهر إلى الافتراضي'
+            : 'Reset theme preference to default'
+        }
       />
       <Radio
         value={theme}
         onValueChange={setTheme}
         className='grid w-full max-w-md grid-cols-3 gap-4'
-        aria-label='Select theme preference'
+        aria-label={locale === 'ar' ? 'اختر تفضيل المظهر' : 'Select theme preference'}
         aria-describedby='theme-description'
       >
         {[
           {
             value: 'system',
-            label: 'System',
+              label: locale === 'ar' ? 'النظام' : 'System',
             icon: IconThemeSystem,
           },
           {
             value: 'light',
-            label: 'Light',
+              label: locale === 'ar' ? 'فاتح' : 'Light',
             icon: IconThemeLight,
           },
           {
             value: 'dark',
-            label: 'Dark',
+              label: locale === 'ar' ? 'داكن' : 'Dark',
             icon: IconThemeDark,
           },
         ].map((item) => (
@@ -217,36 +228,41 @@ function ThemeConfig() {
 }
 
 function SidebarConfig() {
+  const { t, locale } = useI18n()
   const { defaultVariant, variant, setVariant } = useLayout()
   return (
     <div className='max-md:hidden'>
       <SectionTitle
-        title='Sidebar'
+        title={t('sidebar')}
         showReset={defaultVariant !== variant}
         onReset={() => setVariant(defaultVariant)}
-        resetAriaLabel='Reset sidebar style to default'
+        resetAriaLabel={
+          locale === 'ar'
+            ? 'إعادة ضبط نمط الشريط الجانبي إلى الافتراضي'
+            : 'Reset sidebar style to default'
+        }
       />
       <Radio
         value={variant}
         onValueChange={setVariant}
         className='grid w-full max-w-md grid-cols-3 gap-4'
-        aria-label='Select sidebar style'
+        aria-label={locale === 'ar' ? 'اختر نمط الشريط الجانبي' : 'Select sidebar style'}
         aria-describedby='sidebar-description'
       >
         {[
           {
             value: 'inset',
-            label: 'Inset',
+            label: locale === 'ar' ? 'داخلي' : 'Inset',
             icon: IconSidebarInset,
           },
           {
             value: 'floating',
-            label: 'Floating',
+            label: locale === 'ar' ? 'عائم' : 'Floating',
             icon: IconSidebarFloating,
           },
           {
             value: 'sidebar',
-            label: 'Sidebar',
+            label: locale === 'ar' ? 'شريط جانبي' : 'Sidebar',
             icon: IconSidebarSidebar,
           },
         ].map((item) => (
@@ -261,6 +277,7 @@ function SidebarConfig() {
 }
 
 function LayoutConfig() {
+  const { t, locale } = useI18n()
   const { open, setOpen } = useSidebar()
   const { defaultCollapsible, collapsible, setCollapsible } = useLayout()
 
@@ -269,13 +286,17 @@ function LayoutConfig() {
   return (
     <div className='max-md:hidden'>
       <SectionTitle
-        title='Layout'
+        title={t('layout')}
         showReset={radioState !== 'default'}
         onReset={() => {
           setOpen(true)
           setCollapsible(defaultCollapsible)
         }}
-        resetAriaLabel='Reset layout options to default'
+        resetAriaLabel={
+          locale === 'ar'
+            ? 'إعادة ضبط خيارات التخطيط إلى الافتراضي'
+            : 'Reset layout options to default'
+        }
       />
       <Radio
         value={radioState}
@@ -288,23 +309,23 @@ function LayoutConfig() {
           setCollapsible(v as Collapsible)
         }}
         className='grid w-full max-w-md grid-cols-3 gap-4'
-        aria-label='Select layout style'
+        aria-label={locale === 'ar' ? 'اختر نمط التخطيط' : 'Select layout style'}
         aria-describedby='layout-description'
       >
         {[
           {
             value: 'default',
-            label: 'Default',
+            label: locale === 'ar' ? 'افتراضي' : 'Default',
             icon: IconLayoutDefault,
           },
           {
             value: 'icon',
-            label: 'Compact',
+            label: locale === 'ar' ? 'مضغوط' : 'Compact',
             icon: IconLayoutCompact,
           },
           {
             value: 'offcanvas',
-            label: 'Full layout',
+            label: locale === 'ar' ? 'تخطيط كامل' : 'Full layout',
             icon: IconLayoutFull,
           },
         ].map((item) => (
@@ -319,33 +340,38 @@ function LayoutConfig() {
 }
 
 function DirConfig() {
+  const { t, locale } = useI18n()
   const { defaultDir, dir, setDir } = useDirection()
   return (
     <div>
       <SectionTitle
-        title='Direction'
+        title={t('direction')}
         showReset={defaultDir !== dir}
         onReset={() => setDir(defaultDir)}
-        resetAriaLabel='Reset text direction to default'
+        resetAriaLabel={
+          locale === 'ar'
+            ? 'إعادة ضبط اتجاه النص إلى الافتراضي'
+            : 'Reset text direction to default'
+        }
       />
       <Radio
         value={dir}
         onValueChange={setDir}
         className='grid w-full max-w-md grid-cols-3 gap-4'
-        aria-label='Select site direction'
+        aria-label={locale === 'ar' ? 'اختر اتجاه الموقع' : 'Select site direction'}
         aria-describedby='direction-description'
       >
         {[
           {
             value: 'ltr',
-            label: 'Left to Right',
+            label: locale === 'ar' ? 'من اليسار إلى اليمين' : 'Left to Right',
             icon: (props: SVGProps<SVGSVGElement>) => (
               <IconDir dir='ltr' {...props} />
             ),
           },
           {
             value: 'rtl',
-            label: 'Right to Left',
+            label: locale === 'ar' ? 'من اليمين إلى اليسار' : 'Right to Left',
             icon: (props: SVGProps<SVGSVGElement>) => (
               <IconDir dir='rtl' {...props} />
             ),

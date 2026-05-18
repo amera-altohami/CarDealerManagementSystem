@@ -1,218 +1,124 @@
-import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { BarChart3, CarFront, CircleDollarSign, Wrench, Truck, AlertTriangle, Scale, Wallet } from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ConfigDrawer } from '@/components/config-drawer'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
-import { TopNav } from '@/components/layout/top-nav'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
-import { Analytics } from './components/analytics'
-import { Overview } from './components/overview'
-import { RecentSales } from './components/recent-sales'
+import { AlertsList } from '@/components/alerts-list'
+import { StatCard } from '@/components/stat-card'
+import { delayedCarsMock, latestTransactionsMock, carsMockData } from '@/data/carsMockData'
+import { useI18n } from '@/lib/i18n'
+import { LatestTransactions } from './components/latest-transactions'
+
+const money = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  maximumFractionDigits: 0,
+})
 
 export function Dashboard() {
+  const { t } = useI18n()
+  const totalCars = carsMockData.length
+  const soldCars = carsMockData.filter((car) => car.status === 'sold').length
+  const carsUnderRepair = carsMockData.filter((car) => car.status === 'repairing').length
+  const carsUnderShipping = carsMockData.filter((car) => car.status === 'shipping').length
+  const carsRequiringInspection = carsMockData.filter((car) =>
+    car.inspections.some((inspection) => inspection.status !== 'Completed')
+  ).length
+  const totalProfit = carsMockData.reduce((sum, car) => sum + car.netProfit, 0)
+  const totalExpenses = carsMockData.reduce((sum, car) => sum + car.totalCost, 0)
+  const currentCapital = totalExpenses
+
   return (
     <>
-      {/* ===== Top Heading ===== */}
       <Header>
-        <TopNav links={topNav} className='me-auto' />
-        <Search />
+        <Search className='me-auto' />
         <ThemeSwitch />
         <ConfigDrawer />
         <ProfileDropdown />
       </Header>
 
-      {/* ===== Main ===== */}
       <Main>
         <div className='mb-2 flex items-center justify-between space-y-2'>
-          <h1 className='text-2xl font-bold tracking-tight'>Dashboard</h1>
-          <div className='flex items-center space-x-2'>
-            <Button>Download</Button>
+          <div>
+            <h1 className='text-2xl font-bold tracking-tight'>{t('dashboard')}</h1>
+            <p className='text-muted-foreground'>
+              {t('carsManagementDesc')}
+            </p>
           </div>
         </div>
-        <Tabs
-          orientation='vertical'
-          defaultValue='overview'
-          className='space-y-4'
-        >
-          <div className='w-full overflow-x-auto pb-2'>
-            <TabsList>
-              <TabsTrigger value='overview'>Overview</TabsTrigger>
-              <TabsTrigger value='analytics'>Analytics</TabsTrigger>
-              <TabsTrigger value='reports' disabled>
-                Reports
-              </TabsTrigger>
-              <TabsTrigger value='notifications' disabled>
-                Notifications
-              </TabsTrigger>
-            </TabsList>
-          </div>
-          <TabsContent value='overview' className='space-y-4'>
-            <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-4'>
-              <Card>
-                <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-                  <CardTitle className='text-sm font-medium'>
-                    Total Revenue
-                  </CardTitle>
-                  <svg
-                    xmlns='http://www.w3.org/2000/svg'
-                    viewBox='0 0 24 24'
-                    fill='none'
-                    stroke='currentColor'
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth='2'
-                    className='h-4 w-4 text-muted-foreground'
-                  >
-                    <path d='M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6' />
-                  </svg>
-                </CardHeader>
-                <CardContent>
-                  <div className='text-2xl font-bold'>$45,231.89</div>
-                  <p className='text-xs text-muted-foreground'>
-                    +20.1% from last month
-                  </p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-                  <CardTitle className='text-sm font-medium'>
-                    Subscriptions
-                  </CardTitle>
-                  <svg
-                    xmlns='http://www.w3.org/2000/svg'
-                    viewBox='0 0 24 24'
-                    fill='none'
-                    stroke='currentColor'
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth='2'
-                    className='h-4 w-4 text-muted-foreground'
-                  >
-                    <path d='M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2' />
-                    <circle cx='9' cy='7' r='4' />
-                    <path d='M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75' />
-                  </svg>
-                </CardHeader>
-                <CardContent>
-                  <div className='text-2xl font-bold'>+2350</div>
-                  <p className='text-xs text-muted-foreground'>
-                    +180.1% from last month
-                  </p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-                  <CardTitle className='text-sm font-medium'>Sales</CardTitle>
-                  <svg
-                    xmlns='http://www.w3.org/2000/svg'
-                    viewBox='0 0 24 24'
-                    fill='none'
-                    stroke='currentColor'
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth='2'
-                    className='h-4 w-4 text-muted-foreground'
-                  >
-                    <rect width='20' height='14' x='2' y='5' rx='2' />
-                    <path d='M2 10h20' />
-                  </svg>
-                </CardHeader>
-                <CardContent>
-                  <div className='text-2xl font-bold'>+12,234</div>
-                  <p className='text-xs text-muted-foreground'>
-                    +19% from last month
-                  </p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-                  <CardTitle className='text-sm font-medium'>
-                    Active Now
-                  </CardTitle>
-                  <svg
-                    xmlns='http://www.w3.org/2000/svg'
-                    viewBox='0 0 24 24'
-                    fill='none'
-                    stroke='currentColor'
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth='2'
-                    className='h-4 w-4 text-muted-foreground'
-                  >
-                    <path d='M22 12h-4l-3 9L9 3l-3 9H2' />
-                  </svg>
-                </CardHeader>
-                <CardContent>
-                  <div className='text-2xl font-bold'>+573</div>
-                  <p className='text-xs text-muted-foreground'>
-                    +201 since last hour
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-            <div className='grid grid-cols-1 gap-4 lg:grid-cols-7'>
-              <Card className='col-span-1 lg:col-span-4'>
-                <CardHeader>
-                  <CardTitle>Overview</CardTitle>
-                </CardHeader>
-                <CardContent className='ps-2'>
-                  <Overview />
-                </CardContent>
-              </Card>
-              <Card className='col-span-1 lg:col-span-3'>
-                <CardHeader>
-                  <CardTitle>Recent Sales</CardTitle>
-                  <CardDescription>
-                    You made 265 sales this month.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <RecentSales />
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-          <TabsContent value='analytics' className='space-y-4'>
-            <Analytics />
-          </TabsContent>
-        </Tabs>
+
+        <div className='grid gap-4 sm:grid-cols-2 xl:grid-cols-4'>
+          <StatCard
+            title={t('totalCars')}
+            value={String(totalCars)}
+            icon={<CarFront className='h-4 w-4 text-muted-foreground' />}
+          />
+          <StatCard
+            title={t('soldCars')}
+            value={String(soldCars)}
+            icon={<CircleDollarSign className='h-4 w-4 text-muted-foreground' />}
+          />
+          <StatCard
+            title={t('carsUnderRepair')}
+            value={String(carsUnderRepair)}
+            icon={<Wrench className='h-4 w-4 text-muted-foreground' />}
+          />
+          <StatCard
+            title={t('carsUnderShipping')}
+            value={String(carsUnderShipping)}
+            icon={<Truck className='h-4 w-4 text-muted-foreground' />}
+          />
+          <StatCard
+            title={t('carsRequiringInspection')}
+            value={String(carsRequiringInspection)}
+            icon={<AlertTriangle className='h-4 w-4 text-muted-foreground' />}
+          />
+          <StatCard
+            title={t('totalProfit')}
+            value={money.format(totalProfit)}
+            icon={<BarChart3 className='h-4 w-4 text-muted-foreground' />}
+          />
+          <StatCard
+            title={t('totalExpenses')}
+            value={money.format(totalExpenses)}
+            icon={<Scale className='h-4 w-4 text-muted-foreground' />}
+          />
+          <StatCard
+            title={t('currentCapital')}
+            value={money.format(currentCapital)}
+            icon={<Wallet className='h-4 w-4 text-muted-foreground' />}
+          />
+        </div>
+
+        <div className='grid gap-4 lg:grid-cols-[1.3fr_0.9fr]'>
+          <LatestTransactions transactions={latestTransactionsMock} />
+          <AlertsList alerts={delayedCarsMock} />
+        </div>
+
+        <Card className='border-border/60'>
+          <CardHeader>
+            <CardTitle>{t('portfolioSnapshot')}</CardTitle>
+          </CardHeader>
+          <CardContent className='grid gap-4 sm:grid-cols-2 xl:grid-cols-4'>
+            <MiniMetric label={t('purchasedVehicles')} value={String(carsMockData.filter((car) => car.status === 'purchased').length)} />
+            <MiniMetric label={t('readyForSale')} value={String(carsMockData.filter((car) => car.status === 'ready-for-sale').length)} />
+            <MiniMetric label={t('inspectionPending')} value={String(carsRequiringInspection)} />
+            <MiniMetric label={t('alertsOpen')} value={String(delayedCarsMock.length)} />
+          </CardContent>
+        </Card>
       </Main>
     </>
   )
 }
 
-const topNav = [
-  {
-    title: 'Overview',
-    href: 'dashboard/overview',
-    isActive: true,
-    disabled: false,
-  },
-  {
-    title: 'Customers',
-    href: 'dashboard/customers',
-    isActive: false,
-    disabled: true,
-  },
-  {
-    title: 'Products',
-    href: 'dashboard/products',
-    isActive: false,
-    disabled: true,
-  },
-  {
-    title: 'Settings',
-    href: 'dashboard/settings',
-    isActive: false,
-    disabled: true,
-  },
-]
+function MiniMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className='rounded-lg border p-4'>
+      <p className='text-sm text-muted-foreground'>{label}</p>
+      <p className='mt-2 text-xl font-semibold'>{value}</p>
+    </div>
+  )
+}

@@ -1,0 +1,14 @@
+<svg width="1200" height="800" viewBox="0 0 1200 800" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="800" rx="48" fill="#0F172A"/>
+  <rect x="56" y="56" width="1088" height="688" rx="40" fill="#111827" stroke="#334155" stroke-width="2"/>
+  <path d="M314 468L363 368C378 337 409 318 443 318H757C791 318 822 337 837 368L886 468" stroke="#E2E8F0" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M263 468H937C970 468 996 494 996 527V560C996 593 970 619 937 619H263C230 619 204 593 204 560V527C204 494 230 468 263 468Z" fill="#1E293B" stroke="#E2E8F0" stroke-width="18"/>
+  <path d="M356 619C356 653 328 681 294 681C260 681 232 653 232 619" stroke="#E2E8F0" stroke-width="18" stroke-linecap="round"/>
+  <path d="M968 619C968 653 940 681 906 681C872 681 844 653 844 619" stroke="#E2E8F0" stroke-width="18" stroke-linecap="round"/>
+  <circle cx="307" cy="619" r="58" fill="#0B1120" stroke="#E2E8F0" stroke-width="18"/>
+  <circle cx="899" cy="619" r="58" fill="#0B1120" stroke="#E2E8F0" stroke-width="18"/>
+  <path d="M441 468H758" stroke="#94A3B8" stroke-width="14" stroke-linecap="round"/>
+  <path d="M477 368H723" stroke="#94A3B8" stroke-width="14" stroke-linecap="round"/>
+  <path d="M520 552H679" stroke="#E2E8F0" stroke-width="14" stroke-linecap="round"/>
+  <text x="600" y="190" fill="#E2E8F0" font-family="Arial, sans-serif" font-size="42" font-weight="700" text-anchor="middle">Car Placeholder</text>
+</svg>

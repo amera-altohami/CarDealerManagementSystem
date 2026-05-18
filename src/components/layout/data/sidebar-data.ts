@@ -23,183 +23,104 @@ import {
   GalleryVerticalEnd,
 } from 'lucide-react'
 import { ClerkLogo } from '@/assets/clerk-logo'
+import { translate } from '@/lib/i18n'
+import { type Locale } from '@/lib/locale'
 import { type SidebarData } from '../types'
 
-export const sidebarData: SidebarData = {
-  user: {
-    name: 'satnaing',
-    email: 'satnaingdev@gmail.com',
-    avatar: '/avatars/shadcn.jpg',
-  },
-  teams: [
-    {
-      name: 'Shadcn Admin',
-      logo: Command,
-      plan: 'Vite + ShadcnUI',
+export function getSidebarData(locale: Locale): SidebarData {
+  const t = (key: Parameters<typeof translate>[1]) => translate(locale, key)
+
+  return {
+    user: {
+      name: 'satnaing',
+      email: 'satnaingdev@gmail.com',
+      avatar: '/avatars/shadcn.jpg',
     },
-    {
-      name: 'Acme Inc',
-      logo: GalleryVerticalEnd,
-      plan: 'Enterprise',
-    },
-    {
-      name: 'Acme Corp.',
-      logo: AudioWaveform,
-      plan: 'Startup',
-    },
-  ],
-  navGroups: [
-    {
-      title: 'General',
-      items: [
-        {
-          title: 'Dashboard',
-          url: '/',
-          icon: LayoutDashboard,
-        },
-        {
-          title: 'Tasks',
-          url: '/tasks',
-          icon: ListTodo,
-        },
-        {
-          title: 'Apps',
-          url: '/apps',
-          icon: Package,
-        },
-        {
-          title: 'Chats',
-          url: '/chats',
-          badge: '3',
-          icon: MessagesSquare,
-        },
-        {
-          title: 'Users',
-          url: '/users',
-          icon: Users,
-        },
-        {
-          title: 'Secured by Clerk',
-          icon: ClerkLogo,
-          items: [
-            {
-              title: 'Sign In',
-              url: '/clerk/sign-in',
-            },
-            {
-              title: 'Sign Up',
-              url: '/clerk/sign-up',
-            },
-            {
-              title: 'User Management',
-              url: '/clerk/user-management',
-            },
-          ],
-        },
-      ],
-    },
-    {
-      title: 'Pages',
-      items: [
-        {
-          title: 'Auth',
-          icon: ShieldCheck,
-          items: [
-            {
-              title: 'Sign In',
-              url: '/sign-in',
-            },
-            {
-              title: 'Sign In (2 Col)',
-              url: '/sign-in-2',
-            },
-            {
-              title: 'Sign Up',
-              url: '/sign-up',
-            },
-            {
-              title: 'Forgot Password',
-              url: '/forgot-password',
-            },
-            {
-              title: 'OTP',
-              url: '/otp',
-            },
-          ],
-        },
-        {
-          title: 'Errors',
-          icon: Bug,
-          items: [
-            {
-              title: 'Unauthorized',
-              url: '/errors/unauthorized',
-              icon: Lock,
-            },
-            {
-              title: 'Forbidden',
-              url: '/errors/forbidden',
-              icon: UserX,
-            },
-            {
-              title: 'Not Found',
-              url: '/errors/not-found',
-              icon: FileX,
-            },
-            {
-              title: 'Internal Server Error',
-              url: '/errors/internal-server-error',
-              icon: ServerOff,
-            },
-            {
-              title: 'Maintenance Error',
-              url: '/errors/maintenance-error',
-              icon: Construction,
-            },
-          ],
-        },
-      ],
-    },
-    {
-      title: 'Other',
-      items: [
-        {
-          title: 'Settings',
-          icon: Settings,
-          items: [
-            {
-              title: 'Profile',
-              url: '/settings',
-              icon: UserCog,
-            },
-            {
-              title: 'Account',
-              url: '/settings/account',
-              icon: Wrench,
-            },
-            {
-              title: 'Appearance',
-              url: '/settings/appearance',
-              icon: Palette,
-            },
-            {
-              title: 'Notifications',
-              url: '/settings/notifications',
-              icon: Bell,
-            },
-            {
-              title: 'Display',
-              url: '/settings/display',
-              icon: Monitor,
-            },
-          ],
-        },
-        {
-          title: 'Help Center',
-          url: '/help-center',
-          icon: HelpCircle,
-        },
-      ],
-    },
-  ],
+    teams: [
+      {
+        name: t('appName'),
+        logo: Command,
+        plan: t('appSubtitle'),
+      },
+      {
+        name: 'Acme Inc',
+        logo: GalleryVerticalEnd,
+        plan: 'Enterprise',
+      },
+      {
+        name: 'Acme Corp.',
+        logo: AudioWaveform,
+        plan: 'Startup',
+      },
+    ],
+    navGroups: [
+      {
+        title: locale === 'ar' ? 'عام' : 'General',
+        items: [
+          { title: t('dashboard'), url: '/', icon: LayoutDashboard },
+          { title: t('cars'), url: '/cars', icon: Construction },
+          { title: t('tasks'), url: '/tasks', icon: ListTodo },
+          { title: t('apps'), url: '/apps', icon: Package },
+          { title: t('chats'), url: '/chats', badge: '3', icon: MessagesSquare },
+          { title: t('users'), url: '/users', icon: Users },
+          {
+            title: locale === 'ar' ? 'محمي بواسطة Clerk' : 'Secured by Clerk',
+            icon: ClerkLogo,
+            items: [
+              { title: locale === 'ar' ? 'تسجيل الدخول' : 'Sign In', url: '/clerk/sign-in' },
+              { title: locale === 'ar' ? 'إنشاء حساب' : 'Sign Up', url: '/clerk/sign-up' },
+              {
+                title: locale === 'ar' ? 'إدارة المستخدمين' : 'User Management',
+                url: '/clerk/user-management',
+              },
+            ],
+          },
+        ],
+      },
+      {
+        title: locale === 'ar' ? 'الصفحات' : 'Pages',
+        items: [
+          {
+            title: locale === 'ar' ? 'المصادقة' : 'Auth',
+            icon: ShieldCheck,
+            items: [
+              { title: locale === 'ar' ? 'تسجيل الدخول' : 'Sign In', url: '/sign-in' },
+              { title: locale === 'ar' ? 'تسجيل الدخول (عمودان)' : 'Sign In (2 Col)', url: '/sign-in-2' },
+              { title: locale === 'ar' ? 'إنشاء حساب' : 'Sign Up', url: '/sign-up' },
+              { title: locale === 'ar' ? 'استعادة كلمة المرور' : 'Forgot Password', url: '/forgot-password' },
+              { title: 'OTP', url: '/otp' },
+            ],
+          },
+          {
+            title: locale === 'ar' ? 'الأخطاء' : 'Errors',
+            icon: Bug,
+            items: [
+              { title: locale === 'ar' ? 'غير مصرح' : 'Unauthorized', url: '/errors/unauthorized', icon: Lock },
+              { title: locale === 'ar' ? 'ممنوع' : 'Forbidden', url: '/errors/forbidden', icon: UserX },
+              { title: locale === 'ar' ? 'غير موجود' : 'Not Found', url: '/errors/not-found', icon: FileX },
+              { title: locale === 'ar' ? 'خطأ داخلي' : 'Internal Server Error', url: '/errors/internal-server-error', icon: ServerOff },
+              { title: locale === 'ar' ? 'الصيانة' : 'Maintenance Error', url: '/errors/maintenance-error', icon: Construction },
+            ],
+          },
+        ],
+      },
+      {
+        title: locale === 'ar' ? 'أخرى' : 'Other',
+        items: [
+          {
+            title: t('settings'),
+            icon: Settings,
+            items: [
+              { title: t('profile'), url: '/settings', icon: UserCog },
+              { title: t('account'), url: '/settings/account', icon: Wrench },
+              { title: t('appearance'), url: '/settings/appearance', icon: Palette },
+              { title: t('notifications'), url: '/settings/notifications', icon: Bell },
+              { title: t('display'), url: '/settings/display', icon: Monitor },
+            ],
+          },
+          { title: t('helpCenter'), url: '/help-center', icon: HelpCircle },
+        ],
+      },
+    ],
+  }
 }

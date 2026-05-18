@@ -2,7 +2,9 @@ import React from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { ArrowRight, ChevronRight, Laptop, Moon, Sun } from 'lucide-react'
 import { useSearch } from '@/context/search-provider'
+import { useDirection } from '@/context/direction-provider'
 import { useTheme } from '@/context/theme-provider'
+import { useI18n } from '@/lib/i18n'
 import {
   CommandDialog,
   CommandEmpty,
@@ -12,13 +14,16 @@ import {
   CommandList,
   CommandSeparator,
 } from '@/components/ui/command'
-import { sidebarData } from './layout/data/sidebar-data'
+import { getSidebarData } from './layout/data/sidebar-data'
 import { ScrollArea } from './ui/scroll-area'
 
 export function CommandMenu() {
   const navigate = useNavigate()
   const { setTheme } = useTheme()
   const { open, setOpen } = useSearch()
+  const { locale } = useDirection()
+  const { t } = useI18n()
+  const sidebarData = getSidebarData(locale)
 
   const runCommand = React.useCallback(
     (command: () => unknown) => {
@@ -30,10 +35,12 @@ export function CommandMenu() {
 
   return (
     <CommandDialog modal open={open} onOpenChange={setOpen}>
-      <CommandInput placeholder='Type a command or search...' />
+      <CommandInput placeholder={locale === 'ar' ? 'اكتب أمرًا أو ابحث...' : 'Type a command or search...'} />
       <CommandList>
         <ScrollArea type='hover' className='h-72 pe-1'>
-          <CommandEmpty>No results found.</CommandEmpty>
+          <CommandEmpty>
+            {locale === 'ar' ? 'لا توجد نتائج.' : 'No results found.'}
+          </CommandEmpty>
           {sidebarData.navGroups.map((group) => (
             <CommandGroup key={group.title} heading={group.title}>
               {group.items.map((navItem, i) => {
@@ -71,17 +78,17 @@ export function CommandMenu() {
             </CommandGroup>
           ))}
           <CommandSeparator />
-          <CommandGroup heading='Theme'>
+          <CommandGroup heading={t('theme')}>
             <CommandItem onSelect={() => runCommand(() => setTheme('light'))}>
-              <Sun /> <span>Light</span>
+              <Sun /> <span>{locale === 'ar' ? 'فاتح' : 'Light'}</span>
             </CommandItem>
             <CommandItem onSelect={() => runCommand(() => setTheme('dark'))}>
               <Moon className='scale-90' />
-              <span>Dark</span>
+              <span>{locale === 'ar' ? 'داكن' : 'Dark'}</span>
             </CommandItem>
             <CommandItem onSelect={() => runCommand(() => setTheme('system'))}>
               <Laptop />
-              <span>System</span>
+              <span>{locale === 'ar' ? 'النظام' : 'System'}</span>
             </CommandItem>
           </CommandGroup>
         </ScrollArea>

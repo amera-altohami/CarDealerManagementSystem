@@ -25,11 +25,13 @@ import { Route as authForgotPasswordRouteImport } from './routes/(auth)/forgot-p
 import { Route as ClerkAuthenticatedRouteRouteImport } from './routes/clerk/_authenticated/route'
 import { Route as ClerkauthRouteRouteImport } from './routes/clerk/(auth)/route'
 import { Route as AuthenticatedSettingsRouteRouteImport } from './routes/_authenticated/settings/route'
+import { Route as AuthenticatedCarsRouteRouteImport } from './routes/_authenticated/cars/route'
 import { Route as AuthenticatedUsersIndexRouteImport } from './routes/_authenticated/users/index'
 import { Route as AuthenticatedTasksIndexRouteImport } from './routes/_authenticated/tasks/index'
 import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings/index'
 import { Route as AuthenticatedHelpCenterIndexRouteImport } from './routes/_authenticated/help-center/index'
 import { Route as AuthenticatedChatsIndexRouteImport } from './routes/_authenticated/chats/index'
+import { Route as AuthenticatedCarsIndexRouteImport } from './routes/_authenticated/cars/index'
 import { Route as AuthenticatedAppsIndexRouteImport } from './routes/_authenticated/apps/index'
 import { Route as ClerkAuthenticatedUserManagementRouteImport } from './routes/clerk/_authenticated/user-management'
 import { Route as ClerkauthSignUpRouteImport } from './routes/clerk/(auth)/sign-up'
@@ -39,6 +41,10 @@ import { Route as AuthenticatedSettingsDisplayRouteImport } from './routes/_auth
 import { Route as AuthenticatedSettingsAppearanceRouteImport } from './routes/_authenticated/settings/appearance'
 import { Route as AuthenticatedSettingsAccountRouteImport } from './routes/_authenticated/settings/account'
 import { Route as AuthenticatedErrorsErrorRouteImport } from './routes/_authenticated/errors/$error'
+import { Route as AuthenticatedCarsNewRouteImport } from './routes/_authenticated/cars/new'
+import { Route as AuthenticatedCarsCarIdRouteRouteImport } from './routes/_authenticated/cars/$carId/route'
+import { Route as AuthenticatedCarsCarIdIndexRouteImport } from './routes/_authenticated/cars/$carId/index'
+import { Route as AuthenticatedCarsCarIdEditRouteImport } from './routes/_authenticated/cars/$carId/edit'
 
 const ClerkRouteRoute = ClerkRouteRouteImport.update({
   id: '/clerk',
@@ -118,6 +124,11 @@ const AuthenticatedSettingsRouteRoute =
     path: '/settings',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedCarsRouteRoute = AuthenticatedCarsRouteRouteImport.update({
+  id: '/cars',
+  path: '/cars',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedUsersIndexRoute = AuthenticatedUsersIndexRouteImport.update({
   id: '/users/',
   path: '/users/',
@@ -144,6 +155,11 @@ const AuthenticatedChatsIndexRoute = AuthenticatedChatsIndexRouteImport.update({
   id: '/chats/',
   path: '/chats/',
   getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedCarsIndexRoute = AuthenticatedCarsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedCarsRouteRoute,
 } as any)
 const AuthenticatedAppsIndexRoute = AuthenticatedAppsIndexRouteImport.update({
   id: '/apps/',
@@ -196,10 +212,34 @@ const AuthenticatedErrorsErrorRoute =
     path: '/errors/$error',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedCarsNewRoute = AuthenticatedCarsNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => AuthenticatedCarsRouteRoute,
+} as any)
+const AuthenticatedCarsCarIdRouteRoute =
+  AuthenticatedCarsCarIdRouteRouteImport.update({
+    id: '/$carId',
+    path: '/$carId',
+    getParentRoute: () => AuthenticatedCarsRouteRoute,
+  } as any)
+const AuthenticatedCarsCarIdIndexRoute =
+  AuthenticatedCarsCarIdIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedCarsCarIdRouteRoute,
+  } as any)
+const AuthenticatedCarsCarIdEditRoute =
+  AuthenticatedCarsCarIdEditRouteImport.update({
+    id: '/edit',
+    path: '/edit',
+    getParentRoute: () => AuthenticatedCarsCarIdRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/clerk': typeof ClerkAuthenticatedRouteRouteWithChildren
+  '/cars': typeof AuthenticatedCarsRouteRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRouteRouteWithChildren
   '/forgot-password': typeof authForgotPasswordRoute
   '/otp': typeof authOtpRoute
@@ -211,6 +251,8 @@ export interface FileRoutesByFullPath {
   '/404': typeof errors404Route
   '/500': typeof errors500Route
   '/503': typeof errors503Route
+  '/cars/$carId': typeof AuthenticatedCarsCarIdRouteRouteWithChildren
+  '/cars/new': typeof AuthenticatedCarsNewRoute
   '/errors/$error': typeof AuthenticatedErrorsErrorRoute
   '/settings/account': typeof AuthenticatedSettingsAccountRoute
   '/settings/appearance': typeof AuthenticatedSettingsAppearanceRoute
@@ -220,11 +262,14 @@ export interface FileRoutesByFullPath {
   '/clerk/sign-up': typeof ClerkauthSignUpRoute
   '/clerk/user-management': typeof ClerkAuthenticatedUserManagementRoute
   '/apps/': typeof AuthenticatedAppsIndexRoute
+  '/cars/': typeof AuthenticatedCarsIndexRoute
   '/chats/': typeof AuthenticatedChatsIndexRoute
   '/help-center/': typeof AuthenticatedHelpCenterIndexRoute
   '/settings/': typeof AuthenticatedSettingsIndexRoute
   '/tasks/': typeof AuthenticatedTasksIndexRoute
   '/users/': typeof AuthenticatedUsersIndexRoute
+  '/cars/$carId/edit': typeof AuthenticatedCarsCarIdEditRoute
+  '/cars/$carId/': typeof AuthenticatedCarsCarIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/clerk': typeof ClerkAuthenticatedRouteRouteWithChildren
@@ -239,6 +284,7 @@ export interface FileRoutesByTo {
   '/500': typeof errors500Route
   '/503': typeof errors503Route
   '/': typeof AuthenticatedIndexRoute
+  '/cars/new': typeof AuthenticatedCarsNewRoute
   '/errors/$error': typeof AuthenticatedErrorsErrorRoute
   '/settings/account': typeof AuthenticatedSettingsAccountRoute
   '/settings/appearance': typeof AuthenticatedSettingsAppearanceRoute
@@ -248,16 +294,20 @@ export interface FileRoutesByTo {
   '/clerk/sign-up': typeof ClerkauthSignUpRoute
   '/clerk/user-management': typeof ClerkAuthenticatedUserManagementRoute
   '/apps': typeof AuthenticatedAppsIndexRoute
+  '/cars': typeof AuthenticatedCarsIndexRoute
   '/chats': typeof AuthenticatedChatsIndexRoute
   '/help-center': typeof AuthenticatedHelpCenterIndexRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
   '/tasks': typeof AuthenticatedTasksIndexRoute
   '/users': typeof AuthenticatedUsersIndexRoute
+  '/cars/$carId/edit': typeof AuthenticatedCarsCarIdEditRoute
+  '/cars/$carId': typeof AuthenticatedCarsCarIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/clerk': typeof ClerkRouteRouteWithChildren
+  '/_authenticated/cars': typeof AuthenticatedCarsRouteRouteWithChildren
   '/_authenticated/settings': typeof AuthenticatedSettingsRouteRouteWithChildren
   '/clerk/(auth)': typeof ClerkauthRouteRouteWithChildren
   '/clerk/_authenticated': typeof ClerkAuthenticatedRouteRouteWithChildren
@@ -272,6 +322,8 @@ export interface FileRoutesById {
   '/(errors)/500': typeof errors500Route
   '/(errors)/503': typeof errors503Route
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/cars/$carId': typeof AuthenticatedCarsCarIdRouteRouteWithChildren
+  '/_authenticated/cars/new': typeof AuthenticatedCarsNewRoute
   '/_authenticated/errors/$error': typeof AuthenticatedErrorsErrorRoute
   '/_authenticated/settings/account': typeof AuthenticatedSettingsAccountRoute
   '/_authenticated/settings/appearance': typeof AuthenticatedSettingsAppearanceRoute
@@ -281,17 +333,21 @@ export interface FileRoutesById {
   '/clerk/(auth)/sign-up': typeof ClerkauthSignUpRoute
   '/clerk/_authenticated/user-management': typeof ClerkAuthenticatedUserManagementRoute
   '/_authenticated/apps/': typeof AuthenticatedAppsIndexRoute
+  '/_authenticated/cars/': typeof AuthenticatedCarsIndexRoute
   '/_authenticated/chats/': typeof AuthenticatedChatsIndexRoute
   '/_authenticated/help-center/': typeof AuthenticatedHelpCenterIndexRoute
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
   '/_authenticated/tasks/': typeof AuthenticatedTasksIndexRoute
   '/_authenticated/users/': typeof AuthenticatedUsersIndexRoute
+  '/_authenticated/cars/$carId/edit': typeof AuthenticatedCarsCarIdEditRoute
+  '/_authenticated/cars/$carId/': typeof AuthenticatedCarsCarIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/clerk'
+    | '/cars'
     | '/settings'
     | '/forgot-password'
     | '/otp'
@@ -303,6 +359,8 @@ export interface FileRouteTypes {
     | '/404'
     | '/500'
     | '/503'
+    | '/cars/$carId'
+    | '/cars/new'
     | '/errors/$error'
     | '/settings/account'
     | '/settings/appearance'
@@ -312,11 +370,14 @@ export interface FileRouteTypes {
     | '/clerk/sign-up'
     | '/clerk/user-management'
     | '/apps/'
+    | '/cars/'
     | '/chats/'
     | '/help-center/'
     | '/settings/'
     | '/tasks/'
     | '/users/'
+    | '/cars/$carId/edit'
+    | '/cars/$carId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/clerk'
@@ -331,6 +392,7 @@ export interface FileRouteTypes {
     | '/500'
     | '/503'
     | '/'
+    | '/cars/new'
     | '/errors/$error'
     | '/settings/account'
     | '/settings/appearance'
@@ -340,15 +402,19 @@ export interface FileRouteTypes {
     | '/clerk/sign-up'
     | '/clerk/user-management'
     | '/apps'
+    | '/cars'
     | '/chats'
     | '/help-center'
     | '/settings'
     | '/tasks'
     | '/users'
+    | '/cars/$carId/edit'
+    | '/cars/$carId'
   id:
     | '__root__'
     | '/_authenticated'
     | '/clerk'
+    | '/_authenticated/cars'
     | '/_authenticated/settings'
     | '/clerk/(auth)'
     | '/clerk/_authenticated'
@@ -363,6 +429,8 @@ export interface FileRouteTypes {
     | '/(errors)/500'
     | '/(errors)/503'
     | '/_authenticated/'
+    | '/_authenticated/cars/$carId'
+    | '/_authenticated/cars/new'
     | '/_authenticated/errors/$error'
     | '/_authenticated/settings/account'
     | '/_authenticated/settings/appearance'
@@ -372,11 +440,14 @@ export interface FileRouteTypes {
     | '/clerk/(auth)/sign-up'
     | '/clerk/_authenticated/user-management'
     | '/_authenticated/apps/'
+    | '/_authenticated/cars/'
     | '/_authenticated/chats/'
     | '/_authenticated/help-center/'
     | '/_authenticated/settings/'
     | '/_authenticated/tasks/'
     | '/_authenticated/users/'
+    | '/_authenticated/cars/$carId/edit'
+    | '/_authenticated/cars/$carId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -508,6 +579,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsRouteRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/cars': {
+      id: '/_authenticated/cars'
+      path: '/cars'
+      fullPath: '/cars'
+      preLoaderRoute: typeof AuthenticatedCarsRouteRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/users/': {
       id: '/_authenticated/users/'
       path: '/users'
@@ -542,6 +620,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/chats/'
       preLoaderRoute: typeof AuthenticatedChatsIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/cars/': {
+      id: '/_authenticated/cars/'
+      path: '/'
+      fullPath: '/cars/'
+      preLoaderRoute: typeof AuthenticatedCarsIndexRouteImport
+      parentRoute: typeof AuthenticatedCarsRouteRoute
     }
     '/_authenticated/apps/': {
       id: '/_authenticated/apps/'
@@ -606,8 +691,71 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedErrorsErrorRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/cars/new': {
+      id: '/_authenticated/cars/new'
+      path: '/new'
+      fullPath: '/cars/new'
+      preLoaderRoute: typeof AuthenticatedCarsNewRouteImport
+      parentRoute: typeof AuthenticatedCarsRouteRoute
+    }
+    '/_authenticated/cars/$carId': {
+      id: '/_authenticated/cars/$carId'
+      path: '/$carId'
+      fullPath: '/cars/$carId'
+      preLoaderRoute: typeof AuthenticatedCarsCarIdRouteRouteImport
+      parentRoute: typeof AuthenticatedCarsRouteRoute
+    }
+    '/_authenticated/cars/$carId/': {
+      id: '/_authenticated/cars/$carId/'
+      path: '/'
+      fullPath: '/cars/$carId/'
+      preLoaderRoute: typeof AuthenticatedCarsCarIdIndexRouteImport
+      parentRoute: typeof AuthenticatedCarsCarIdRouteRoute
+    }
+    '/_authenticated/cars/$carId/edit': {
+      id: '/_authenticated/cars/$carId/edit'
+      path: '/edit'
+      fullPath: '/cars/$carId/edit'
+      preLoaderRoute: typeof AuthenticatedCarsCarIdEditRouteImport
+      parentRoute: typeof AuthenticatedCarsCarIdRouteRoute
+    }
   }
 }
+
+interface AuthenticatedCarsCarIdRouteRouteChildren {
+  AuthenticatedCarsCarIdEditRoute: typeof AuthenticatedCarsCarIdEditRoute
+  AuthenticatedCarsCarIdIndexRoute: typeof AuthenticatedCarsCarIdIndexRoute
+}
+
+const AuthenticatedCarsCarIdRouteRouteChildren: AuthenticatedCarsCarIdRouteRouteChildren =
+  {
+    AuthenticatedCarsCarIdEditRoute: AuthenticatedCarsCarIdEditRoute,
+    AuthenticatedCarsCarIdIndexRoute: AuthenticatedCarsCarIdIndexRoute,
+  }
+
+const AuthenticatedCarsCarIdRouteRouteWithChildren =
+  AuthenticatedCarsCarIdRouteRoute._addFileChildren(
+    AuthenticatedCarsCarIdRouteRouteChildren,
+  )
+
+interface AuthenticatedCarsRouteRouteChildren {
+  AuthenticatedCarsCarIdRouteRoute: typeof AuthenticatedCarsCarIdRouteRouteWithChildren
+  AuthenticatedCarsNewRoute: typeof AuthenticatedCarsNewRoute
+  AuthenticatedCarsIndexRoute: typeof AuthenticatedCarsIndexRoute
+}
+
+const AuthenticatedCarsRouteRouteChildren: AuthenticatedCarsRouteRouteChildren =
+  {
+    AuthenticatedCarsCarIdRouteRoute:
+      AuthenticatedCarsCarIdRouteRouteWithChildren,
+    AuthenticatedCarsNewRoute: AuthenticatedCarsNewRoute,
+    AuthenticatedCarsIndexRoute: AuthenticatedCarsIndexRoute,
+  }
+
+const AuthenticatedCarsRouteRouteWithChildren =
+  AuthenticatedCarsRouteRoute._addFileChildren(
+    AuthenticatedCarsRouteRouteChildren,
+  )
 
 interface AuthenticatedSettingsRouteRouteChildren {
   AuthenticatedSettingsAccountRoute: typeof AuthenticatedSettingsAccountRoute
@@ -633,6 +781,7 @@ const AuthenticatedSettingsRouteRouteWithChildren =
   )
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedCarsRouteRoute: typeof AuthenticatedCarsRouteRouteWithChildren
   AuthenticatedSettingsRouteRoute: typeof AuthenticatedSettingsRouteRouteWithChildren
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedErrorsErrorRoute: typeof AuthenticatedErrorsErrorRoute
@@ -644,6 +793,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedCarsRouteRoute: AuthenticatedCarsRouteRouteWithChildren,
   AuthenticatedSettingsRouteRoute: AuthenticatedSettingsRouteRouteWithChildren,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedErrorsErrorRoute: AuthenticatedErrorsErrorRoute,
