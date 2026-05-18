@@ -25,6 +25,7 @@ import { StatusBadge } from '@/components/status-badge'
 import { type Car } from '@/data/carsMockData'
 import { cn } from '@/lib/utils'
 import { useI18n } from '@/lib/i18n'
+import { useAuthStore } from '@/stores/auth-store'
 import { EditTitleModal } from '../components/edit-title-modal'
 import { TitleBadge } from '../components/title-badge'
 import { TitleHistoryTable } from '../components/title-history-table'
@@ -43,22 +44,24 @@ const money = new Intl.NumberFormat('en-US', {
 
 export function CarDetails({ car }: CarDetailsProps) {
   const { t, locale } = useI18n()
+  const currentUser = useAuthStore((state) => state.auth.user)
   const [currentTitle, setCurrentTitle] = useState(car.currentTitle)
   const [titleHistory, setTitleHistory] = useState(car.titleHistory)
   const [titleModalOpen, setTitleModalOpen] = useState(false)
-  const [titleModalMode, setTitleModalMode] = useState<'edit' | 'status' | 'notes'>('edit')
 
-  const openTitleModal = (mode: 'edit' | 'status' | 'notes') => {
-    setTitleModalMode(mode)
+  const openTitleModal = () => {
     setTitleModalOpen(true)
   }
 
   const handleSaveTitle = (values: TitleUpdateValues) => {
+    const today = new Date().toISOString().slice(0, 10)
+    const updatedBy =
+      currentUser?.email || currentUser?.accountNo || 'Current account'
     const previousTitleType = currentTitle.type
     const nextTitle = {
       type: values.titleType,
-      lastUpdatedAt: values.changeDate,
-      updatedBy: values.updatedBy,
+      lastUpdatedAt: today,
+      updatedBy,
     }
 
     setCurrentTitle(nextTitle)
@@ -67,8 +70,8 @@ export function CarDetails({ car }: CarDetailsProps) {
         id: `title-${car.id}-${Date.now()}`,
         previousTitleType,
         newTitleType: values.titleType,
-        changeDate: values.changeDate,
-        updatedBy: values.updatedBy,
+        changeDate: today,
+        updatedBy,
         notes: values.notes.trim() || undefined,
       },
       ...current,
@@ -253,9 +256,8 @@ export function CarDetails({ car }: CarDetailsProps) {
           <TabsContent value='title-management' className='space-y-4'>
             <TitleManagementCard
               currentTitle={currentTitle}
-              onEditTitle={() => openTitleModal('edit')}
-              onUpdateTitleStatus={() => openTitleModal('status')}
-              onAddNotes={() => openTitleModal('notes')}
+              onEditTitle={openTitleModal}
+              onAddNotes={openTitleModal}
             />
             <TitleHistoryTable history={titleHistory} />
           </TabsContent>
@@ -282,7 +284,6 @@ export function CarDetails({ car }: CarDetailsProps) {
         open={titleModalOpen}
         onOpenChange={setTitleModalOpen}
         currentTitle={currentTitle}
-        mode={titleModalMode}
         onSave={handleSaveTitle}
       />
     </>

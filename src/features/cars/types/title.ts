@@ -18,8 +18,6 @@ export type TitleHistoryEntry = {
 export type TitleUpdateValues = {
   titleType: TitleType
   notes: string
-  updatedBy: string
-  changeDate: string
 }
 
 export const titleTypeOptions: TitleType[] = ['Clean', 'Salvage', 'Rebuilt']
@@ -51,4 +49,3 @@ export type SupportedLocale = keyof typeof titleTypeLabels
 export function getTitleTypeLabel(type: TitleType, locale: SupportedLocale) {
   return titleTypeLabels[locale][type]
 }
-

@@ -18,23 +18,20 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { useI18n } from '@/lib/i18n'
+import { z } from 'zod'
 import {
   getTitleTypeLabel,
   titleTypeOptions,
   type CurrentTitle,
   type TitleUpdateValues,
 } from '../types/title'
-import { z } from 'zod'
 
 const titleUpdateSchema = z.object({
   titleType: z.enum(['Clean', 'Salvage', 'Rebuilt']),
   notes: z.string().optional().default(''),
-  updatedBy: z.string().min(2, 'Updated by is required.'),
-  changeDate: z.string().min(1, 'Change date is required.'),
 })
 
 type EditTitleModalProps = {
@@ -42,7 +39,6 @@ type EditTitleModalProps = {
   onOpenChange: (open: boolean) => void
   currentTitle: CurrentTitle
   onSave: (values: TitleUpdateValues) => void
-  mode: 'edit' | 'status' | 'notes'
 }
 
 export function EditTitleModal({
@@ -50,7 +46,6 @@ export function EditTitleModal({
   onOpenChange,
   currentTitle,
   onSave,
-  mode,
 }: EditTitleModalProps) {
   const { locale } = useI18n()
   const form = useForm<TitleUpdateValues>({
@@ -58,8 +53,6 @@ export function EditTitleModal({
     defaultValues: {
       titleType: currentTitle.type,
       notes: '',
-      updatedBy: currentTitle.updatedBy,
-      changeDate: currentTitle.lastUpdatedAt,
     },
     mode: 'onChange',
   })
@@ -70,46 +63,28 @@ export function EditTitleModal({
     form.reset({
       titleType: currentTitle.type,
       notes: '',
-      updatedBy: currentTitle.updatedBy,
-      changeDate: currentTitle.lastUpdatedAt,
     })
-  }, [currentTitle.lastUpdatedAt, currentTitle.type, currentTitle.updatedBy, form, open])
+  }, [currentTitle.type, form, open])
 
   const copy =
     locale === 'ar'
       ? {
-          title:
-            mode === 'status'
-              ? 'تحديث حالة الملكية'
-              : mode === 'notes'
-                ? 'إضافة ملاحظات الملكية'
-                : 'تعديل الملكية',
-          description:
-            currentTitle.type === 'Salvage'
-              ? 'يمكن ترقية Salvage إلى Rebuilt بعد اكتمال الإصلاح والفحص.'
-              : 'حدّث نوع الملكية وسجل التغيير ضمن تاريخ السيارة.',
+          title: 'تعديل الملكية',
+          description: 'سيتم حفظ تاريخ التغيير واسم الحساب الحالي تلقائيًا.',
           titleType: 'نوع الملكية',
           notes: 'ملاحظات',
-          updatedBy: 'تم التحديث بواسطة',
-          changeDate: 'تاريخ التغيير',
+          titleTypeHelp:
+            'يمكنك تغيير العنوان إلى Clean أو Salvage أو Rebuilt. التاريخ والاسم يُسجلان تلقائيًا.',
           cancel: 'إلغاء',
           save: 'حفظ',
         }
       : {
-          title:
-            mode === 'status'
-              ? 'Update Title Status'
-              : mode === 'notes'
-                ? 'Add Title Notes'
-                : 'Edit Title',
-          description:
-            currentTitle.type === 'Salvage'
-              ? 'Salvage titles can be upgraded to Rebuilt after repairs and inspection.'
-              : 'Update the title and keep the vehicle history in sync.',
+          title: 'Edit Title',
+          description: 'The current account and today date will be saved automatically.',
           titleType: 'Title Type',
           notes: 'Notes',
-          updatedBy: 'Updated By',
-          changeDate: 'Change Date',
+          titleTypeHelp:
+            'You can change the title to Clean, Salvage, or Rebuilt. Date and user are stored automatically.',
           cancel: 'Cancel',
           save: 'Save Title',
         }
@@ -149,38 +124,11 @@ export function EditTitleModal({
                       ))}
                     </SelectContent>
                   </Select>
+                  <p className='text-xs text-muted-foreground'>{copy.titleTypeHelp}</p>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <div className='grid gap-4 sm:grid-cols-2'>
-              <FormField
-                control={form.control}
-                name='updatedBy'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{copy.updatedBy}</FormLabel>
-                    <FormControl>
-                      <Input placeholder='John Doe' {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name='changeDate'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{copy.changeDate}</FormLabel>
-                    <FormControl>
-                      <Input type='date' {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
             <FormField
               control={form.control}
               name='notes'
@@ -191,8 +139,8 @@ export function EditTitleModal({
                     <Textarea
                       placeholder={
                         locale === 'ar'
-                          ? 'أضف ملاحظات حول سبب التغيير أو تفاصيل الفحص...'
-                          : 'Add notes about the title change or inspection details...'
+                          ? 'أضف ملاحظات حول التغيير...'
+                          : 'Add notes about the title change...'
                       }
                       className='min-h-24 resize-none'
                       {...field}

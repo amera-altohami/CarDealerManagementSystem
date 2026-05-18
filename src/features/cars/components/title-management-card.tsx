@@ -8,14 +8,12 @@ import { TitleBadge } from './title-badge'
 type TitleManagementCardProps = {
   currentTitle: CurrentTitle
   onEditTitle: () => void
-  onUpdateTitleStatus: () => void
   onAddNotes: () => void
 }
 
 export function TitleManagementCard({
   currentTitle,
   onEditTitle,
-  onUpdateTitleStatus,
   onAddNotes,
 }: TitleManagementCardProps) {
   const { locale } = useI18n()
@@ -28,7 +26,6 @@ export function TitleManagementCard({
           lastUpdated: 'آخر تحديث',
           updatedBy: 'تم التحديث بواسطة',
           editTitle: 'تعديل الملكية',
-          updateStatus: 'تحديث حالة الملكية',
           addNotes: 'إضافة ملاحظات',
           salvageHint: 'يمكن ترقية Salvage إلى Rebuilt بعد اكتمال الإصلاح والفحص.',
         }
@@ -39,7 +36,6 @@ export function TitleManagementCard({
           lastUpdated: 'Last Updated Date',
           updatedBy: 'Updated By',
           editTitle: 'Edit Title',
-          updateStatus: 'Update Title Status',
           addNotes: 'Add Notes',
           salvageHint: 'Salvage titles can be upgraded to Rebuilt after repairs and inspection.',
         }
@@ -52,7 +48,10 @@ export function TitleManagementCard({
       </CardHeader>
       <CardContent className='space-y-5'>
         <div className='grid gap-4 sm:grid-cols-3'>
-          <InfoBlock label={copy.currentType} value={<TitleBadge titleType={currentTitle.type} />} />
+          <InfoBlock
+            label={copy.currentType}
+            value={<TitleBadge titleType={currentTitle.type} />}
+          />
           <InfoBlock label={copy.lastUpdated} value={currentTitle.lastUpdatedAt} />
           <InfoBlock label={copy.updatedBy} value={currentTitle.updatedBy} />
         </div>
@@ -65,9 +64,6 @@ export function TitleManagementCard({
 
         <div className='flex flex-wrap gap-3'>
           <Button onClick={onEditTitle}>{copy.editTitle}</Button>
-          <Button variant='outline' onClick={onUpdateTitleStatus}>
-            {copy.updateStatus}
-          </Button>
           <Button variant='secondary' onClick={onAddNotes}>
             {copy.addNotes}
           </Button>
