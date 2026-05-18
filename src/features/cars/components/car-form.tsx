@@ -26,6 +26,7 @@ type CarFormProps = {
   onSubmit?: (values: CarFormValues, formData: FormData) => void
   submitLabel?: string
   cancelHref?: string
+  lockTitleType?: boolean
 }
 
 const defaults: CarFormValues = {
@@ -51,6 +52,7 @@ export function CarForm({
   onSubmit,
   submitLabel = 'Save Car',
   cancelHref = '/cars',
+  lockTitleType = false,
 }: CarFormProps) {
   const { t } = useI18n()
   const form = useForm<CarFormValues>({
@@ -169,7 +171,11 @@ export function CarForm({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t('status')}</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      disabled={lockTitleType}
+                    >
                     <FormControl>
                       <SelectTrigger className='w-full'>
                         <SelectValue placeholder='Select status' />
@@ -183,6 +189,11 @@ export function CarForm({
                       ))}
                     </SelectContent>
                   </Select>
+                  <FormDescription>
+                    {lockTitleType
+                      ? 'Title Type can only be changed from Title Management.'
+                      : 'Select the car title type.'}
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

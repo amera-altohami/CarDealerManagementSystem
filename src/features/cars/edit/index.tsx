@@ -50,6 +50,7 @@ export function CarEdit({ carId }: CarEditProps) {
           </p>
         </div>
         <CarForm
+          lockTitleType
           defaultValues={{
             brand: car.brand,
             model: car.model,
