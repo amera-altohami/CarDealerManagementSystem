@@ -171,11 +171,7 @@ export function CarForm({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t('status')}</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                      disabled={lockTitleType}
-                    >
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger className='w-full'>
                         <SelectValue placeholder='Select status' />
@@ -189,11 +185,6 @@ export function CarForm({
                       ))}
                     </SelectContent>
                   </Select>
-                  <FormDescription>
-                    {lockTitleType
-                      ? 'Title Type can only be changed from Title Management.'
-                      : 'Select the car title type.'}
-                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -241,20 +232,31 @@ export function CarForm({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t('titleType')}</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger className='w-full'>
-                        <SelectValue placeholder='Select title type' />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {titleTypeOptions.map((option) => (
-                        <SelectItem key={option} value={option}>
-                          {option}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  {lockTitleType ? (
+                    <div className='rounded-md border bg-muted/20 px-3 py-2 text-sm font-medium'>
+                      {field.value}
+                    </div>
+                  ) : (
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger className='w-full'>
+                          <SelectValue placeholder='Select title type' />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {titleTypeOptions.map((option) => (
+                          <SelectItem key={option} value={option}>
+                            {option}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                  <FormDescription>
+                    {lockTitleType
+                      ? 'Title Type can only be changed from Title Management.'
+                      : 'Select the car title type.'}
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
