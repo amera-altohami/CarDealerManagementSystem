@@ -1,18 +1,33 @@
-import { useEffect, useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
-  type SortingState,
-  type VisibilityState,
-  flexRender,
-  getCoreRowModel,
-  getFacetedRowModel,
-  getFacetedUniqueValues,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
-} from '@tanstack/react-table'
-import { cn } from '@/lib/utils'
-import { type NavigateFn, useTableUrlState } from '@/hooks/use-table-url-state'
+  EllipsisVertical,
+  Pencil,
+  ShieldCheck,
+  Trash2,
+  UserCheck,
+  UserX,
+} from 'lucide-react'
+import { useI18n, type MessageKey } from '@/lib/i18n'
+import { getDisplayNameInitials, cn } from '@/lib/utils'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import {
   Table,
   TableBody,
@@ -21,174 +36,203 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { DataTablePagination, DataTableToolbar } from '@/components/data-table'
-import { roles } from '../data/data'
-import { type User } from '../data/schema'
-import { DataTableBulkActions } from './data-table-bulk-actions'
-import { usersColumns as columns } from './users-columns'
+import { userManagementStatusOptions, type ManagedUser } from '../data/schema'
 
-type DataTableProps = {
-  data: User[]
-  search: Record<string, unknown>
-  navigate: NavigateFn
+type UsersTableProps = {
+  data: ManagedUser[]
+  onEdit: (user: ManagedUser) => void
+  onDelete: (user: ManagedUser) => void
+  onToggleStatus: (user: ManagedUser) => void
 }
 
-export function UsersTable({ data, search, navigate }: DataTableProps) {
-  // Local UI-only states
-  const [rowSelection, setRowSelection] = useState({})
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
-  const [sorting, setSorting] = useState<SortingState>([])
+type StatusFilter = ManagedUser['status'] | 'all'
 
-  // Local state management for table (uncomment to use local-only state, not synced with URL)
-  // const [columnFilters, onColumnFiltersChange] = useState<ColumnFiltersState>([])
-  // const [pagination, onPaginationChange] = useState<PaginationState>({ pageIndex: 0, pageSize: 10 })
+const statusStyles: Record<ManagedUser['status'], string> = {
+  Active:
+    'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
+  Disabled: 'border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300',
+}
 
-  // Synced with URL states (keys/defaults mirror users route search schema)
-  const {
-    columnFilters,
-    onColumnFiltersChange,
-    pagination,
-    onPaginationChange,
-    ensurePageInRange,
-  } = useTableUrlState({
-    search,
-    navigate,
-    pagination: { defaultPage: 1, defaultPageSize: 10 },
-    globalFilter: { enabled: false },
-    columnFilters: [
-      // username per-column text filter
-      { columnId: 'username', searchKey: 'username', type: 'string' },
-      { columnId: 'status', searchKey: 'status', type: 'array' },
-      { columnId: 'role', searchKey: 'role', type: 'array' },
-    ],
-  })
+const statusLabelKeys: Record<ManagedUser['status'], MessageKey> = {
+  Active: 'activeStatus',
+  Disabled: 'disabledStatus',
+}
 
-  // eslint-disable-next-line react-hooks/incompatible-library
-  const table = useReactTable({
-    data,
-    columns,
-    state: {
-      sorting,
-      pagination,
-      rowSelection,
-      columnFilters,
-      columnVisibility,
-    },
-    enableRowSelection: true,
-    onPaginationChange,
-    onColumnFiltersChange,
-    onRowSelectionChange: setRowSelection,
-    onSortingChange: setSorting,
-    onColumnVisibilityChange: setColumnVisibility,
-    getPaginationRowModel: getPaginationRowModel(),
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFacetedRowModel: getFacetedRowModel(),
-    getFacetedUniqueValues: getFacetedUniqueValues(),
-  })
+export function UsersTable({
+  data,
+  onEdit,
+  onDelete,
+  onToggleStatus,
+}: UsersTableProps) {
+  const { t } = useI18n()
+  const [search, setSearch] = useState('')
+  const [status, setStatus] = useState<StatusFilter>('all')
 
-  useEffect(() => {
-    ensurePageInRange(table.getPageCount())
-  }, [table, ensurePageInRange])
+  const filteredRows = useMemo(() => {
+    const query = search.trim().toLowerCase()
+
+    return data.filter((user) => {
+      const matchesSearch =
+        !query ||
+        [user.fullName, user.email, user.phone]
+          .join(' ')
+          .toLowerCase()
+          .includes(query)
+      const matchesStatus = status === 'all' || user.status === status
+
+      return matchesSearch && matchesStatus
+    })
+  }, [data, search, status])
 
   return (
-    <div
-      className={cn(
-        'max-sm:has-[div[role="toolbar"]]:mb-16', // Add margin bottom to the table on mobile when the toolbar is visible
-        'flex flex-1 flex-col gap-4'
-      )}
-    >
-      <DataTableToolbar
-        table={table}
-        searchPlaceholder='Filter users...'
-        searchKey='username'
-        filters={[
-          {
-            columnId: 'status',
-            title: 'Status',
-            options: [
-              { label: 'Active', value: 'active' },
-              { label: 'Inactive', value: 'inactive' },
-              { label: 'Invited', value: 'invited' },
-              { label: 'Suspended', value: 'suspended' },
-            ],
-          },
-          {
-            columnId: 'role',
-            title: 'Role',
-            options: roles.map((role) => ({ ...role })),
-          },
-        ]}
-      />
-      <div className='overflow-hidden rounded-md border'>
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id} className='group/row'>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead
-                      key={header.id}
-                      colSpan={header.colSpan}
-                      className={cn(
-                        'bg-background group-hover/row:bg-muted group-data-[state=selected]/row:bg-muted',
-                        header.column.columnDef.meta?.className,
-                        header.column.columnDef.meta?.thClassName
-                      )}
-                    >
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </TableHead>
-                  )
-                })}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && 'selected'}
-                  className='group/row'
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell
-                      key={cell.id}
-                      className={cn(
-                        'bg-background group-hover/row:bg-muted group-data-[state=selected]/row:bg-muted',
-                        cell.column.columnDef.meta?.className,
-                        cell.column.columnDef.meta?.tdClassName
-                      )}
-                    >
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : (
+    <Card className='border-border/60'>
+      <CardHeader className='space-y-4'>
+        <div className='flex flex-wrap items-center gap-3'>
+          <div className='grid flex-1 gap-2 sm:max-w-sm'>
+            <CardTitle className='text-base'>{t('usersManagement')}</CardTitle>
+            <p className='text-sm text-muted-foreground'>
+              {t('usersTableDesc')}
+            </p>
+          </div>
+        </div>
+        <div className='grid gap-3 lg:grid-cols-[1fr_220px]'>
+          <Input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder={t('searchUsers')}
+          />
+          <Select
+            value={status}
+            onValueChange={(value) => setStatus(value as StatusFilter)}
+          >
+            <SelectTrigger className='w-full'>
+              <SelectValue placeholder={t('filterByStatus')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value='all'>{t('allStatuses')}</SelectItem>
+              {userManagementStatusOptions.map((option) => (
+                <SelectItem key={option} value={option}>
+                  {t(statusLabelKeys[option])}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className='overflow-hidden rounded-md border'>
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className='h-24 text-center'
-                >
-                  No results.
-                </TableCell>
+                <TableHead>{t('user')}</TableHead>
+                <TableHead>{t('email')}</TableHead>
+                <TableHead>{t('phone')}</TableHead>
+                <TableHead>{t('status')}</TableHead>
+                <TableHead>{t('createdAt')}</TableHead>
+                <TableHead>{t('lastLogin')}</TableHead>
+                <TableHead className='text-end'>{t('actions')}</TableHead>
               </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
-      <DataTablePagination table={table} className='mt-auto' />
-      <DataTableBulkActions table={table} />
-    </div>
+            </TableHeader>
+            <TableBody>
+              {filteredRows.length ? (
+                filteredRows.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell>
+                      <div className='flex items-center gap-3'>
+                        <Avatar className='h-9 w-9 rounded-md'>
+                          <AvatarFallback className='rounded-md bg-muted text-xs font-semibold'>
+                            {getDisplayNameInitials(user.fullName)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className='min-w-0'>
+                          <div className='flex flex-wrap items-center gap-2'>
+                            <p className='truncate font-medium'>
+                              {user.fullName}
+                            </p>
+                            {user.isProtected ? (
+                              <Badge variant='secondary' className='gap-1'>
+                                <ShieldCheck className='h-3 w-3' />
+                                {t('protectedUser')}
+                              </Badge>
+                            ) : null}
+                          </div>
+                          <p className='text-xs text-muted-foreground'>
+                            {user.id}
+                          </p>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>{user.phone || '-'}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant='outline'
+                        className={cn('capitalize', statusStyles[user.status])}
+                      >
+                        {t(statusLabelKeys[user.status])}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{user.createdAt}</TableCell>
+                    <TableCell>
+                      {user.lastLogin === 'Never' ? t('never') : user.lastLogin}
+                    </TableCell>
+                    <TableCell className='text-end'>
+                      <DropdownMenu modal={false}>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant='ghost'
+                            className='h-8 w-8 p-0 data-[state=open]:bg-muted'
+                          >
+                            <EllipsisVertical className='h-4 w-4' />
+                            <span className='sr-only'>{t('openMenu')}</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align='end' className='w-44'>
+                          <DropdownMenuItem
+                            disabled={user.isProtected}
+                            onClick={() => onEdit(user)}
+                          >
+                            {t('edit')}
+                            <Pencil className='ms-auto h-4 w-4' />
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            disabled={user.isProtected}
+                            onClick={() => onToggleStatus(user)}
+                          >
+                            {user.status === 'Active'
+                              ? t('disable')
+                              : t('enable')}
+                            {user.status === 'Active' ? (
+                              <UserX className='ms-auto h-4 w-4' />
+                            ) : (
+                              <UserCheck className='ms-auto h-4 w-4' />
+                            )}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className='text-red-500!'
+                            disabled={user.isProtected}
+                            onClick={() => onDelete(user)}
+                          >
+                            {t('delete')}
+                            <Trash2 className='ms-auto h-4 w-4' />
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={7} className='h-24 text-center'>
+                    {t('noUsersFound')}
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
   )
 }
