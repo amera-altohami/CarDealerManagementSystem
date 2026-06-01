@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm, type Resolver } from 'react-hook-form'
+import { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -21,7 +22,6 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { useI18n } from '@/lib/i18n'
-import { z } from 'zod'
 import {
   getTitleTypeLabel,
   titleTypeOptions,
@@ -47,7 +47,7 @@ export function EditTitleModal({
   currentTitle,
   onSave,
 }: EditTitleModalProps) {
-  const { locale } = useI18n()
+  const { locale, t } = useI18n()
   const form = useForm<TitleUpdateValues>({
     resolver: zodResolver(titleUpdateSchema) as Resolver<TitleUpdateValues>,
     defaultValues: {
@@ -66,35 +66,14 @@ export function EditTitleModal({
     })
   }, [currentTitle.type, form, open])
 
-  const copy =
-    locale === 'ar'
-      ? {
-          title: 'تعديل الملكية',
-          description: 'سيتم حفظ تاريخ التغيير واسم الحساب الحالي تلقائيًا.',
-          titleType: 'نوع الملكية',
-          notes: 'ملاحظات',
-          titleTypeHelp:
-            'يمكنك تغيير العنوان إلى Clean أو Salvage أو Rebuilt. التاريخ والاسم يُسجلان تلقائيًا.',
-          cancel: 'إلغاء',
-          save: 'حفظ',
-        }
-      : {
-          title: 'Edit Title',
-          description: 'The current account and today date will be saved automatically.',
-          titleType: 'Title Type',
-          notes: 'Notes',
-          titleTypeHelp:
-            'You can change the title to Clean, Salvage, or Rebuilt. Date and user are stored automatically.',
-          cancel: 'Cancel',
-          save: 'Save Title',
-        }
+  const supportedLocale = locale === 'ar' ? 'ar' : 'en'
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{copy.title}</DialogTitle>
-          <DialogDescription>{copy.description}</DialogDescription>
+          <DialogTitle>{t('editTitle')}</DialogTitle>
+          <DialogDescription>{t('editTitleDescription')}</DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
@@ -109,22 +88,22 @@ export function EditTitleModal({
               name='titleType'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{copy.titleType}</FormLabel>
+                  <FormLabel>{t('titleType')}</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger className='w-full'>
-                        <SelectValue placeholder={copy.titleType} />
+                        <SelectValue placeholder={t('titleType')} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
                       {titleTypeOptions.map((option) => (
                         <SelectItem key={option} value={option}>
-                          {getTitleTypeLabel(option, locale === 'ar' ? 'ar' : 'en')}
+                          {getTitleTypeLabel(option, supportedLocale)}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  <p className='text-xs text-muted-foreground'>{copy.titleTypeHelp}</p>
+                  <p className='text-xs text-muted-foreground'>{t('editTitleHelp')}</p>
                   <FormMessage />
                 </FormItem>
               )}
@@ -134,14 +113,10 @@ export function EditTitleModal({
               name='notes'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{copy.notes}</FormLabel>
+                  <FormLabel>{t('notes')}</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder={
-                        locale === 'ar'
-                          ? 'أضف ملاحظات حول التغيير...'
-                          : 'Add notes about the title change...'
-                      }
+                      placeholder={t('titleNotesPlaceholder')}
                       className='min-h-24 resize-none'
                       {...field}
                     />
@@ -153,9 +128,9 @@ export function EditTitleModal({
 
             <DialogFooter>
               <Button type='button' variant='outline' onClick={() => onOpenChange(false)}>
-                {copy.cancel}
+                {t('cancel')}
               </Button>
-              <Button type='submit'>{copy.save}</Button>
+              <Button type='submit'>{t('saveTitle')}</Button>
             </DialogFooter>
           </form>
         </Form>
@@ -163,4 +138,3 @@ export function EditTitleModal({
     </Dialog>
   )
 }
-

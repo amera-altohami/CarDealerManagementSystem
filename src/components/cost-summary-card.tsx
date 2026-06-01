@@ -19,6 +19,7 @@ type CostSummary = {
 
 type CostSummaryCardProps = {
   breakdown: CostSummary
+  purchasePrice?: number
   sellingPrice: number
   className?: string
 }
@@ -31,6 +32,7 @@ const money = new Intl.NumberFormat('en-US', {
 
 export function CostSummaryCard({
   breakdown,
+  purchasePrice,
   sellingPrice,
   className,
 }: CostSummaryCardProps) {
@@ -62,12 +64,18 @@ export function CostSummaryCard({
         ))}
         <div className='border-t pt-3'>
           <div className='flex items-center justify-between text-sm'>
-            <span className='text-muted-foreground'>{t('totalCost')}</span>
-            <span className='font-semibold'>{money.format(totalCost)}</span>
+            <span className='text-muted-foreground'>Purchase Price</span>
+            <span className='font-semibold'>
+              {money.format(purchasePrice ?? breakdown.purchase)}
+            </span>
           </div>
           <div className='mt-2 flex items-center justify-between text-sm'>
             <span className='text-muted-foreground'>{t('sellingPrice')}</span>
             <span className='font-semibold'>{money.format(sellingPrice)}</span>
+          </div>
+          <div className='mt-2 flex items-center justify-between text-sm'>
+            <span className='text-muted-foreground'>{t('totalCost')}</span>
+            <span className='font-semibold'>{money.format(totalCost)}</span>
           </div>
           <div className='mt-2 flex items-center justify-between rounded-md bg-emerald-500/10 px-3 py-2 text-sm'>
             <span className='font-medium text-emerald-700 dark:text-emerald-300'>

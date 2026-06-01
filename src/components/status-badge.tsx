@@ -1,6 +1,7 @@
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
-import { carStatusOptions, type CarStatus } from '@/data/carsMockData'
+import { type CarStatus } from '@/data/carsMockData'
+import { useI18n } from '@/lib/i18n'
 
 type StatusBadgeProps = {
   status: CarStatus | string
@@ -20,6 +21,9 @@ const statusStyles: Record<string, string> = {
     'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
   Pending:
     'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300',
+  Passed:
+    'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
+  Failed: 'border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300',
   Delayed:
     'border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300',
   warning:
@@ -28,9 +32,21 @@ const statusStyles: Record<string, string> = {
 }
 
 export function StatusBadge({ status, className }: StatusBadgeProps) {
-  const label =
-    carStatusOptions.find((option) => option.value === status)?.label ??
-    String(status)
+  const { t } = useI18n()
+  const label = {
+    purchased: t('purchasedStatus'),
+    shipping: t('shippingStatus'),
+    repairing: t('repairingStatus'),
+    'ready-for-sale': t('readyForSaleStatus'),
+    sold: t('soldStatus'),
+    Completed: t('completed'),
+    Pending: t('pending'),
+    Passed: t('passed'),
+    Failed: t('failed'),
+    Delayed: t('delayed'),
+    warning: t('warning'),
+    critical: t('critical'),
+  }[status] ?? String(status)
 
   return (
     <Badge

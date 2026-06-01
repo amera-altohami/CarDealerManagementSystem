@@ -9,43 +9,23 @@ type TitleHistoryTableProps = {
 }
 
 export function TitleHistoryTable({ history }: TitleHistoryTableProps) {
-  const { locale } = useI18n()
-  const copy =
-    locale === 'ar'
-      ? {
-          title: 'سجل تغيير الملكية',
-          previous: 'الملكية السابقة',
-          next: 'الملكية الجديدة',
-          date: 'تاريخ التغيير',
-          updatedBy: 'تم التحديث بواسطة',
-          notes: 'ملاحظات',
-          empty: 'لا يوجد سجل تغييرات حتى الآن.',
-        }
-      : {
-          title: 'Title Change History',
-          previous: 'Previous Title Type',
-          next: 'New Title Type',
-          date: 'Change Date',
-          updatedBy: 'Updated By',
-          notes: 'Notes',
-          empty: 'No title changes yet.',
-        }
+  const { t } = useI18n()
 
   return (
     <Card className='border-border/60'>
       <CardHeader>
-        <CardTitle>{copy.title}</CardTitle>
+        <CardTitle>{t('titleChangeHistory')}</CardTitle>
       </CardHeader>
       <CardContent>
         <div className='overflow-hidden rounded-md border'>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{copy.previous}</TableHead>
-                <TableHead>{copy.next}</TableHead>
-                <TableHead>{copy.date}</TableHead>
-                <TableHead>{copy.updatedBy}</TableHead>
-                <TableHead>{copy.notes}</TableHead>
+                <TableHead>{t('previousTitleType')}</TableHead>
+                <TableHead>{t('newTitleType')}</TableHead>
+                <TableHead>{t('changeDate')}</TableHead>
+                <TableHead>{t('updatedBy')}</TableHead>
+                <TableHead>{t('notes')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -68,7 +48,7 @@ export function TitleHistoryTable({ history }: TitleHistoryTableProps) {
               ) : (
                 <TableRow>
                   <TableCell colSpan={5} className='h-24 text-center'>
-                    {copy.empty}
+                    {t('noTitleChangesYet')}
                   </TableCell>
                 </TableRow>
               )}
@@ -79,4 +59,3 @@ export function TitleHistoryTable({ history }: TitleHistoryTableProps) {
     </Card>
   )
 }
-

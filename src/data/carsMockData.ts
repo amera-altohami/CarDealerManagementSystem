@@ -7,7 +7,7 @@ export type CarStatus =
   | 'ready-for-sale'
   | 'sold'
 
-export type CarTitleType = 'Clean' | 'Salvage' | 'Rebuilt' | 'Parts Only'
+export type CarTitleType = 'Clean' | 'Salvage' | 'Rebuilt'
 
 export type CarExpense = {
   id: string
@@ -30,13 +30,6 @@ export type CarInspection = {
   status: 'Pending' | 'Completed' | 'Delayed'
 }
 
-export type CarPartner = {
-  id: string
-  name: string
-  share: string
-  investment: number
-}
-
 export type CarDocument = {
   id: string
   name: string
@@ -55,6 +48,7 @@ export type Car = {
   currentTitle: CurrentTitle
   titleHistory: TitleHistoryEntry[]
   purchaseDate: string
+  purchasePrice: number
   purchasePlace: string
   carfaxType: 'link' | 'pdf'
   carfaxLink: string
@@ -77,7 +71,6 @@ export type Car = {
   expenses: CarExpense[]
   parts: CarPart[]
   inspections: CarInspection[]
-  partners: CarPartner[]
   documents: CarDocument[]
 }
 
@@ -110,7 +103,6 @@ export const titleTypeOptions: CarTitleType[] = [
   'Clean',
   'Salvage',
   'Rebuilt',
-  'Parts Only',
 ]
 
 export const carsMockData: Car[] = [
@@ -122,20 +114,20 @@ export const carsMockData: Car[] = [
     vin: '4T1BF1FK5LU123001',
     lotNumber: 'LOT-2401',
     status: 'repairing',
-    titleType: 'Clean',
+    titleType: 'Salvage',
     currentTitle: {
-      type: 'Clean',
-      lastUpdatedAt: '2026-04-15',
+      type: 'Salvage',
+      lastUpdatedAt: '2026-05-30',
       updatedBy: 'Maya S.',
     },
     titleHistory: [
       {
         id: 'title-001-1',
         previousTitleType: 'Clean',
-        newTitleType: 'Clean',
-        changeDate: '2026-03-18',
-        updatedBy: 'System',
-        notes: 'Initial title recorded at purchase.',
+        newTitleType: 'Salvage',
+        changeDate: '2026-05-30',
+        updatedBy: 'Maya S.',
+        notes: 'Sample salvage title for testing inspection workflow.',
       },
     ],
     purchaseDate: '2026-03-18',
@@ -144,8 +136,9 @@ export const carsMockData: Car[] = [
     carfaxLink: '',
     carfaxPdfName: 'toyota-camry-2020-carfax.pdf',
     carfaxPdfUrl: '',
-    notes: 'Front bumper replacement pending. Mechanical inspection completed.',
+    notes: 'Front bumper replacement pending. Sample salvage record ready for inspection testing.',
     photo: '/images/car-placeholder.svg',
+    purchasePrice: 9800,
     totalCost: 13250,
     sellingPrice: 16890,
     netProfit: 3640,
@@ -169,11 +162,7 @@ export const carsMockData: Car[] = [
     ],
     inspections: [
       { id: 'insp-1', schedule: '2026-05-22', inspector: 'Hassan A.', status: 'Pending' },
-      { id: 'insp-2', schedule: '2026-05-29', inspector: 'Workshop QA', status: 'Delayed' },
-    ],
-    partners: [
-      { id: 'partner-1', name: 'North Yard Partners', share: '45%', investment: 4800 },
-      { id: 'partner-2', name: 'Workshop Team', share: '15%', investment: 1600 },
+      { id: 'insp-2', schedule: '2026-05-29', inspector: 'Workshop QA', status: 'Completed' },
     ],
     documents: [
       { id: 'doc-1', name: 'Carfax Report', type: 'Carfax' },
@@ -212,6 +201,7 @@ export const carsMockData: Car[] = [
     carfaxPdfUrl: '',
     notes: 'Arriving this week. Ready for intake and photography.',
     photo: '/images/car-placeholder.svg',
+    purchasePrice: 8200,
     totalCost: 10950,
     sellingPrice: 13950,
     netProfit: 3000,
@@ -233,9 +223,6 @@ export const carsMockData: Car[] = [
     ],
     inspections: [
       { id: 'insp-3', schedule: '2026-05-20', inspector: 'Yousef K.', status: 'Pending' },
-    ],
-    partners: [
-      { id: 'partner-3', name: 'Alpha Capital', share: '60%', investment: 6200 },
     ],
     documents: [
       { id: 'doc-3', name: 'Carfax Report', type: 'Carfax' },
@@ -281,6 +268,7 @@ export const carsMockData: Car[] = [
     carfaxPdfUrl: '',
     notes: 'Fully detailed, photographed, and listed for sale.',
     photo: '/images/car-placeholder.svg',
+    purchasePrice: 24400,
     totalCost: 28740,
     sellingPrice: 32990,
     netProfit: 4250,
@@ -304,10 +292,6 @@ export const carsMockData: Car[] = [
     ],
     inspections: [
       { id: 'insp-4', schedule: '2026-05-21', inspector: 'Quality Bay 2', status: 'Completed' },
-    ],
-    partners: [
-      { id: 'partner-4', name: 'Premium Auto Fund', share: '50%', investment: 14000 },
-      { id: 'partner-5', name: 'Retail Team', share: '10%', investment: 2800 },
     ],
     documents: [
       { id: 'doc-4', name: 'Title Scan', type: 'Title' },
@@ -346,6 +330,7 @@ export const carsMockData: Car[] = [
     carfaxPdfUrl: '',
     notes: 'Sold last week and awaiting customer pickup documents.',
     photo: '/images/car-placeholder.svg',
+    purchasePrice: 11500,
     totalCost: 15410,
     sellingPrice: 18950,
     netProfit: 3540,
@@ -368,9 +353,6 @@ export const carsMockData: Car[] = [
     ],
     inspections: [
       { id: 'insp-5', schedule: '2026-05-01', inspector: 'Final QA', status: 'Completed' },
-    ],
-    partners: [
-      { id: 'partner-6', name: 'West Coast Investors', share: '35%', investment: 5400 },
     ],
     documents: [
       { id: 'doc-6', name: 'Customer Contract', type: 'PDF' },
@@ -409,6 +391,7 @@ export const carsMockData: Car[] = [
     carfaxPdfUrl: '',
     notes: 'Recently purchased. Needs intake inspection and shipping arrangement.',
     photo: '/images/car-placeholder.svg',
+    purchasePrice: 38900,
     totalCost: 41800,
     sellingPrice: 46900,
     netProfit: 5100,
@@ -427,9 +410,6 @@ export const carsMockData: Car[] = [
     parts: [],
     inspections: [
       { id: 'insp-6', schedule: '2026-05-23', inspector: 'Intake Team', status: 'Pending' },
-    ],
-    partners: [
-      { id: 'partner-7', name: 'Luxury Fleet Partners', share: '70%', investment: 29300 },
     ],
     documents: [
       { id: 'doc-8', name: 'Auction Receipt', type: 'Receipt' },

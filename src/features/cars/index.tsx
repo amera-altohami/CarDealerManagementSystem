@@ -1,23 +1,21 @@
+import { Link } from '@tanstack/react-router'
+import { Info } from 'lucide-react'
+import { carsMockData } from '@/data/carsMockData'
+import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { ConfigDrawer } from '@/components/config-drawer'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
-import { Button } from '@/components/ui/button'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { Link } from '@tanstack/react-router'
-import { Info } from 'lucide-react'
-import { CarsTable } from './components/cars-table'
-import { carsMockData } from '@/data/carsMockData'
 import { useI18n } from '@/lib/i18n'
+import { CarsTable } from './components/cars-table'
 
 export function CarsManagement() {
-  const { t, locale } = useI18n()
-  const hintText =
-    locale === 'ar'
-      ? 'انقر مرتين على صف السيارة لفتح التفاصيل. على الهاتف، اضغط مرتين على الصف.'
-      : 'Double click a car row to open its details. On mobile, double tap the row.'
+  const { t } = useI18n()
+  const hintText = t('doubleClickHint')
+
   return (
     <>
       <Header fixed>

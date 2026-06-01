@@ -1,57 +1,23 @@
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from 'recharts'
-
-const data = [
-  {
-    name: 'Jan',
-    total: Math.floor(Math.random() * 5000) + 1000,
-  },
-  {
-    name: 'Feb',
-    total: Math.floor(Math.random() * 5000) + 1000,
-  },
-  {
-    name: 'Mar',
-    total: Math.floor(Math.random() * 5000) + 1000,
-  },
-  {
-    name: 'Apr',
-    total: Math.floor(Math.random() * 5000) + 1000,
-  },
-  {
-    name: 'May',
-    total: Math.floor(Math.random() * 5000) + 1000,
-  },
-  {
-    name: 'Jun',
-    total: Math.floor(Math.random() * 5000) + 1000,
-  },
-  {
-    name: 'Jul',
-    total: Math.floor(Math.random() * 5000) + 1000,
-  },
-  {
-    name: 'Aug',
-    total: Math.floor(Math.random() * 5000) + 1000,
-  },
-  {
-    name: 'Sep',
-    total: Math.floor(Math.random() * 5000) + 1000,
-  },
-  {
-    name: 'Oct',
-    total: Math.floor(Math.random() * 5000) + 1000,
-  },
-  {
-    name: 'Nov',
-    total: Math.floor(Math.random() * 5000) + 1000,
-  },
-  {
-    name: 'Dec',
-    total: Math.floor(Math.random() * 5000) + 1000,
-  },
-]
+import { useI18n } from '@/lib/i18n'
 
 export function Overview() {
+  const { t } = useI18n()
+  const data = [
+    { name: t('jan'), total: Math.floor(Math.random() * 5000) + 1000 },
+    { name: t('feb'), total: Math.floor(Math.random() * 5000) + 1000 },
+    { name: t('mar'), total: Math.floor(Math.random() * 5000) + 1000 },
+    { name: t('apr'), total: Math.floor(Math.random() * 5000) + 1000 },
+    { name: t('may'), total: Math.floor(Math.random() * 5000) + 1000 },
+    { name: t('jun'), total: Math.floor(Math.random() * 5000) + 1000 },
+    { name: t('jul'), total: Math.floor(Math.random() * 5000) + 1000 },
+    { name: t('aug'), total: Math.floor(Math.random() * 5000) + 1000 },
+    { name: t('sep'), total: Math.floor(Math.random() * 5000) + 1000 },
+    { name: t('oct'), total: Math.floor(Math.random() * 5000) + 1000 },
+    { name: t('nov'), total: Math.floor(Math.random() * 5000) + 1000 },
+    { name: t('dec'), total: Math.floor(Math.random() * 5000) + 1000 },
+  ]
+
   return (
     <ResponsiveContainer width='100%' height={350}>
       <BarChart data={data}>
