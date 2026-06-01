@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
+import { type Car } from '@/data/carsMockData'
 import {
   CarFront,
   HandCoins,
@@ -10,22 +11,33 @@ import {
   Users,
   Wrench,
 } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { useAuthStore } from '@/stores/auth-store'
+import { useI18n } from '@/lib/i18n'
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ConfigDrawer } from '@/components/config-drawer'
+import { CostSummaryCard } from '@/components/cost-summary-card'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
-import { ThemeSwitch } from '@/components/theme-switch'
-import { CostSummaryCard } from '@/components/cost-summary-card'
 import { StatusBadge } from '@/components/status-badge'
-import { type Car } from '@/data/carsMockData'
-import { cn } from '@/lib/utils'
-import { useI18n } from '@/lib/i18n'
-import { useAuthStore } from '@/stores/auth-store'
+import { ThemeSwitch } from '@/components/theme-switch'
+import {
+  partnerContributionsMock,
+  partnersMockData,
+  profitSharesMock,
+} from '@/features/partners/data/partnersMockData'
 import { EditTitleModal } from '../components/edit-title-modal'
 import { TitleBadge } from '../components/title-badge'
 import { TitleHistoryTable } from '../components/title-history-table'
@@ -44,6 +56,15 @@ const money = new Intl.NumberFormat('en-US', {
 
 export function CarDetails({ car }: CarDetailsProps) {
   const { t, locale } = useI18n()
+  const carPartnerContributions = partnerContributionsMock.filter(
+    (contribution) => contribution.carId === car.id
+  )
+  const carProfitShares = profitSharesMock.filter(
+    (profitShare) => profitShare.carId === car.id
+  )
+  const partnerNameById = new Map(
+    partnersMockData.map((partner) => [partner.id, partner.name])
+  )
   const currentUser = useAuthStore((state) => state.auth.user)
   const [currentTitle, setCurrentTitle] = useState(car.currentTitle)
   const [titleHistory, setTitleHistory] = useState(car.titleHistory)
@@ -109,12 +130,36 @@ export function CarDetails({ car }: CarDetailsProps) {
                 </p>
               </div>
               <div className='grid gap-3 sm:grid-cols-2 xl:grid-cols-3'>
-                <InfoCard icon={<CarFront className='h-4 w-4' />} label={t('titleTypeValue')} value={<TitleBadge titleType={currentTitle.type} />} />
-                <InfoCard icon={<ShieldCheck className='h-4 w-4' />} label={t('carfax')} value='Available' />
-                <InfoCard icon={<HandCoins className='h-4 w-4' />} label={t('totalCost')} value={money.format(car.totalCost)} />
-                <InfoCard icon={<Wrench className='h-4 w-4' />} label={t('sellingPrice')} value={money.format(car.sellingPrice)} />
-                <InfoCard icon={<Users className='h-4 w-4' />} label={t('netProfit')} value={money.format(car.netProfit)} />
-                <InfoCard icon={<Settings2 className='h-4 w-4' />} label={t('purchasePlace')} value={car.purchasePlace} />
+                <InfoCard
+                  icon={<CarFront className='h-4 w-4' />}
+                  label={t('titleTypeValue')}
+                  value={<TitleBadge titleType={currentTitle.type} />}
+                />
+                <InfoCard
+                  icon={<ShieldCheck className='h-4 w-4' />}
+                  label={t('carfax')}
+                  value='Available'
+                />
+                <InfoCard
+                  icon={<HandCoins className='h-4 w-4' />}
+                  label={t('totalCost')}
+                  value={money.format(car.totalCost)}
+                />
+                <InfoCard
+                  icon={<Wrench className='h-4 w-4' />}
+                  label={t('sellingPrice')}
+                  value={money.format(car.sellingPrice)}
+                />
+                <InfoCard
+                  icon={<Users className='h-4 w-4' />}
+                  label={t('netProfit')}
+                  value={money.format(car.netProfit)}
+                />
+                <InfoCard
+                  icon={<Settings2 className='h-4 w-4' />}
+                  label={t('purchasePlace')}
+                  value={car.purchasePlace}
+                />
               </div>
               <div className='flex flex-wrap gap-3'>
                 <Button asChild>
@@ -125,7 +170,11 @@ export function CarDetails({ car }: CarDetailsProps) {
                 <Button asChild variant='outline'>
                   {car.carfaxType === 'pdf' ? (
                     car.carfaxPdfUrl ? (
-                      <a href={car.carfaxPdfUrl} target='_blank' rel='noreferrer'>
+                      <a
+                        href={car.carfaxPdfUrl}
+                        target='_blank'
+                        rel='noreferrer'
+                      >
                         <Link2 className='me-2 h-4 w-4' />
                         {car.carfaxPdfName || t('carfax')}
                       </a>
@@ -182,7 +231,10 @@ export function CarDetails({ car }: CarDetailsProps) {
                       : car.carfaxLink || 'Link'
                   }
                 />
-                <InfoRow label={t('status')} value={<StatusBadge status={car.status} />} />
+                <InfoRow
+                  label={t('status')}
+                  value={<StatusBadge status={car.status} />}
+                />
               </CardContent>
             </Card>
             <Card className='border-border/60'>
@@ -210,15 +262,27 @@ export function CarDetails({ car }: CarDetailsProps) {
           <TabsContent value='parts' className='space-y-4'>
             <SimpleTable
               title={t('parts')}
-              headers={[t('parts'), locale === 'ar' ? 'المورد' : 'Vendor', locale === 'ar' ? 'التكلفة' : 'Cost']}
-              rows={car.parts.map((part) => [part.name, part.vendor, money.format(part.cost)])}
+              headers={[
+                t('parts'),
+                locale === 'ar' ? 'المورد' : 'Vendor',
+                locale === 'ar' ? 'التكلفة' : 'Cost',
+              ]}
+              rows={car.parts.map((part) => [
+                part.name,
+                part.vendor,
+                money.format(part.cost),
+              ])}
             />
           </TabsContent>
 
           <TabsContent value='inspection' className='space-y-4'>
             <SimpleTable
               title={t('inspection')}
-              headers={[locale === 'ar' ? 'الجدول' : 'Schedule', locale === 'ar' ? 'الفاحص' : 'Inspector', t('status')]}
+              headers={[
+                locale === 'ar' ? 'الجدول' : 'Schedule',
+                locale === 'ar' ? 'الفاحص' : 'Inspector',
+                t('status'),
+              ]}
               rows={car.inspections.map((inspection) => [
                 inspection.schedule,
                 inspection.inspector,
@@ -229,20 +293,48 @@ export function CarDetails({ car }: CarDetailsProps) {
 
           <TabsContent value='partners' className='space-y-4'>
             <SimpleTable
-              title={t('partners')}
-              headers={[locale === 'ar' ? 'الشريك' : 'Partner', locale === 'ar' ? 'الحصة' : 'Share', locale === 'ar' ? 'الاستثمار' : 'Investment']}
-              rows={car.partners.map((partner) => [
-                partner.name,
-                partner.share,
-                money.format(partner.investment),
-              ])}
+              title={t('partnersInvestments')}
+              headers={[
+                t('partner'),
+                t('totalContribution'),
+                t('percentage'),
+                t('partnerProfitShare'),
+              ]}
+              rows={
+                carPartnerContributions.length
+                  ? carPartnerContributions.map((contribution) => {
+                      const profitShare = carProfitShares.find(
+                        (item) => item.partnerId === contribution.partnerId
+                      )
+
+                      return [
+                        partnerNameById.get(contribution.partnerId) ??
+                          contribution.partnerId,
+                        money.format(contribution.contributionAmount),
+                        `${contribution.investmentPercentage}%`,
+                        money.format(profitShare?.partnerProfitShare ?? 0),
+                      ]
+                    })
+                  : car.partners.map((partner) => [
+                      partner.name,
+                      money.format(partner.investment),
+                      partner.share,
+                      money.format(
+                        (car.netProfit * Number.parseFloat(partner.share)) / 100
+                      ),
+                    ])
+              }
             />
           </TabsContent>
 
           <TabsContent value='documents' className='space-y-4'>
             <SimpleTable
               title={t('documents')}
-              headers={[locale === 'ar' ? 'المستند' : 'Document', locale === 'ar' ? 'النوع' : 'Type', locale === 'ar' ? 'الرابط' : 'Link']}
+              headers={[
+                locale === 'ar' ? 'المستند' : 'Document',
+                locale === 'ar' ? 'النوع' : 'Type',
+                locale === 'ar' ? 'الرابط' : 'Link',
+              ]}
               rows={car.documents.map((document) => [
                 document.name,
                 document.type,
@@ -269,12 +361,25 @@ export function CarDetails({ car }: CarDetailsProps) {
                   <CardTitle>{t('profitSummary')}</CardTitle>
                 </CardHeader>
                 <CardContent className='grid gap-3 sm:grid-cols-3'>
-                  <MetricCard label={t('totalCost')} value={money.format(car.totalCost)} />
-                  <MetricCard label={t('sellingPrice')} value={money.format(car.sellingPrice)} />
-                  <MetricCard label={t('netProfit')} value={money.format(car.netProfit)} highlight />
+                  <MetricCard
+                    label={t('totalCost')}
+                    value={money.format(car.totalCost)}
+                  />
+                  <MetricCard
+                    label={t('sellingPrice')}
+                    value={money.format(car.sellingPrice)}
+                  />
+                  <MetricCard
+                    label={t('netProfit')}
+                    value={money.format(car.netProfit)}
+                    highlight
+                  />
                 </CardContent>
               </Card>
-              <CostSummaryCard breakdown={car.costBreakdown} sellingPrice={car.sellingPrice} />
+              <CostSummaryCard
+                breakdown={car.costBreakdown}
+                sellingPrice={car.sellingPrice}
+              />
             </div>
           </TabsContent>
         </Tabs>
@@ -302,9 +407,11 @@ function InfoCard({
   return (
     <Card className='border-border/60'>
       <CardContent className='flex items-center gap-3 p-4'>
-        <div className='rounded-md bg-muted p-2 text-muted-foreground'>{icon}</div>
+        <div className='rounded-md bg-muted p-2 text-muted-foreground'>
+          {icon}
+        </div>
         <div>
-          <p className='text-xs uppercase tracking-wide text-muted-foreground'>
+          <p className='text-xs tracking-wide text-muted-foreground uppercase'>
             {label}
           </p>
           <p className='font-medium'>{value}</p>
@@ -314,17 +421,11 @@ function InfoCard({
   )
 }
 
-function InfoRow({
-  label,
-  value,
-}: {
-  label: string
-  value: ReactNode
-}) {
+function InfoRow({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className='flex items-center justify-between gap-4 border-b pb-2 last:border-0 last:pb-0'>
       <span className='text-muted-foreground'>{label}</span>
-      <span className='font-medium text-right'>{value}</span>
+      <span className='text-right font-medium'>{value}</span>
     </div>
   )
 }
