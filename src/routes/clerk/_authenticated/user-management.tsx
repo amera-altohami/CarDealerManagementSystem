@@ -7,31 +7,94 @@ import {
   useRouter,
 } from '@tanstack/react-router'
 import { useAuth, UserButton } from '@clerk/react'
-import { ExternalLink, Loader2 } from 'lucide-react'
+import { ExternalLink, Loader2, UserPlus } from 'lucide-react'
 import { ClerkLogo } from '@/assets/clerk-logo'
+import { useI18n } from '@/lib/i18n'
 import { Button } from '@/components/ui/button'
 import { ConfigDrawer } from '@/components/config-drawer'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
 import { LearnMore } from '@/components/learn-more'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
-import { UsersDialogs } from '@/features/users/components/users-dialogs'
-import { UsersPrimaryButtons } from '@/features/users/components/users-primary-buttons'
-import { UsersProvider } from '@/features/users/components/users-provider'
+import { UserForm } from '@/features/users/components/user-form'
 import { UsersTable } from '@/features/users/components/users-table'
-import { users } from '@/features/users/data/users'
+import {
+  type ManagedUser,
+  type UserManagementFormValues,
+} from '@/features/users/data/schema'
+import { usersMockData } from '@/features/users/data/usersMockData'
 
 export const Route = createFileRoute('/clerk/_authenticated/user-management')({
   component: UserManagement,
 })
 
 function UserManagement() {
-  const search = Route.useSearch()
-  const navigate = Route.useNavigate()
-
+  const { t } = useI18n()
   const [opened, setOpened] = useState(true)
+  const [users, setUsers] = useState<ManagedUser[]>(usersMockData)
+  const [formOpen, setFormOpen] = useState(false)
+  const [editingUser, setEditingUser] = useState<ManagedUser | null>(null)
+  const [userToDelete, setUserToDelete] = useState<ManagedUser | null>(null)
   const { isLoaded, isSignedIn } = useAuth()
+
+  const handleAddUser = () => {
+    setEditingUser(null)
+    setFormOpen(true)
+  }
+
+  const handleEditUser = (user: ManagedUser) => {
+    if (user.isProtected) return
+
+    setEditingUser(user)
+    setFormOpen(true)
+  }
+
+  const handleSubmit = (values: UserManagementFormValues) => {
+    if (editingUser) {
+      setUsers((currentUsers) =>
+        currentUsers.map((user) =>
+          user.id === editingUser.id ? { ...user, ...values } : user
+        )
+      )
+    } else {
+      const today = new Date().toISOString().slice(0, 10)
+      setUsers((currentUsers) => [
+        {
+          id: `user-${Date.now()}`,
+          ...values,
+          createdAt: today,
+          lastLogin: 'Never',
+        },
+        ...currentUsers,
+      ])
+    }
+
+    setFormOpen(false)
+    setEditingUser(null)
+  }
+
+  const handleToggleStatus = (targetUser: ManagedUser) => {
+    if (targetUser.isProtected) return
+
+    setUsers((currentUsers) =>
+      currentUsers.map((user) =>
+        user.id === targetUser.id
+          ? {
+              ...user,
+              status: user.status === 'Active' ? 'Disabled' : 'Active',
+            }
+          : user
+      )
+    )
+  }
+
+  const handleRequestDelete = (user: ManagedUser) => {
+    if (user.isProtected) return
+
+    setUserToDelete(user)
+  }
 
   if (!isLoaded) {
     return (
@@ -46,7 +109,7 @@ function UserManagement() {
   }
 
   return (
-    <UsersProvider>
+    <>
       <Header fixed>
         <Search className='me-auto' />
         <ThemeSwitch />
@@ -55,12 +118,14 @@ function UserManagement() {
       </Header>
 
       <Main className='flex flex-1 flex-col gap-4 sm:gap-6'>
-        <div className='flex flex-wrap items-end justify-between gap-2'>
-          <div>
-            <h2 className='text-2xl font-bold tracking-tight'>User List</h2>
+        <div className='flex flex-wrap items-end justify-between gap-3'>
+          <div className='space-y-1'>
+            <h1 className='text-2xl font-bold tracking-tight md:text-3xl'>
+              {t('usersManagement')}
+            </h1>
             <div className='flex gap-1'>
               <p className='text-muted-foreground'>
-                Manage your users and their roles here.
+                {t('usersManagementDesc')}
               </p>
               <LearnMore
                 open={opened}
@@ -85,13 +150,70 @@ function UserManagement() {
               </LearnMore>
             </div>
           </div>
-          <UsersPrimaryButtons />
+          <Button onClick={handleAddUser}>
+            <UserPlus className='h-4 w-4' />
+            {t('addUser')}
+          </Button>
         </div>
-        <UsersTable data={users} navigate={navigate} search={search} />
+        <UsersTable
+          data={users}
+          onEdit={handleEditUser}
+          onDelete={handleRequestDelete}
+          onToggleStatus={handleToggleStatus}
+        />
       </Main>
 
-      <UsersDialogs />
-    </UsersProvider>
+      <UserForm
+        open={formOpen}
+        onOpenChange={(open) => {
+          setFormOpen(open)
+          if (!open) {
+            setEditingUser(null)
+          }
+        }}
+        defaultValues={
+          editingUser
+            ? {
+                fullName: editingUser.fullName,
+                email: editingUser.email,
+                phone: editingUser.phone,
+                role: editingUser.role,
+                status: editingUser.status,
+              }
+            : undefined
+        }
+        onSubmit={handleSubmit}
+      />
+
+      <ConfirmDialog
+        open={!!userToDelete}
+        onOpenChange={(open) => {
+          if (!open) {
+            setUserToDelete(null)
+          }
+        }}
+        title={t('deleteUser')}
+        desc={
+          <span>
+            {t('deleteUserConfirmStart')}{' '}
+            <strong>{userToDelete?.fullName ?? ''}</strong>
+            {t('deleteUserConfirmEnd')}
+          </span>
+        }
+        destructive
+        confirmText={t('delete')}
+        cancelBtnText={t('cancel')}
+        handleConfirm={() => {
+          if (!userToDelete) return
+          if (userToDelete.isProtected) return
+
+          setUsers((currentUsers) =>
+            currentUsers.filter((user) => user.id !== userToDelete.id)
+          )
+          setUserToDelete(null)
+        }}
+      />
+    </>
   )
 }
 

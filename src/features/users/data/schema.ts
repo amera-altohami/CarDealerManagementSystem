@@ -28,3 +28,44 @@ const _userSchema = z.object({
   updatedAt: z.coerce.date(),
 })
 export type User = z.infer<typeof _userSchema>
+
+export const userManagementRoleOptions = [
+  'Admin',
+  'Manager',
+  'Accountant',
+  'Sales',
+  'Viewer',
+] as const
+
+export const userManagementStatusOptions = ['Active', 'Disabled'] as const
+
+export const userManagementSchema = z.object({
+  id: z.string(),
+  fullName: z.string(),
+  email: z.string(),
+  phone: z.string().optional().default(''),
+  role: z.enum(userManagementRoleOptions),
+  status: z.enum(userManagementStatusOptions),
+  isProtected: z.boolean().optional(),
+  createdAt: z.string(),
+  lastLogin: z.string(),
+})
+
+export type ManagedUser = z.infer<typeof userManagementSchema>
+
+export const userManagementFormSchema = z.object({
+  fullName: z.string().min(1, 'Full Name is required.'),
+  email: z.email({
+    error: (issue) =>
+      issue.input === '' ? 'Email is required.' : 'Email format must be valid.',
+  }),
+  phone: z.string().optional().default(''),
+  role: z.enum(userManagementRoleOptions, {
+    error: 'Role is required.',
+  }),
+  status: z.enum(userManagementStatusOptions, {
+    error: 'Status is required.',
+  }),
+})
+
+export type UserManagementFormValues = z.infer<typeof userManagementFormSchema>
