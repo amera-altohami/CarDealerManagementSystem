@@ -39,7 +39,7 @@ export const titleTypeLabels = {
   },
   ar: {
     Clean: 'نظيف',
-    Salvage: 'خلاص/إنقاذ',
+    Salvage: 'Salvage',
     Rebuilt: 'معاد بناؤه',
   },
 } as const

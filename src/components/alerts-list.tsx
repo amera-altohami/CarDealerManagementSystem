@@ -20,7 +20,7 @@ export function AlertsList({ alerts, className }: AlertsListProps) {
           {t('delayedCarsAlerts')}
         </CardTitle>
       </CardHeader>
-      <CardContent className='space-y-3'>
+      <CardContent className='max-h-[28rem] space-y-3 overflow-y-auto pr-1'>
         {alerts.map((alert) => (
           <div
             key={alert.id}

@@ -26,11 +26,11 @@ export function LatestTransactions({ transactions }: LatestTransactionsProps) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Car</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className='text-end'>Amount</TableHead>
+                <TableHead>{t('car')}</TableHead>
+                <TableHead>{t('type')}</TableHead>
+                <TableHead>{t('date')}</TableHead>
+                <TableHead>{t('status')}</TableHead>
+                <TableHead className='text-end'>{t('amount')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

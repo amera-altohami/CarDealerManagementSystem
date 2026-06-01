@@ -9,64 +9,53 @@ type TitleManagementCardProps = {
   currentTitle: CurrentTitle
   onEditTitle: () => void
   onAddNotes: () => void
+  onConvertToRebuilt?: () => void
+  canConvertToRebuilt?: boolean
 }
 
 export function TitleManagementCard({
   currentTitle,
   onEditTitle,
   onAddNotes,
+  onConvertToRebuilt,
+  canConvertToRebuilt = false,
 }: TitleManagementCardProps) {
-  const { locale } = useI18n()
-  const copy =
-    locale === 'ar'
-      ? {
-          title: 'إدارة الملكية',
-          current: 'معلومات الملكية الحالية',
-          currentType: 'نوع الملكية الحالي',
-          lastUpdated: 'آخر تحديث',
-          updatedBy: 'تم التحديث بواسطة',
-          editTitle: 'تعديل الملكية',
-          addNotes: 'إضافة ملاحظات',
-          salvageHint: 'يمكن ترقية Salvage إلى Rebuilt بعد اكتمال الإصلاح والفحص.',
-        }
-      : {
-          title: 'Title Management',
-          current: 'Current Title Information',
-          currentType: 'Current Title Type',
-          lastUpdated: 'Last Updated Date',
-          updatedBy: 'Updated By',
-          editTitle: 'Edit Title',
-          addNotes: 'Add Notes',
-          salvageHint: 'Salvage titles can be upgraded to Rebuilt after repairs and inspection.',
-        }
+  const { t } = useI18n()
 
   return (
     <Card className='border-border/60'>
       <CardHeader className='space-y-2'>
-        <CardTitle>{copy.title}</CardTitle>
-        <p className='text-sm text-muted-foreground'>{copy.current}</p>
+        <CardTitle>{t('titleManagement')}</CardTitle>
+        <p className='text-sm text-muted-foreground'>
+          {t('currentTitleInformation')}
+        </p>
       </CardHeader>
       <CardContent className='space-y-5'>
         <div className='grid gap-4 sm:grid-cols-3'>
           <InfoBlock
-            label={copy.currentType}
+            label={t('currentTitleType')}
             value={<TitleBadge titleType={currentTitle.type} />}
           />
-          <InfoBlock label={copy.lastUpdated} value={currentTitle.lastUpdatedAt} />
-          <InfoBlock label={copy.updatedBy} value={currentTitle.updatedBy} />
+          <InfoBlock label={t('lastUpdatedDate')} value={currentTitle.lastUpdatedAt} />
+          <InfoBlock label={t('updatedBy')} value={currentTitle.updatedBy} />
         </div>
 
         {currentTitle.type === 'Salvage' ? (
           <div className='rounded-lg border border-amber-500/20 bg-amber-500/5 p-4 text-sm text-amber-700 dark:text-amber-300'>
-            {copy.salvageHint}
+            {t('salvageTitleHint')}
           </div>
         ) : null}
 
         <div className='flex flex-wrap gap-3'>
-          <Button onClick={onEditTitle}>{copy.editTitle}</Button>
+          <Button onClick={onEditTitle}>{t('editTitle')}</Button>
           <Button variant='secondary' onClick={onAddNotes}>
-            {copy.addNotes}
+            {t('addNotes')}
           </Button>
+          {currentTitle.type === 'Salvage' && canConvertToRebuilt && onConvertToRebuilt ? (
+            <Button variant='outline' onClick={onConvertToRebuilt}>
+              {t('changeToRebuiltTitle')}
+            </Button>
+          ) : null}
         </div>
       </CardContent>
     </Card>
@@ -89,4 +78,3 @@ function InfoBlock({
     </div>
   )
 }
-

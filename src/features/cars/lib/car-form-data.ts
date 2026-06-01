@@ -9,6 +9,8 @@ export function buildCarFormData(values: CarFormValues) {
   formData.append('vin', values.vin)
   formData.append('lotNumber', values.lotNumber)
   formData.append('purchaseDate', values.purchaseDate)
+  formData.append('purchasePrice', String(values.purchasePrice))
+  formData.append('sellingPrice', String(values.sellingPrice))
   formData.append('purchasePlace', values.purchasePlace)
   formData.append('titleType', values.titleType)
   formData.append('status', values.status)

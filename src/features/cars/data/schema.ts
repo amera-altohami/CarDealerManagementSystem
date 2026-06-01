@@ -5,7 +5,6 @@ const titleTypeSchema = z.enum([
   titleTypeOptions[0],
   titleTypeOptions[1],
   titleTypeOptions[2],
-  titleTypeOptions[3],
 ])
 
 const statusSchema = z.enum([
@@ -32,6 +31,12 @@ export const carFormSchema = z.object({
     .min(5, 'VIN must be at least 5 characters.'),
   lotNumber: z.string().min(2, 'Lot number must be at least 2 characters.'),
   purchaseDate: z.string().min(1, 'Please select a purchase date.'),
+  purchasePrice: z.coerce
+    .number()
+    .min(0, 'Please enter a valid purchase price.'),
+  sellingPrice: z.coerce
+    .number()
+    .min(0, 'Please enter a valid selling price.'),
   purchasePlace: z
     .string()
     .min(2, 'Purchase place must be at least 2 characters.'),

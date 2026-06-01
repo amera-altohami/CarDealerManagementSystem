@@ -21,6 +21,8 @@ import {
   AudioWaveform,
   Command,
   GalleryVerticalEnd,
+  Building2,
+  ReceiptText,
 } from 'lucide-react'
 import { ClerkLogo } from '@/assets/clerk-logo'
 import { translate } from '@/lib/i18n'
@@ -59,6 +61,10 @@ export function getSidebarData(locale: Locale): SidebarData {
         items: [
           { title: t('dashboard'), url: '/', icon: LayoutDashboard },
           { title: t('cars'), url: '/cars', icon: Construction },
+          { title: t('expenses'), url: '/expenses', icon: ReceiptText },
+          { title: t('parts'), url: '/parts', icon: Package },
+          { title: t('inspections'), url: '/inspections', icon: ShieldCheck },
+          { title: t('companies'), url: '/companies', icon: Building2 },
           { title: t('tasks'), url: '/tasks', icon: ListTodo },
           { title: t('apps'), url: '/apps', icon: Package },
           { title: t('chats'), url: '/chats', badge: '3', icon: MessagesSquare },

@@ -17,9 +17,12 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { carStatusOptions, titleTypeOptions } from '@/data/carsMockData'
+import { SearchableCombobox } from '@/components/searchable-combobox'
+import { companiesMockData } from '@/data/dealerOperationsMockData'
 import { useI18n } from '@/lib/i18n'
 import { carFormSchema, type CarFormValues } from '../data/schema'
 import { buildCarFormData } from '../lib/car-form-data'
+import { getTitleTypeLabel } from '../types/title'
 
 type CarFormProps = {
   defaultValues?: Partial<CarFormValues>
@@ -36,6 +39,8 @@ const defaults: CarFormValues = {
   vin: '',
   lotNumber: '',
   purchaseDate: '',
+  purchasePrice: 0,
+  sellingPrice: 0,
   purchasePlace: '',
   titleType: 'Clean',
   status: 'purchased',
@@ -54,7 +59,13 @@ export function CarForm({
   cancelHref = '/cars',
   lockTitleType = false,
 }: CarFormProps) {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
+  const supportedLocale = locale === 'ar' ? 'ar' : 'en'
+  const companyOptions = companiesMockData.map((company) => ({
+    label: company.name,
+    value: company.name,
+    description: company.type,
+  }))
   const form = useForm<CarFormValues>({
     resolver: zodResolver(carFormSchema) as Resolver<CarFormValues>,
     defaultValues: { ...defaults, ...defaultValues },
@@ -83,7 +94,7 @@ export function CarForm({
       >
         <section className='space-y-4'>
           <div>
-            <h3 className='text-lg font-semibold'>Basic Information</h3>
+            <h3 className='text-lg font-semibold'>{t('basicInformation')}</h3>
             <p className='text-sm text-muted-foreground'>
               {t('basicInformation')}
             </p>
@@ -144,7 +155,7 @@ export function CarForm({
               name='vin'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>VIN</FormLabel>
+                  <FormLabel>{t('vin')}</FormLabel>
                   <FormControl>
                     <Input placeholder='4T1BF1FK5LU123001' {...field} />
                   </FormControl>
@@ -174,13 +185,21 @@ export function CarForm({
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger className='w-full'>
-                        <SelectValue placeholder='Select status' />
+                        <SelectValue placeholder={t('selectStatus')} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
                       {carStatusOptions.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
-                          {option.label}
+                          {option.value === 'purchased'
+                            ? t('purchasedStatus')
+                            : option.value === 'shipping'
+                              ? t('shippingStatus')
+                              : option.value === 'repairing'
+                                ? t('repairingStatus')
+                                : option.value === 'ready-for-sale'
+                                  ? t('readyForSaleStatus')
+                                  : t('soldStatus')}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -215,12 +234,68 @@ export function CarForm({
             />
             <FormField
               control={form.control}
+              name='purchasePrice'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('purchasePrice')}</FormLabel>
+                  <FormControl>
+                    <Input
+                      type='number'
+                      min='0'
+                      placeholder='9800'
+                      value={field.value}
+                      onChange={(event) =>
+                        field.onChange(
+                          event.target.value === ''
+                            ? ''
+                            : Number(event.target.value)
+                        )
+                      }
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name='sellingPrice'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('sellingPrice')}</FormLabel>
+                  <FormControl>
+                    <Input
+                      type='number'
+                      min='0'
+                      placeholder='12500'
+                      value={field.value}
+                      onChange={(event) =>
+                        field.onChange(
+                          event.target.value === ''
+                            ? ''
+                            : Number(event.target.value)
+                        )
+                      }
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
               name='purchasePlace'
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t('purchasePlace')}</FormLabel>
                   <FormControl>
-                    <Input placeholder='Dallas Auto Auction' {...field} />
+                    <SearchableCombobox
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      options={companyOptions}
+                      placeholder={t('selectPurchasePlace')}
+                      searchPlaceholder={t('searchCompanies')}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -234,19 +309,19 @@ export function CarForm({
                   <FormLabel>{t('titleType')}</FormLabel>
                   {lockTitleType ? (
                     <div className='rounded-md border bg-muted/20 px-3 py-2 text-sm font-medium'>
-                      {field.value}
+                      {getTitleTypeLabel(field.value, supportedLocale)}
                     </div>
                   ) : (
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger className='w-full'>
-                          <SelectValue placeholder='Select title type' />
+                          <SelectValue placeholder={t('selectTitleType')} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
                         {titleTypeOptions.map((option) => (
                           <SelectItem key={option} value={option}>
-                            {option}
+                            {getTitleTypeLabel(option, supportedLocale)}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -254,8 +329,8 @@ export function CarForm({
                   )}
                   <FormDescription>
                     {lockTitleType
-                      ? 'Title Type can only be changed from Title Management.'
-                      : 'Select the car title type.'}
+                      ? t('titleTypeLockedHelp')
+                      : t('titleTypeHelp')}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -289,7 +364,7 @@ export function CarForm({
                     />
                   </FormControl>
                   <FormDescription>
-                    {field.value ? `Current file: ${field.value}` : 'Images only.'}
+                    {field.value ? `${t('currentFile')}: ${field.value}` : t('imagesOnly')}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -327,15 +402,15 @@ export function CarForm({
                         <SelectValue placeholder={t('carfax')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value='link'>Link</SelectItem>
-                        <SelectItem value='pdf'>PDF</SelectItem>
+                        <SelectItem value='link'>{t('carfaxLink')}</SelectItem>
+                        <SelectItem value='pdf'>{t('carfaxPdf')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </FormControl>
                   <FormDescription>
                     {field.value === 'pdf'
-                      ? 'Upload a PDF from your device.'
-                      : 'Paste a Carfax link.'}
+                      ? t('uploadPdfFromDevice')
+                      : t('pasteCarfaxLink')}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -365,7 +440,7 @@ export function CarForm({
                 name='carfaxPdfFile'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Carfax PDF</FormLabel>
+                    <FormLabel>{t('carfaxPdf')}</FormLabel>
                     <FormControl>
                       <Input
                         type='file'
@@ -382,8 +457,8 @@ export function CarForm({
                     </FormControl>
                     <FormDescription>
                       {carfaxPdfName
-                        ? `Current file: ${carfaxPdfName}`
-                        : 'PDF files only.'}
+                        ? `${t('currentFile')}: ${carfaxPdfName}`
+                        : t('pdfFilesOnly')}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -408,7 +483,7 @@ export function CarForm({
                 <FormControl>
                   <Textarea
                     className='min-h-32 resize-none'
-                    placeholder='Add any helpful notes about this vehicle...'
+                    placeholder={t('notesPlaceholder')}
                     {...field}
                   />
                 </FormControl>

@@ -23,6 +23,12 @@ type CarsTableProps = {
   data: Car[]
 }
 
+const money = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  maximumFractionDigits: 0,
+})
+
 export function CarsTable({ data }: CarsTableProps) {
   const { t } = useI18n()
   const navigate = useNavigate()
@@ -108,7 +114,15 @@ export function CarsTable({ data }: CarsTableProps) {
                 <SelectItem value='all'>{t('allStatuses')}</SelectItem>
                 {carStatusOptions.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
-                    {option.label}
+                    {option.value === 'purchased'
+                      ? t('purchasedStatus')
+                      : option.value === 'shipping'
+                        ? t('shippingStatus')
+                        : option.value === 'repairing'
+                          ? t('repairingStatus')
+                          : option.value === 'ready-for-sale'
+                            ? t('readyForSaleStatus')
+                            : t('soldStatus')}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -124,8 +138,10 @@ export function CarsTable({ data }: CarsTableProps) {
                   <TableHead>{t('brand')}</TableHead>
                   <TableHead>{t('model')}</TableHead>
                   <TableHead>{t('year')}</TableHead>
-                  <TableHead>VIN</TableHead>
+                  <TableHead>{t('vin')}</TableHead>
                   <TableHead>{t('lotNumber')}</TableHead>
+                  <TableHead>{t('purchasePrice')}</TableHead>
+                  <TableHead>{t('sellingPrice')}</TableHead>
                   <TableHead>{t('status')}</TableHead>
                   <TableHead className='text-end'>{t('actions')}</TableHead>
                 </TableRow>
@@ -153,6 +169,8 @@ export function CarsTable({ data }: CarsTableProps) {
                       <TableCell>{car.year}</TableCell>
                       <TableCell className='font-mono text-xs'>{car.vin}</TableCell>
                       <TableCell>{car.lotNumber}</TableCell>
+                      <TableCell>{money.format(car.purchasePrice)}</TableCell>
+                      <TableCell>{money.format(car.sellingPrice)}</TableCell>
                       <TableCell>
                         <StatusBadge status={car.status} />
                       </TableCell>
@@ -164,7 +182,7 @@ export function CarsTable({ data }: CarsTableProps) {
                               className='h-8 w-8 p-0 data-[state=open]:bg-muted'
                             >
                               <EllipsisVertical className='h-4 w-4' />
-                              <span className='sr-only'>Open menu</span>
+                              <span className='sr-only'>{t('openMenu')}</span>
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align='end' className='w-40'>
@@ -201,7 +219,7 @@ export function CarsTable({ data }: CarsTableProps) {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={8} className='h-24 text-center'>
+                    <TableCell colSpan={10} className='h-24 text-center'>
                       {t('noCarsFound')}
                     </TableCell>
                   </TableRow>
@@ -219,15 +237,15 @@ export function CarsTable({ data }: CarsTableProps) {
             setCarToDelete(null)
           }
         }}
-        title='Delete car'
+        title={t('deleteCar')}
         desc={
           <span>
-            Are you sure you want to delete{' '}
+            {t('deleteCarConfirmPrefix')}{' '}
             <strong>{carToDelete ? formatCarName(carToDelete) : ''}</strong>?
           </span>
         }
         destructive
-        confirmText='Delete'
+        confirmText={t('delete')}
         handleConfirm={() => {
           if (!carToDelete) {
             return

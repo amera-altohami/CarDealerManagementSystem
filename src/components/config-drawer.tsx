@@ -126,6 +126,7 @@ function SectionTitle({
 function RadioGroupItem({
   item,
   isTheme = false,
+  locale,
 }: {
   item: {
     value: string
@@ -133,12 +134,18 @@ function RadioGroupItem({
     icon: (props: SVGProps<SVGSVGElement>) => React.ReactElement
   }
   isTheme?: boolean
+  locale: 'ar' | 'en'
 }) {
+  const selectLabel =
+    locale === 'ar' ? `اختر ${item.label}` : `Select ${item.label.toLowerCase()}`
+  const previewLabel =
+    locale === 'ar' ? `معاينة خيار ${item.label}` : `${item.label} option preview`
+
   return (
     <Item
       value={item.value}
       className={cn('group outline-none', 'transition duration-200 ease-in')}
-      aria-label={`Select ${item.label.toLowerCase()}`}
+      aria-label={selectLabel}
       aria-describedby={`${item.value}-description`}
     >
       <div
@@ -149,7 +156,7 @@ function RadioGroupItem({
         )}
         role='img'
         aria-hidden='false'
-        aria-label={`${item.label} option preview`}
+        aria-label={previewLabel}
       >
         <CircleCheck
           className={cn(
@@ -217,11 +224,18 @@ function ThemeConfig() {
             icon: IconThemeDark,
           },
         ].map((item) => (
-          <RadioGroupItem key={item.value} item={item} isTheme />
+          <RadioGroupItem
+            key={item.value}
+            item={item}
+            isTheme
+            locale={locale as 'ar' | 'en'}
+          />
         ))}
       </Radio>
       <div id='theme-description' className='sr-only'>
-        Choose between system preference, light mode, or dark mode
+        {locale === 'ar'
+          ? 'اختر بين وضع النظام أو الوضع الفاتح أو الوضع الداكن.'
+          : 'Choose between system preference, light mode, or dark mode'}
       </div>
     </div>
   )
@@ -266,11 +280,17 @@ function SidebarConfig() {
             icon: IconSidebarSidebar,
           },
         ].map((item) => (
-          <RadioGroupItem key={item.value} item={item} />
+          <RadioGroupItem
+            key={item.value}
+            item={item}
+            locale={locale as 'ar' | 'en'}
+          />
         ))}
       </Radio>
       <div id='sidebar-description' className='sr-only'>
-        Choose between inset, floating, or standard sidebar layout
+        {locale === 'ar'
+          ? 'اختر بين التخطيط الداخلي أو العائم أو الشريط الجانبي التقليدي.'
+          : 'Choose between inset, floating, or standard sidebar layout'}
       </div>
     </div>
   )
@@ -329,11 +349,17 @@ function LayoutConfig() {
             icon: IconLayoutFull,
           },
         ].map((item) => (
-          <RadioGroupItem key={item.value} item={item} />
+          <RadioGroupItem
+            key={item.value}
+            item={item}
+            locale={locale as 'ar' | 'en'}
+          />
         ))}
       </Radio>
       <div id='layout-description' className='sr-only'>
-        Choose between default expanded, compact icon-only, or full layout mode
+        {locale === 'ar'
+          ? 'اختر بين الوضع الافتراضي الموسع أو الوضع المضغوط بالأيقونات فقط أو التخطيط الكامل.'
+          : 'Choose between default expanded, compact icon-only, or full layout mode'}
       </div>
     </div>
   )
@@ -377,11 +403,17 @@ function DirConfig() {
             ),
           },
         ].map((item) => (
-          <RadioGroupItem key={item.value} item={item} />
+          <RadioGroupItem
+            key={item.value}
+            item={item}
+            locale={locale as 'ar' | 'en'}
+          />
         ))}
       </Radio>
       <div id='direction-description' className='sr-only'>
-        Choose between left-to-right or right-to-left site direction
+        {locale === 'ar'
+          ? 'اختر بين الاتجاه من اليسار إلى اليمين أو من اليمين إلى اليسار.'
+          : 'Choose between left-to-right or right-to-left site direction'}
       </div>
     </div>
   )

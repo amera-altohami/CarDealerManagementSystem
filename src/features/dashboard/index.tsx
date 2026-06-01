@@ -9,7 +9,8 @@ import { ThemeSwitch } from '@/components/theme-switch'
 import { AlertsList } from '@/components/alerts-list'
 import { StatCard } from '@/components/stat-card'
 import { delayedCarsMock, latestTransactionsMock, carsMockData } from '@/data/carsMockData'
-import { useI18n } from '@/lib/i18n'
+import { expensesMockData, getDashboardTotals } from '@/data/dealerOperationsMockData'
+import { getExpenseTypeLabel, useI18n } from '@/lib/i18n'
 import { LatestTransactions } from './components/latest-transactions'
 
 const money = new Intl.NumberFormat('en-US', {
@@ -19,17 +20,30 @@ const money = new Intl.NumberFormat('en-US', {
 })
 
 export function Dashboard() {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const totalCars = carsMockData.length
   const soldCars = carsMockData.filter((car) => car.status === 'sold').length
   const carsUnderRepair = carsMockData.filter((car) => car.status === 'repairing').length
   const carsUnderShipping = carsMockData.filter((car) => car.status === 'shipping').length
   const carsRequiringInspection = carsMockData.filter((car) =>
-    car.inspections.some((inspection) => inspection.status !== 'Completed')
+    car.titleType === 'Salvage' || car.inspections.some((inspection) => inspection.status !== 'Completed')
   ).length
-  const totalProfit = carsMockData.reduce((sum, car) => sum + car.netProfit, 0)
-  const totalExpenses = carsMockData.reduce((sum, car) => sum + car.totalCost, 0)
-  const currentCapital = totalExpenses
+  const dashboardTotals = getDashboardTotals()
+  const totalProfit = dashboardTotals.totalProfit
+  const totalExpenses = dashboardTotals.totalExpenses
+  const totalParts = dashboardTotals.totalParts
+  const installedParts = dashboardTotals.installedParts
+  const pendingParts = dashboardTotals.pendingParts
+  const pendingInspections = dashboardTotals.pendingInspections
+  const failedInspections = dashboardTotals.failedInspections
+  const expenseByType = Object.entries(
+    expensesMockData.reduce<Record<string, number>>((acc, expense) => {
+      acc[expense.expenseType] = (acc[expense.expenseType] ?? 0) + expense.amount
+      return acc
+    }, {})
+  )
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 4)
 
   return (
     <>
@@ -88,7 +102,7 @@ export function Dashboard() {
           />
           <StatCard
             title={t('currentCapital')}
-            value={money.format(currentCapital)}
+            value={money.format(dashboardTotals.totalPurchasePrice)}
             icon={<Wallet className='h-4 w-4 text-muted-foreground' />}
           />
         </div>
@@ -96,6 +110,32 @@ export function Dashboard() {
         <div className='mt-6 grid gap-4 lg:grid-cols-[1.3fr_0.9fr]'>
           <LatestTransactions transactions={latestTransactionsMock} />
           <AlertsList alerts={delayedCarsMock} />
+        </div>
+
+        <div className='mt-6 grid gap-4 lg:grid-cols-[1fr_1fr]'>
+          <Card className='border-border/60'>
+            <CardHeader>
+              <CardTitle>{t('expensesByType')}</CardTitle>
+            </CardHeader>
+            <CardContent className='grid gap-3 sm:grid-cols-2'>
+              {expenseByType.map(([type, amount]) => (
+                <MiniMetric key={type} label={getExpenseTypeLabel(type as Parameters<typeof getExpenseTypeLabel>[0], locale)} value={money.format(amount)} />
+              ))}
+            </CardContent>
+          </Card>
+          <Card className='border-border/60'>
+            <CardHeader>
+              <CardTitle>{t('inventoryAndOperations')}</CardTitle>
+            </CardHeader>
+            <CardContent className='grid gap-4 sm:grid-cols-2'>
+              <MiniMetric label={t('totalParts')} value={String(totalParts)} />
+              <MiniMetric label={t('installedParts')} value={String(installedParts)} />
+              <MiniMetric label={t('pendingParts')} value={String(pendingParts)} />
+              <MiniMetric label={t('pendingInspections')} value={String(pendingInspections)} />
+              <MiniMetric label={t('failedInspections')} value={String(failedInspections)} />
+              <MiniMetric label={t('carsRequiringInspection')} value={String(carsRequiringInspection)} />
+            </CardContent>
+          </Card>
         </div>
 
         <Card className='mt-6 border-border/60'>

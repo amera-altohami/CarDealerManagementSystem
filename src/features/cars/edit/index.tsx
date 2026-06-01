@@ -19,12 +19,12 @@ export function CarEdit({ carId }: CarEditProps) {
   const car = getCarById(carId)
 
   if (!car) {
-    return (
-      <Main className='flex flex-1 items-center justify-center'>
-        <div className='rounded-lg border p-6 text-center'>
-          <h1 className='text-lg font-semibold'>Car not found</h1>
+      return (
+        <Main className='flex flex-1 items-center justify-center'>
+          <div className='rounded-lg border p-6 text-center'>
+          <h1 className='text-lg font-semibold'>{t('carNotFound')}</h1>
           <p className='mt-2 text-sm text-muted-foreground'>
-            The requested car record does not exist.
+            {t('carNotFoundDesc')}
           </p>
         </div>
       </Main>
@@ -43,7 +43,7 @@ export function CarEdit({ carId }: CarEditProps) {
       <Main className='flex flex-1 flex-col gap-4 sm:gap-6'>
         <div className='space-y-1'>
           <h1 className='text-2xl font-bold tracking-tight md:text-3xl'>
-            {t('edit')}
+            {t('editCar')}
           </h1>
           <p className='text-muted-foreground'>
             {t('carsManagementDesc')}
@@ -58,6 +58,8 @@ export function CarEdit({ carId }: CarEditProps) {
             vin: car.vin,
             lotNumber: car.lotNumber,
             purchaseDate: car.purchaseDate,
+            purchasePrice: car.purchasePrice,
+            sellingPrice: car.sellingPrice,
             purchasePlace: car.purchasePlace,
             titleType: car.titleType,
             status: car.status,
