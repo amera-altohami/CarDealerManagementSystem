@@ -5,7 +5,7 @@ import { Main } from '@/components/layout/main'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
-import { getCompanyById } from '../components/company-form'
+import { getCompanyById } from '@/data/dealerOperationsMockData'
 import { CompanyForm } from '../components/company-form'
 import { useI18n } from '@/lib/i18n'
 

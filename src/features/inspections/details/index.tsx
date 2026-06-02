@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useI18n, getInspectionStatusLabel } from '@/lib/i18n'
-import { getInspectionById } from '../components/inspection-form'
+import { getInspectionById } from '@/data/dealerOperationsMockData'
 
 type InspectionDetailsProps = {
   inspectionId: string

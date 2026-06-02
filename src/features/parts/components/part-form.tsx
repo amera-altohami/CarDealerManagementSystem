@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useForm, type Resolver } from 'react-hook-form'
+import { useForm, useWatch, type Resolver } from 'react-hook-form'
 import { Link } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
 import {
@@ -17,22 +17,9 @@ import { Textarea } from '@/components/ui/textarea'
 import { SearchableCombobox } from '@/components/searchable-combobox'
 import { showSubmittedData } from '@/lib/show-submitted-data'
 import { carsMockData } from '@/data/carsMockData'
-import { companiesMockData, partsMockData } from '@/data/dealerOperationsMockData'
+import { companiesMockData } from '@/data/dealerOperationsMockData'
 import { getCompanyTypeLabel, useI18n } from '@/lib/i18n'
-import { z } from 'zod'
-
-export const partFormSchema = z.object({
-  partName: z.string().min(2, 'Please enter a part name.'),
-  price: z.coerce.number().min(0, 'Please enter a valid price.'),
-  supplierId: z.string().optional().default(''),
-  purchaseDate: z.string().min(1, 'Please select a purchase date.'),
-  installed: z.enum(['yes', 'no']),
-  relatedCarId: z.string().optional().default(''),
-  invoiceName: z.string().optional().default(''),
-  notes: z.string().optional().default(''),
-})
-
-export type PartFormValues = z.infer<typeof partFormSchema>
+import { partFormSchema, type PartFormValues } from './part-form-data'
 
 type PartFormProps = {
   defaultValues?: Partial<PartFormValues>
@@ -96,7 +83,7 @@ export function PartForm({
     [locale]
   )
 
-  const invoiceName = form.watch('invoiceName')
+  const invoiceName = useWatch({ control: form.control, name: 'invoiceName' })
 
   return (
     <Form {...form}>
@@ -274,8 +261,4 @@ export function PartForm({
       </form>
     </Form>
   )
-}
-
-export function getPartById(partId: string) {
-  return partsMockData.find((part) => part.id === partId)
 }

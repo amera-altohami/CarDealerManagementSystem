@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useForm, type Resolver } from 'react-hook-form'
+import { useForm, useWatch, type Resolver } from 'react-hook-form'
 import { Link } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
 import {
@@ -17,44 +17,14 @@ import { Textarea } from '@/components/ui/textarea'
 import { SearchableCombobox } from '@/components/searchable-combobox'
 import { showSubmittedData } from '@/lib/show-submitted-data'
 import { carsMockData } from '@/data/carsMockData'
-import { expensesMockData, financialActorsMockData, type ExpenseType, type PaymentMethod } from '@/data/dealerOperationsMockData'
+import { financialActorsMockData } from '@/data/dealerOperationsMockData'
 import { getExpenseTypeLabel, getPaymentMethodLabel, useI18n } from '@/lib/i18n'
-import { z } from 'zod'
-
-export const expenseTypes: ExpenseType[] = [
-  'Purchase',
-  'Shipping',
-  'Repair',
-  'Parts',
-  'Labor',
-  'Inspection',
-  'Fees',
-  'Other',
-]
-
-export const paymentMethods: PaymentMethod[] = ['Zelle', 'Cash', 'Card']
-
-export const expenseFormSchema = z.object({
-  carId: z.string().min(1, 'Please select a car.'),
-  expenseType: z.enum([
-    expenseTypes[0],
-    expenseTypes[1],
-    expenseTypes[2],
-    expenseTypes[3],
-    expenseTypes[4],
-    expenseTypes[5],
-    expenseTypes[6],
-    expenseTypes[7],
-  ]),
-  amount: z.coerce.number().min(0, 'Please enter a valid amount.'),
-  paidBy: z.string().min(2, 'Please select who paid this expense.'),
-  paymentMethod: z.enum([paymentMethods[0], paymentMethods[1], paymentMethods[2]]),
-  date: z.string().min(1, 'Please select a date.'),
-  notes: z.string().optional().default(''),
-  invoiceName: z.string().optional().default(''),
-})
-
-export type ExpenseFormValues = z.infer<typeof expenseFormSchema>
+import {
+  expenseFormSchema,
+  expenseTypes,
+  paymentMethods,
+  type ExpenseFormValues,
+} from './expense-form-data'
 
 type ExpenseFormProps = {
   defaultValues?: Partial<ExpenseFormValues>
@@ -86,7 +56,7 @@ export function ExpenseForm({
     defaultValues: { ...defaults, ...defaultValues },
     mode: 'onChange',
   })
-  const invoiceName = form.watch('invoiceName')
+  const invoiceName = useWatch({ control: form.control, name: 'invoiceName' })
 
   const carOptions = useMemo(
     () =>
@@ -303,8 +273,4 @@ export function ExpenseForm({
       </form>
     </Form>
   )
-}
-
-export function getExpenseById(expenseId: string) {
-  return expensesMockData.find((expense) => expense.id === expenseId)
 }

@@ -5,7 +5,8 @@ import { Main } from '@/components/layout/main'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
-import { PartForm, getPartById } from '../components/part-form'
+import { getPartById } from '@/data/dealerOperationsMockData'
+import { PartForm } from '../components/part-form'
 import { useI18n } from '@/lib/i18n'
 
 type PartEditProps = {

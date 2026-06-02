@@ -410,6 +410,18 @@ export function getCompanyById(companyId: string) {
   return companiesMockData.find((company) => company.id === companyId)
 }
 
+export function getExpenseById(expenseId: string) {
+  return expensesMockData.find((expense) => expense.id === expenseId)
+}
+
+export function getPartById(partId: string) {
+  return partsMockData.find((part) => part.id === partId)
+}
+
+export function getInspectionById(inspectionId: string) {
+  return inspectionsMockData.find((inspection) => inspection.id === inspectionId)
+}
+
 export function getExpensesByCarId(carId: string) {
   return expensesMockData.filter((expense) => expense.carId === carId)
 }

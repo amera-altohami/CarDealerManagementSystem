@@ -1,6 +1,5 @@
 import { useMemo, useRef, useState, type TouchEvent } from 'react'
-import { useNavigate } from '@tanstack/react-router'
-import { Link } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import { EllipsisVertical, Pencil, Trash2, Eye } from 'lucide-react'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { StatusBadge } from '@/components/status-badge'
@@ -74,7 +73,7 @@ export function CarsTable({ data }: CarsTableProps) {
       return
     }
 
-    const now = Date.now()
+    const now = event.timeStamp
     const isDoubleTap =
       lastTapRef.current.carId === carId && now - lastTapRef.current.time < 300
 

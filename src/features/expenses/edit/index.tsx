@@ -5,7 +5,8 @@ import { Main } from '@/components/layout/main'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
-import { ExpenseForm, getExpenseById } from '../components/expense-form'
+import { getExpenseById } from '@/data/dealerOperationsMockData'
+import { ExpenseForm } from '../components/expense-form'
 import { useI18n } from '@/lib/i18n'
 
 type ExpenseEditProps = {

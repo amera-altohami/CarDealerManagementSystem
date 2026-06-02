@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useForm, type Resolver } from 'react-hook-form'
+import { useForm, useWatch, type Resolver } from 'react-hook-form'
 import { Link } from '@tanstack/react-router'
 import { showSubmittedData } from '@/lib/show-submitted-data'
 import { Button } from '@/components/ui/button'
@@ -71,8 +71,8 @@ export function CarForm({
     defaultValues: { ...defaults, ...defaultValues },
     mode: 'onChange',
   })
-  const carfaxType = form.watch('carfaxType')
-  const carfaxPdfName = form.watch('carfaxPdfName')
+  const carfaxType = useWatch({ control: form.control, name: 'carfaxType' })
+  const carfaxPdfName = useWatch({ control: form.control, name: 'carfaxPdfName' })
 
   useEffect(() => {
     form.reset({ ...defaults, ...defaultValues })

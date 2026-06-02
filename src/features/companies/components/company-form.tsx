@@ -15,36 +15,8 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { showSubmittedData } from '@/lib/show-submitted-data'
-import { companiesMockData, type CompanyType } from '@/data/dealerOperationsMockData'
 import { getCompanyTypeLabel, useI18n } from '@/lib/i18n'
-import { z } from 'zod'
-
-export const companyTypes: CompanyType[] = [
-  'Auction',
-  'Shipping',
-  'Repair Shop',
-  'Parts Store',
-  'DMV/BMV',
-  'Inspection Center',
-]
-
-export const companyFormSchema = z.object({
-  name: z.string().min(2, 'Please enter a company name.'),
-  type: z.enum([
-    companyTypes[0],
-    companyTypes[1],
-    companyTypes[2],
-    companyTypes[3],
-    companyTypes[4],
-    companyTypes[5],
-  ]),
-  phoneNumber: z.string().min(7, 'Please enter a valid phone number.'),
-  address: z.string().min(4, 'Please enter an address.'),
-  email: z.string().email('Please enter a valid email.').optional().or(z.literal('')),
-  notes: z.string().optional().default(''),
-})
-
-export type CompanyFormValues = z.infer<typeof companyFormSchema>
+import { companyFormSchema, companyTypes, type CompanyFormValues } from './company-form-data'
 
 type CompanyFormProps = {
   defaultValues?: Partial<CompanyFormValues>
@@ -192,8 +164,4 @@ export function CompanyForm({
       </form>
     </Form>
   )
-}
-
-export function getCompanyById(companyId: string) {
-  return companiesMockData.find((company) => company.id === companyId)
 }

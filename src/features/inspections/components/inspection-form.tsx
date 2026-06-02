@@ -17,27 +17,9 @@ import { Textarea } from '@/components/ui/textarea'
 import { SearchableCombobox } from '@/components/searchable-combobox'
 import { showSubmittedData } from '@/lib/show-submitted-data'
 import { carsMockData } from '@/data/carsMockData'
-import { companiesMockData, inspectionsMockData, type InspectionStatus } from '@/data/dealerOperationsMockData'
+import { companiesMockData } from '@/data/dealerOperationsMockData'
 import { getCompanyTypeLabel, getInspectionStatusLabel, useI18n } from '@/lib/i18n'
-import { z } from 'zod'
-
-export const inspectionStatuses: InspectionStatus[] = ['Pending', 'Passed', 'Failed']
-
-export const inspectionFormSchema = z.object({
-  carId: z.string().min(1, 'Please select a car.'),
-  date: z.string().min(1, 'Please select a date.'),
-  time: z.string().min(1, 'Please select a time.'),
-  placeId: z.string().min(1, 'Please select a place.'),
-  status: z.enum([inspectionStatuses[0], inspectionStatuses[1], inspectionStatuses[2]]),
-  notes: z.string().optional().default(''),
-  files: z.string().optional().default(''),
-  receipts: z.string().optional().default(''),
-  beforeImages: z.string().optional().default(''),
-  afterImages: z.string().optional().default(''),
-  reminderSent: z.enum(['yes', 'no']),
-})
-
-export type InspectionFormValues = z.infer<typeof inspectionFormSchema>
+import { inspectionFormSchema, inspectionStatuses, type InspectionFormValues } from './inspection-form-data'
 
 type InspectionFormProps = {
   defaultValues?: Partial<InspectionFormValues>
@@ -297,8 +279,4 @@ function FileUploadField({
       )}
     />
   )
-}
-
-export function getInspectionById(inspectionId: string) {
-  return inspectionsMockData.find((inspection) => inspection.id === inspectionId)
 }

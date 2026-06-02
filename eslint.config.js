@@ -56,4 +56,11 @@ export default defineConfig(
       'no-duplicate-imports': 'error',
     },
   }
+  ,
+  {
+    files: ['src/routes/**/*.{ts,tsx}'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  }
 )
