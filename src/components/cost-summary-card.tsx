@@ -13,6 +13,7 @@ type CostSummary = {
   repair: number
   parts: number
   labor: number
+  inspection?: number
   fees: number
   other: number
 }
@@ -46,6 +47,7 @@ export function CostSummaryCard({
     [t('repair'), breakdown.repair],
     [t('partsCost'), breakdown.parts],
     [t('labor'), breakdown.labor],
+    [t('inspection'), breakdown.inspection ?? 0],
     [t('fees'), breakdown.fees],
     [t('other'), breakdown.other],
   ] as const

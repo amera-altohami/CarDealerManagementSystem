@@ -13,24 +13,52 @@ import {
   TrendingUp,
   Wrench,
 } from 'lucide-react'
+import {
+  calculateCarExpenseSummary,
+  getExpensesByCarId,
+  getInspectionsByCarId,
+  getPartsByCarId,
+  type Expense,
+  type Part,
+} from '@/data/dealerOperationsMockData'
+import { type Car } from '@/data/carsMockData'
+import { useAuthStore } from '@/stores/auth-store'
+import {
+  getExpenseTypeLabel,
+  getPaymentMethodLabel,
+  useI18n,
+  type MessageKey,
+} from '@/lib/i18n'
+import { cn } from '@/lib/utils'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Badge } from '@/components/ui/badge'
 import { ConfigDrawer } from '@/components/config-drawer'
+import { CostSummaryCard } from '@/components/cost-summary-card'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
-import { ThemeSwitch } from '@/components/theme-switch'
-import { CostSummaryCard } from '@/components/cost-summary-card'
 import { StatusBadge } from '@/components/status-badge'
-import { cn } from '@/lib/utils'
-import { getExpenseTypeLabel, getPaymentMethodLabel, useI18n } from '@/lib/i18n'
-import { useAuthStore } from '@/stores/auth-store'
-import { calculateCarExpenseSummary, getExpensesByCarId, getInspectionsByCarId, getPartsByCarId, type Expense, type Part } from '@/data/dealerOperationsMockData'
-import { type Car } from '@/data/carsMockData'
+import { ThemeSwitch } from '@/components/theme-switch'
+import {
+  partnerContributionsMock,
+  partnersMockData,
+  profitSharesMock,
+} from '@/features/partners/data/partnersMockData'
+import {
+  type PartnerContribution,
+  type ProfitShare,
+} from '@/features/partners/data/schema'
 import { EditTitleModal } from '../components/edit-title-modal'
 import { TitleBadge } from '../components/title-badge'
 import { TitleHistoryTable } from '../components/title-history-table'
@@ -47,6 +75,19 @@ const money = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 0,
 })
 
+const profitShareStatusStyles: Record<ProfitShare['status'], string> = {
+  Pending:
+    'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300',
+  Paid: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
+  Loss: 'border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300',
+}
+
+const profitShareStatusLabelKeys: Record<ProfitShare['status'], MessageKey> = {
+  Pending: 'pendingStatus',
+  Paid: 'paidStatus',
+  Loss: 'lossStatus',
+}
+
 export function CarDetails({ car }: CarDetailsProps) {
   const { t, locale } = useI18n()
   const navigate = useNavigate()
@@ -59,6 +100,16 @@ export function CarDetails({ car }: CarDetailsProps) {
   const parts = getPartsByCarId(car.id)
   const inspections = getInspectionsByCarId(car.id)
   const expenseSummary = calculateCarExpenseSummary(car.id)
+  const expenseBreakdown = {
+    purchase: expenseSummary.purchase,
+    shipping: expenseSummary.shipping,
+    repair: expenseSummary.repair,
+    parts: expenseSummary.parts,
+    labor: expenseSummary.labor,
+    inspection: expenseSummary.inspection,
+    fees: expenseSummary.fees,
+    other: expenseSummary.other,
+  }
   const totalProfit = car.sellingPrice - expenseSummary.totalCost
   const salvageInspectionRequired = currentTitle.type === 'Salvage'
   const currentMonthKey = new Date().toISOString().slice(0, 7)
@@ -69,8 +120,20 @@ export function CarDetails({ car }: CarDetailsProps) {
     .filter(([key]) => key !== 'totalCost')
     .sort(([, a], [, b]) => b - a)[0]?.[0]
   const highestExpenseTypeLabel = highestExpenseType
-    ? getExpenseTypeLabel(highestExpenseType as Expense['expenseType'], locale === 'ar' ? 'ar' : 'en')
+    ? getExpenseTypeLabel(
+        highestExpenseType as Expense['expenseType'],
+        locale === 'ar' ? 'ar' : 'en'
+      )
     : '-'
+  const carPartnerContributions = partnerContributionsMock.filter(
+    (contribution) => contribution.carId === car.id
+  )
+  const carProfitShares = profitSharesMock.filter(
+    (profitShare) => profitShare.carId === car.id
+  )
+  const partnerNameById = new Map(
+    partnersMockData.map((partner) => [partner.id, partner.name])
+  )
 
   const openTitleModal = () => setTitleModalOpen(true)
 
@@ -163,7 +226,13 @@ export function CarDetails({ car }: CarDetailsProps) {
                   value={money.format(expenseSummary.totalCost)}
                 />
                 <InfoCard
-                  icon={totalProfit >= 0 ? <TrendingUp className='h-4 w-4' /> : <TrendingDown className='h-4 w-4' />}
+                  icon={
+                    totalProfit >= 0 ? (
+                      <TrendingUp className='h-4 w-4' />
+                    ) : (
+                      <TrendingDown className='h-4 w-4' />
+                    )
+                  }
                   label={t('netProfit')}
                   value={
                     <span
@@ -189,7 +258,11 @@ export function CarDetails({ car }: CarDetailsProps) {
                 <Button asChild variant='outline'>
                   {car.carfaxType === 'pdf' ? (
                     car.carfaxPdfUrl ? (
-                      <a href={car.carfaxPdfUrl} target='_blank' rel='noreferrer'>
+                      <a
+                        href={car.carfaxPdfUrl}
+                        target='_blank'
+                        rel='noreferrer'
+                      >
                         <Link2 className='me-2 h-4 w-4' />
                         {car.carfaxPdfName || t('carfax')}
                       </a>
@@ -218,11 +291,15 @@ export function CarDetails({ car }: CarDetailsProps) {
             <TabsTrigger value='expenses'>{t('expenses')}</TabsTrigger>
             <TabsTrigger value='parts'>{t('parts')}</TabsTrigger>
             <TabsTrigger value='inspection'>{t('inspection')}</TabsTrigger>
+            <TabsTrigger value='partners'>{t('partners')}</TabsTrigger>
             <TabsTrigger value='documents'>{t('documents')}</TabsTrigger>
             <TabsTrigger value='timeline'>{t('timeline')}</TabsTrigger>
           </TabsList>
 
-          <TabsContent value='overview' className='grid gap-4 xl:grid-cols-[1.1fr_0.9fr]'>
+          <TabsContent
+            value='overview'
+            className='grid gap-4 xl:grid-cols-[1.1fr_0.9fr]'
+          >
             <Card className='border-border/60'>
               <CardHeader>
                 <CardTitle>{t('carInformation')}</CardTitle>
@@ -252,21 +329,34 @@ export function CarDetails({ car }: CarDetailsProps) {
 
             <div className='space-y-4'>
               <CostSummaryCard
-                breakdown={expenseSummary}
+                breakdown={expenseBreakdown}
                 purchasePrice={car.purchasePrice}
                 sellingPrice={car.sellingPrice}
               />
               <Card className='border-border/60'>
-              <CardHeader>
-                <CardTitle>{t('quickMetrics')}</CardTitle>
-              </CardHeader>
-              <CardContent className='grid gap-3 sm:grid-cols-2'>
-                  <SummaryCard label={t('expenseCount')} value={String(expenses.length)} />
-                  <SummaryCard label={t('partsCount')} value={String(parts.length)} />
-                  <SummaryCard label={t('inspectionsCount')} value={String(inspections.length)} />
-              </CardContent>
-            </Card>
-          </div>
+                <CardHeader>
+                  <CardTitle>{t('quickMetrics')}</CardTitle>
+                </CardHeader>
+                <CardContent className='grid gap-3 sm:grid-cols-2'>
+                  <SummaryCard
+                    label={t('expenseCount')}
+                    value={String(expenses.length)}
+                  />
+                  <SummaryCard
+                    label={t('partsCount')}
+                    value={String(parts.length)}
+                  />
+                  <SummaryCard
+                    label={t('partnersCount')}
+                    value={String(carPartnerContributions.length)}
+                  />
+                  <SummaryCard
+                    label={t('inspectionsCount')}
+                    value={String(inspections.length)}
+                  />
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           <TabsContent value='title' className='space-y-4'>
@@ -275,21 +365,44 @@ export function CarDetails({ car }: CarDetailsProps) {
               onEditTitle={openTitleModal}
               onAddNotes={openTitleModal}
               onConvertToRebuilt={convertToRebuiltTitle}
-              canConvertToRebuilt={inspections.some((inspection) => inspection.status === 'Passed')}
+              canConvertToRebuilt={inspections.some(
+                (inspection) => inspection.status === 'Passed'
+              )}
             />
             <TitleHistoryTable history={titleHistory} />
           </TabsContent>
 
           <TabsContent value='expenses' className='space-y-4'>
             <div className='grid gap-4 sm:grid-cols-2 xl:grid-cols-4'>
-              <SummaryCard title={t('totalExpenses')} value={money.format(expenseSummary.totalCost)} icon={<ReceiptText className='h-4 w-4' />} />
-              <SummaryCard title={t('thisMonthExpenses')} value={money.format(thisMonthExpenses.reduce((sum, expense) => sum + expense.amount, 0))} icon={<Sparkles className='h-4 w-4' />} />
-              <SummaryCard title={t('highestExpenseType')} value={highestExpenseTypeLabel} icon={<AlertTriangle className='h-4 w-4' />} />
-              <SummaryCard title={t('expensesCount')} value={String(expenses.length)} icon={<FileText className='h-4 w-4' />} />
+              <SummaryCard
+                title={t('totalExpenses')}
+                value={money.format(expenseSummary.totalCost)}
+                icon={<ReceiptText className='h-4 w-4' />}
+              />
+              <SummaryCard
+                title={t('thisMonthExpenses')}
+                value={money.format(
+                  thisMonthExpenses.reduce(
+                    (sum, expense) => sum + expense.amount,
+                    0
+                  )
+                )}
+                icon={<Sparkles className='h-4 w-4' />}
+              />
+              <SummaryCard
+                title={t('highestExpenseType')}
+                value={highestExpenseTypeLabel}
+                icon={<AlertTriangle className='h-4 w-4' />}
+              />
+              <SummaryCard
+                title={t('expensesCount')}
+                value={String(expenses.length)}
+                icon={<FileText className='h-4 w-4' />}
+              />
             </div>
             <ExpenseTable expenses={expenses} />
             <CostSummaryCard
-              breakdown={expenseSummary}
+              breakdown={expenseBreakdown}
               purchasePrice={car.purchasePrice}
               sellingPrice={car.sellingPrice}
             />
@@ -297,10 +410,28 @@ export function CarDetails({ car }: CarDetailsProps) {
 
           <TabsContent value='parts' className='space-y-4'>
             <div className='grid gap-4 sm:grid-cols-2 xl:grid-cols-4'>
-              <SummaryCard title={t('totalParts')} value={String(parts.length)} icon={<Package className='h-4 w-4' />} />
-              <SummaryCard title={t('installed')} value={String(parts.filter((part) => part.installed).length)} icon={<ShieldCheck className='h-4 w-4' />} />
-              <SummaryCard title={t('pending')} value={String(parts.filter((part) => !part.installed).length)} icon={<Wrench className='h-4 w-4' />} />
-              <SummaryCard title={t('partsCost')} value={money.format(parts.reduce((sum, part) => sum + part.price, 0))} icon={<HandCoins className='h-4 w-4' />} />
+              <SummaryCard
+                title={t('totalParts')}
+                value={String(parts.length)}
+                icon={<Package className='h-4 w-4' />}
+              />
+              <SummaryCard
+                title={t('installed')}
+                value={String(parts.filter((part) => part.installed).length)}
+                icon={<ShieldCheck className='h-4 w-4' />}
+              />
+              <SummaryCard
+                title={t('pending')}
+                value={String(parts.filter((part) => !part.installed).length)}
+                icon={<Wrench className='h-4 w-4' />}
+              />
+              <SummaryCard
+                title={t('partsCost')}
+                value={money.format(
+                  parts.reduce((sum, part) => sum + part.price, 0)
+                )}
+                icon={<HandCoins className='h-4 w-4' />}
+              />
             </div>
             <PartsTable parts={parts} />
           </TabsContent>
@@ -311,7 +442,9 @@ export function CarDetails({ car }: CarDetailsProps) {
                 <Card className='border-amber-500/20 bg-amber-500/5'>
                   <CardContent className='space-y-4 p-4'>
                     <div className='space-y-1'>
-                      <p className='font-medium'>{t('inspectionRequiredForSalvage')}</p>
+                      <p className='font-medium'>
+                        {t('inspectionRequiredForSalvage')}
+                      </p>
                       <p className='text-sm text-muted-foreground'>
                         {t('inspectionRequiredHelp')}
                       </p>
@@ -337,42 +470,30 @@ export function CarDetails({ car }: CarDetailsProps) {
             )}
           </TabsContent>
 
+          <TabsContent value='partners' className='space-y-4'>
+            <PartnerInvestmentsTable
+              contributions={carPartnerContributions}
+              profitShares={carProfitShares}
+              partnerNameById={partnerNameById}
+            />
+          </TabsContent>
+
           <TabsContent value='documents' className='space-y-4'>
-            <DocumentsCard car={car} expenses={expenses} parts={parts} inspections={inspections} />
+            <DocumentsCard
+              car={car}
+              expenses={expenses}
+              parts={parts}
+              inspections={inspections}
+            />
           </TabsContent>
 
           <TabsContent value='timeline' className='space-y-4'>
             <TitleHistoryTable history={titleHistory} />
-            <Card className='border-border/60'>
-              <CardHeader>
-                <CardTitle>{t('recentOperationalActivity')}</CardTitle>
-              </CardHeader>
-              <CardContent className='space-y-3'>
-                {[...expenses.slice(0, 2), ...parts.slice(0, 2), ...inspections.slice(0, 2)].map((item, index) => (
-                  <div key={index} className='flex items-center justify-between rounded-lg border px-4 py-3'>
-                    <div>
-                      <p className='font-medium'>
-                        {'expenseType' in item
-                          ? `${item.expenseType} ${t('expense')}`
-                          : 'installed' in item
-                            ? `${t('part')}: ${item.partName}`
-                            : `${t('inspectionItem')}: ${item.status}`}
-                      </p>
-                      <p className='text-sm text-muted-foreground'>
-                        {'date' in item ? item.date : ''}
-                      </p>
-                    </div>
-                    <Badge variant='outline'>
-                      {'amount' in item
-                        ? money.format(item.amount)
-                        : 'price' in item
-                          ? money.format(item.price)
-                          : item.status}
-                    </Badge>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
+            <RecentOperationalActivity
+              expenses={expenses}
+              parts={parts}
+              inspections={inspections}
+            />
           </TabsContent>
         </Tabs>
       </Main>
@@ -399,9 +520,11 @@ function InfoCard({
   return (
     <Card className='border-border/60'>
       <CardContent className='flex items-center gap-3 p-4'>
-        <div className='rounded-md bg-muted p-2 text-muted-foreground'>{icon}</div>
+        <div className='rounded-md bg-muted p-2 text-muted-foreground'>
+          {icon}
+        </div>
         <div>
-          <p className='text-xs uppercase tracking-wide text-muted-foreground'>
+          <p className='text-xs tracking-wide text-muted-foreground uppercase'>
             {label}
           </p>
           <p className='font-medium'>{value}</p>
@@ -423,14 +546,17 @@ function SummaryCard({
   icon?: ReactNode
 }) {
   const heading = label ?? title ?? ''
+
   return (
     <Card className='border-border/60'>
       <CardContent className='flex items-center gap-3 p-4'>
         {icon ? (
-          <div className='rounded-md bg-muted p-2 text-muted-foreground'>{icon}</div>
+          <div className='rounded-md bg-muted p-2 text-muted-foreground'>
+            {icon}
+          </div>
         ) : null}
         <div>
-          <p className='text-xs uppercase tracking-wide text-muted-foreground'>
+          <p className='text-xs tracking-wide text-muted-foreground uppercase'>
             {heading}
           </p>
           <p className='font-semibold'>{value}</p>
@@ -440,17 +566,11 @@ function SummaryCard({
   )
 }
 
-function InfoRow({
-  label,
-  value,
-}: {
-  label: string
-  value: ReactNode
-}) {
+function InfoRow({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className='flex items-center justify-between gap-4 border-b pb-2 last:border-0 last:pb-0'>
       <span className='text-muted-foreground'>{label}</span>
-      <span className='max-w-[60%] text-right font-medium'>{value}</span>
+      <span className='max-w-[60%] text-end font-medium'>{value}</span>
     </div>
   )
 }
@@ -477,16 +597,30 @@ function ExpenseTable({ expenses }: { expenses: Expense[] }) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {expenses.map((expense) => (
-                <TableRow key={expense.id}>
-                  <TableCell><ExpenseBadge expenseType={expense.expenseType} /></TableCell>
-                  <TableCell>{money.format(expense.amount)}</TableCell>
-                  <TableCell>{expense.paidBy}</TableCell>
-                  <TableCell><PaymentBadge method={expense.paymentMethod} /></TableCell>
-                  <TableCell>{expense.date}</TableCell>
-                  <TableCell className='text-muted-foreground'>{expense.invoiceName ?? '-'}</TableCell>
+              {expenses.length ? (
+                expenses.map((expense) => (
+                  <TableRow key={expense.id}>
+                    <TableCell>
+                      <ExpenseBadge expenseType={expense.expenseType} />
+                    </TableCell>
+                    <TableCell>{money.format(expense.amount)}</TableCell>
+                    <TableCell>{expense.paidBy}</TableCell>
+                    <TableCell>
+                      <PaymentBadge method={expense.paymentMethod} />
+                    </TableCell>
+                    <TableCell>{expense.date}</TableCell>
+                    <TableCell className='text-muted-foreground'>
+                      {expense.invoiceName ?? '-'}
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={6} className='h-24 text-center'>
+                    {t('noExpensesFound')}
+                  </TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         </div>
@@ -517,20 +651,129 @@ function PartsTable({ parts }: { parts: Part[] }) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {parts.map((part) => (
-                <TableRow key={part.id}>
-                  <TableCell className='font-medium'>{part.partName}</TableCell>
-                  <TableCell>{part.supplierName}</TableCell>
-                  <TableCell>{money.format(part.price)}</TableCell>
-                  <TableCell>{part.purchaseDate}</TableCell>
-                  <TableCell>
-                    <Badge variant='outline' className={part.installed ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' : 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300'}>
-                      {part.installed ? t('installed') : t('notInstalled')}
-                    </Badge>
+              {parts.length ? (
+                parts.map((part) => (
+                  <TableRow key={part.id}>
+                    <TableCell className='font-medium'>
+                      {part.partName}
+                    </TableCell>
+                    <TableCell>{part.supplierName}</TableCell>
+                    <TableCell>{money.format(part.price)}</TableCell>
+                    <TableCell>{part.purchaseDate}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant='outline'
+                        className={
+                          part.installed
+                            ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
+                            : 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300'
+                        }
+                      >
+                        {part.installed ? t('installed') : t('notInstalled')}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className='text-muted-foreground'>
+                      {part.invoiceName ?? '-'}
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={6} className='h-24 text-center'>
+                    {t('noPartsFound')}
                   </TableCell>
-                  <TableCell className='text-muted-foreground'>{part.invoiceName ?? '-'}</TableCell>
                 </TableRow>
-              ))}
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function PartnerInvestmentsTable({
+  contributions,
+  profitShares,
+  partnerNameById,
+}: {
+  contributions: PartnerContribution[]
+  profitShares: ProfitShare[]
+  partnerNameById: Map<string, string>
+}) {
+  const { t } = useI18n()
+
+  return (
+    <Card className='border-border/60'>
+      <CardHeader>
+        <CardTitle>{t('partnersInvestments')}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className='overflow-hidden rounded-md border'>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t('partner')}</TableHead>
+                <TableHead>{t('totalContribution')}</TableHead>
+                <TableHead>{t('percentage')}</TableHead>
+                <TableHead>{t('partnerProfitShare')}</TableHead>
+                <TableHead>{t('status')}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {contributions.length ? (
+                contributions.map((contribution) => {
+                  const profitShare = profitShares.find(
+                    (item) => item.partnerId === contribution.partnerId
+                  )
+                  const status = profitShare?.status ?? 'Pending'
+
+                  return (
+                    <TableRow key={contribution.id}>
+                      <TableCell>
+                        <Link
+                          to='/partners/$partnerId'
+                          params={{ partnerId: contribution.partnerId }}
+                          className='font-medium underline-offset-4 hover:underline'
+                        >
+                          {partnerNameById.get(contribution.partnerId) ??
+                            contribution.partnerId}
+                        </Link>
+                      </TableCell>
+                      <TableCell>
+                        {money.format(contribution.contributionAmount)}
+                      </TableCell>
+                      <TableCell>
+                        {contribution.investmentPercentage}%
+                      </TableCell>
+                      <TableCell
+                        className={cn(
+                          'font-medium',
+                          (profitShare?.partnerProfitShare ?? 0) >= 0
+                            ? 'text-emerald-600 dark:text-emerald-400'
+                            : 'text-red-600 dark:text-red-400'
+                        )}
+                      >
+                        {money.format(profitShare?.partnerProfitShare ?? 0)}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant='outline'
+                          className={profitShareStatusStyles[status]}
+                        >
+                          {t(profitShareStatusLabelKeys[status])}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={5} className='h-24 text-center'>
+                    {t('noContributionsFound')}
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </div>
@@ -556,15 +799,29 @@ function InspectionTimeline({
           <div key={inspection.id} className='rounded-lg border p-4'>
             <div className='flex flex-wrap items-center justify-between gap-2'>
               <div>
-                <p className='font-medium'>{inspection.date} {t('at')} {inspection.time}</p>
-                <p className='text-sm text-muted-foreground'>{inspection.place}</p>
+                <p className='font-medium'>
+                  {inspection.date} {t('at')} {inspection.time}
+                </p>
+                <p className='text-sm text-muted-foreground'>
+                  {inspection.place}
+                </p>
               </div>
               <StatusBadge status={inspection.status} />
             </div>
-            <p className='mt-3 text-sm text-muted-foreground'>{inspection.notes}</p>
+            <p className='mt-3 text-sm text-muted-foreground'>
+              {inspection.notes}
+            </p>
             <div className='mt-3 flex flex-wrap gap-2'>
-              {inspection.files.map((file) => <Badge key={file} variant='secondary'>{file}</Badge>)}
-              {inspection.receipts.map((file) => <Badge key={file} variant='secondary'>{file}</Badge>)}
+              {inspection.files.map((file) => (
+                <Badge key={file} variant='secondary'>
+                  {file}
+                </Badge>
+              ))}
+              {inspection.receipts.map((file) => (
+                <Badge key={file} variant='secondary'>
+                  {file}
+                </Badge>
+              ))}
             </div>
           </div>
         ))}
@@ -592,9 +849,16 @@ function DocumentsCard({
   const { t } = useI18n()
   const documentNames = [
     ...car.documents.map((document) => document.name),
-    ...expenses.map((expense) => expense.invoiceName).filter(Boolean) as string[],
-    ...parts.map((part) => part.invoiceName).filter(Boolean) as string[],
-    ...inspections.flatMap((inspection) => [...inspection.files, ...inspection.receipts, ...inspection.beforeImages, ...inspection.afterImages]),
+    ...(expenses
+      .map((expense) => expense.invoiceName)
+      .filter(Boolean) as string[]),
+    ...(parts.map((part) => part.invoiceName).filter(Boolean) as string[]),
+    ...inspections.flatMap((inspection) => [
+      ...inspection.files,
+      ...inspection.receipts,
+      ...inspection.beforeImages,
+      ...inspection.afterImages,
+    ]),
   ]
 
   return (
@@ -619,15 +883,73 @@ function DocumentsCard({
   )
 }
 
+function RecentOperationalActivity({
+  expenses,
+  parts,
+  inspections,
+}: {
+  expenses: Expense[]
+  parts: Part[]
+  inspections: ReturnType<typeof getInspectionsByCarId>
+}) {
+  const { t } = useI18n()
+  const items = [
+    ...expenses.slice(0, 2),
+    ...parts.slice(0, 2),
+    ...inspections.slice(0, 2),
+  ]
+
+  return (
+    <Card className='border-border/60'>
+      <CardHeader>
+        <CardTitle>{t('recentOperationalActivity')}</CardTitle>
+      </CardHeader>
+      <CardContent className='space-y-3'>
+        {items.map((item, index) => (
+          <div
+            key={index}
+            className='flex items-center justify-between rounded-lg border px-4 py-3'
+          >
+            <div>
+              <p className='font-medium'>
+                {'expenseType' in item
+                  ? `${item.expenseType} ${t('expense')}`
+                  : 'installed' in item
+                    ? `${t('part')}: ${item.partName}`
+                    : `${t('inspectionItem')}: ${item.status}`}
+              </p>
+              <p className='text-sm text-muted-foreground'>
+                {'date' in item ? item.date : ''}
+              </p>
+            </div>
+            <Badge variant='outline'>
+              {'amount' in item
+                ? money.format(item.amount)
+                : 'price' in item
+                  ? money.format(item.price)
+                  : item.status}
+            </Badge>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  )
+}
+
 function ExpenseBadge({ expenseType }: { expenseType: Expense['expenseType'] }) {
   const { locale } = useI18n()
   const className = {
     Purchase: 'border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300',
-    Shipping: 'border-indigo-500/30 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300',
-    Repair: 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300',
-    Parts: 'border-violet-500/30 bg-violet-500/10 text-violet-700 dark:text-violet-300',
-    Labor: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
-    Inspection: 'border-orange-500/30 bg-orange-500/10 text-orange-700 dark:text-orange-300',
+    Shipping:
+      'border-indigo-500/30 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300',
+    Repair:
+      'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300',
+    Parts:
+      'border-violet-500/30 bg-violet-500/10 text-violet-700 dark:text-violet-300',
+    Labor:
+      'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
+    Inspection:
+      'border-orange-500/30 bg-orange-500/10 text-orange-700 dark:text-orange-300',
     Fees: 'border-slate-500/30 bg-slate-500/10 text-slate-700 dark:text-slate-300',
     Other: 'border-zinc-500/30 bg-zinc-500/10 text-zinc-700 dark:text-zinc-300',
   }[expenseType]

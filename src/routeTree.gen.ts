@@ -26,6 +26,7 @@ import { Route as ClerkAuthenticatedRouteRouteImport } from './routes/clerk/_aut
 import { Route as ClerkauthRouteRouteImport } from './routes/clerk/(auth)/route'
 import { Route as AuthenticatedSettingsRouteRouteImport } from './routes/_authenticated/settings/route'
 import { Route as AuthenticatedPartsRouteRouteImport } from './routes/_authenticated/parts/route'
+import { Route as AuthenticatedPartnersRouteRouteImport } from './routes/_authenticated/partners/route'
 import { Route as AuthenticatedInspectionsRouteRouteImport } from './routes/_authenticated/inspections/route'
 import { Route as AuthenticatedExpensesRouteRouteImport } from './routes/_authenticated/expenses/route'
 import { Route as AuthenticatedCompaniesRouteRouteImport } from './routes/_authenticated/companies/route'
@@ -34,6 +35,7 @@ import { Route as AuthenticatedUsersIndexRouteImport } from './routes/_authentic
 import { Route as AuthenticatedTasksIndexRouteImport } from './routes/_authenticated/tasks/index'
 import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings/index'
 import { Route as AuthenticatedPartsIndexRouteImport } from './routes/_authenticated/parts/index'
+import { Route as AuthenticatedPartnersIndexRouteImport } from './routes/_authenticated/partners/index'
 import { Route as AuthenticatedInspectionsIndexRouteImport } from './routes/_authenticated/inspections/index'
 import { Route as AuthenticatedHelpCenterIndexRouteImport } from './routes/_authenticated/help-center/index'
 import { Route as AuthenticatedExpensesIndexRouteImport } from './routes/_authenticated/expenses/index'
@@ -55,11 +57,13 @@ import { Route as AuthenticatedErrorsErrorRouteImport } from './routes/_authenti
 import { Route as AuthenticatedCompaniesNewRouteImport } from './routes/_authenticated/companies/new'
 import { Route as AuthenticatedCarsNewRouteImport } from './routes/_authenticated/cars/new'
 import { Route as AuthenticatedPartsPartIdRouteRouteImport } from './routes/_authenticated/parts/$partId/route'
+import { Route as AuthenticatedPartnersPartnerIdRouteRouteImport } from './routes/_authenticated/partners/$partnerId/route'
 import { Route as AuthenticatedInspectionsInspectionIdRouteRouteImport } from './routes/_authenticated/inspections/$inspectionId/route'
 import { Route as AuthenticatedExpensesExpenseIdRouteRouteImport } from './routes/_authenticated/expenses/$expenseId/route'
 import { Route as AuthenticatedCompaniesCompanyIdRouteRouteImport } from './routes/_authenticated/companies/$companyId/route'
 import { Route as AuthenticatedCarsCarIdRouteRouteImport } from './routes/_authenticated/cars/$carId/route'
 import { Route as AuthenticatedPartsPartIdIndexRouteImport } from './routes/_authenticated/parts/$partId/index'
+import { Route as AuthenticatedPartnersPartnerIdIndexRouteImport } from './routes/_authenticated/partners/$partnerId/index'
 import { Route as AuthenticatedInspectionsInspectionIdIndexRouteImport } from './routes/_authenticated/inspections/$inspectionId/index'
 import { Route as AuthenticatedExpensesExpenseIdIndexRouteImport } from './routes/_authenticated/expenses/$expenseId/index'
 import { Route as AuthenticatedCompaniesCompanyIdIndexRouteImport } from './routes/_authenticated/companies/$companyId/index'
@@ -153,6 +157,12 @@ const AuthenticatedPartsRouteRoute = AuthenticatedPartsRouteRouteImport.update({
   path: '/parts',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedPartnersRouteRoute =
+  AuthenticatedPartnersRouteRouteImport.update({
+    id: '/partners',
+    path: '/partners',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedInspectionsRouteRoute =
   AuthenticatedInspectionsRouteRouteImport.update({
     id: '/inspections',
@@ -197,6 +207,12 @@ const AuthenticatedPartsIndexRoute = AuthenticatedPartsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedPartsRouteRoute,
 } as any)
+const AuthenticatedPartnersIndexRoute =
+  AuthenticatedPartnersIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedPartnersRouteRoute,
+  } as any)
 const AuthenticatedInspectionsIndexRoute =
   AuthenticatedInspectionsIndexRouteImport.update({
     id: '/',
@@ -316,6 +332,12 @@ const AuthenticatedPartsPartIdRouteRoute =
     path: '/$partId',
     getParentRoute: () => AuthenticatedPartsRouteRoute,
   } as any)
+const AuthenticatedPartnersPartnerIdRouteRoute =
+  AuthenticatedPartnersPartnerIdRouteRouteImport.update({
+    id: '/$partnerId',
+    path: '/$partnerId',
+    getParentRoute: () => AuthenticatedPartnersRouteRoute,
+  } as any)
 const AuthenticatedInspectionsInspectionIdRouteRoute =
   AuthenticatedInspectionsInspectionIdRouteRouteImport.update({
     id: '/$inspectionId',
@@ -345,6 +367,12 @@ const AuthenticatedPartsPartIdIndexRoute =
     id: '/',
     path: '/',
     getParentRoute: () => AuthenticatedPartsPartIdRouteRoute,
+  } as any)
+const AuthenticatedPartnersPartnerIdIndexRoute =
+  AuthenticatedPartnersPartnerIdIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedPartnersPartnerIdRouteRoute,
   } as any)
 const AuthenticatedInspectionsInspectionIdIndexRoute =
   AuthenticatedInspectionsInspectionIdIndexRouteImport.update({
@@ -408,6 +436,7 @@ export interface FileRoutesByFullPath {
   '/companies': typeof AuthenticatedCompaniesRouteRouteWithChildren
   '/expenses': typeof AuthenticatedExpensesRouteRouteWithChildren
   '/inspections': typeof AuthenticatedInspectionsRouteRouteWithChildren
+  '/partners': typeof AuthenticatedPartnersRouteRouteWithChildren
   '/parts': typeof AuthenticatedPartsRouteRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRouteRouteWithChildren
   '/forgot-password': typeof authForgotPasswordRoute
@@ -424,6 +453,7 @@ export interface FileRoutesByFullPath {
   '/companies/$companyId': typeof AuthenticatedCompaniesCompanyIdRouteRouteWithChildren
   '/expenses/$expenseId': typeof AuthenticatedExpensesExpenseIdRouteRouteWithChildren
   '/inspections/$inspectionId': typeof AuthenticatedInspectionsInspectionIdRouteRouteWithChildren
+  '/partners/$partnerId': typeof AuthenticatedPartnersPartnerIdRouteRouteWithChildren
   '/parts/$partId': typeof AuthenticatedPartsPartIdRouteRouteWithChildren
   '/cars/new': typeof AuthenticatedCarsNewRoute
   '/companies/new': typeof AuthenticatedCompaniesNewRoute
@@ -445,6 +475,7 @@ export interface FileRoutesByFullPath {
   '/expenses/': typeof AuthenticatedExpensesIndexRoute
   '/help-center/': typeof AuthenticatedHelpCenterIndexRoute
   '/inspections/': typeof AuthenticatedInspectionsIndexRoute
+  '/partners/': typeof AuthenticatedPartnersIndexRoute
   '/parts/': typeof AuthenticatedPartsIndexRoute
   '/settings/': typeof AuthenticatedSettingsIndexRoute
   '/tasks/': typeof AuthenticatedTasksIndexRoute
@@ -458,6 +489,7 @@ export interface FileRoutesByFullPath {
   '/companies/$companyId/': typeof AuthenticatedCompaniesCompanyIdIndexRoute
   '/expenses/$expenseId/': typeof AuthenticatedExpensesExpenseIdIndexRoute
   '/inspections/$inspectionId/': typeof AuthenticatedInspectionsInspectionIdIndexRoute
+  '/partners/$partnerId/': typeof AuthenticatedPartnersPartnerIdIndexRoute
   '/parts/$partId/': typeof AuthenticatedPartsPartIdIndexRoute
 }
 export interface FileRoutesByTo {
@@ -493,6 +525,7 @@ export interface FileRoutesByTo {
   '/expenses': typeof AuthenticatedExpensesIndexRoute
   '/help-center': typeof AuthenticatedHelpCenterIndexRoute
   '/inspections': typeof AuthenticatedInspectionsIndexRoute
+  '/partners': typeof AuthenticatedPartnersIndexRoute
   '/parts': typeof AuthenticatedPartsIndexRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
   '/tasks': typeof AuthenticatedTasksIndexRoute
@@ -506,6 +539,7 @@ export interface FileRoutesByTo {
   '/companies/$companyId': typeof AuthenticatedCompaniesCompanyIdIndexRoute
   '/expenses/$expenseId': typeof AuthenticatedExpensesExpenseIdIndexRoute
   '/inspections/$inspectionId': typeof AuthenticatedInspectionsInspectionIdIndexRoute
+  '/partners/$partnerId': typeof AuthenticatedPartnersPartnerIdIndexRoute
   '/parts/$partId': typeof AuthenticatedPartsPartIdIndexRoute
 }
 export interface FileRoutesById {
@@ -516,6 +550,7 @@ export interface FileRoutesById {
   '/_authenticated/companies': typeof AuthenticatedCompaniesRouteRouteWithChildren
   '/_authenticated/expenses': typeof AuthenticatedExpensesRouteRouteWithChildren
   '/_authenticated/inspections': typeof AuthenticatedInspectionsRouteRouteWithChildren
+  '/_authenticated/partners': typeof AuthenticatedPartnersRouteRouteWithChildren
   '/_authenticated/parts': typeof AuthenticatedPartsRouteRouteWithChildren
   '/_authenticated/settings': typeof AuthenticatedSettingsRouteRouteWithChildren
   '/clerk/(auth)': typeof ClerkauthRouteRouteWithChildren
@@ -535,6 +570,7 @@ export interface FileRoutesById {
   '/_authenticated/companies/$companyId': typeof AuthenticatedCompaniesCompanyIdRouteRouteWithChildren
   '/_authenticated/expenses/$expenseId': typeof AuthenticatedExpensesExpenseIdRouteRouteWithChildren
   '/_authenticated/inspections/$inspectionId': typeof AuthenticatedInspectionsInspectionIdRouteRouteWithChildren
+  '/_authenticated/partners/$partnerId': typeof AuthenticatedPartnersPartnerIdRouteRouteWithChildren
   '/_authenticated/parts/$partId': typeof AuthenticatedPartsPartIdRouteRouteWithChildren
   '/_authenticated/cars/new': typeof AuthenticatedCarsNewRoute
   '/_authenticated/companies/new': typeof AuthenticatedCompaniesNewRoute
@@ -556,6 +592,7 @@ export interface FileRoutesById {
   '/_authenticated/expenses/': typeof AuthenticatedExpensesIndexRoute
   '/_authenticated/help-center/': typeof AuthenticatedHelpCenterIndexRoute
   '/_authenticated/inspections/': typeof AuthenticatedInspectionsIndexRoute
+  '/_authenticated/partners/': typeof AuthenticatedPartnersIndexRoute
   '/_authenticated/parts/': typeof AuthenticatedPartsIndexRoute
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
   '/_authenticated/tasks/': typeof AuthenticatedTasksIndexRoute
@@ -569,6 +606,7 @@ export interface FileRoutesById {
   '/_authenticated/companies/$companyId/': typeof AuthenticatedCompaniesCompanyIdIndexRoute
   '/_authenticated/expenses/$expenseId/': typeof AuthenticatedExpensesExpenseIdIndexRoute
   '/_authenticated/inspections/$inspectionId/': typeof AuthenticatedInspectionsInspectionIdIndexRoute
+  '/_authenticated/partners/$partnerId/': typeof AuthenticatedPartnersPartnerIdIndexRoute
   '/_authenticated/parts/$partId/': typeof AuthenticatedPartsPartIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -580,6 +618,7 @@ export interface FileRouteTypes {
     | '/companies'
     | '/expenses'
     | '/inspections'
+    | '/partners'
     | '/parts'
     | '/settings'
     | '/forgot-password'
@@ -596,6 +635,7 @@ export interface FileRouteTypes {
     | '/companies/$companyId'
     | '/expenses/$expenseId'
     | '/inspections/$inspectionId'
+    | '/partners/$partnerId'
     | '/parts/$partId'
     | '/cars/new'
     | '/companies/new'
@@ -617,6 +657,7 @@ export interface FileRouteTypes {
     | '/expenses/'
     | '/help-center/'
     | '/inspections/'
+    | '/partners/'
     | '/parts/'
     | '/settings/'
     | '/tasks/'
@@ -630,6 +671,7 @@ export interface FileRouteTypes {
     | '/companies/$companyId/'
     | '/expenses/$expenseId/'
     | '/inspections/$inspectionId/'
+    | '/partners/$partnerId/'
     | '/parts/$partId/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -665,6 +707,7 @@ export interface FileRouteTypes {
     | '/expenses'
     | '/help-center'
     | '/inspections'
+    | '/partners'
     | '/parts'
     | '/settings'
     | '/tasks'
@@ -678,6 +721,7 @@ export interface FileRouteTypes {
     | '/companies/$companyId'
     | '/expenses/$expenseId'
     | '/inspections/$inspectionId'
+    | '/partners/$partnerId'
     | '/parts/$partId'
   id:
     | '__root__'
@@ -687,6 +731,7 @@ export interface FileRouteTypes {
     | '/_authenticated/companies'
     | '/_authenticated/expenses'
     | '/_authenticated/inspections'
+    | '/_authenticated/partners'
     | '/_authenticated/parts'
     | '/_authenticated/settings'
     | '/clerk/(auth)'
@@ -706,6 +751,7 @@ export interface FileRouteTypes {
     | '/_authenticated/companies/$companyId'
     | '/_authenticated/expenses/$expenseId'
     | '/_authenticated/inspections/$inspectionId'
+    | '/_authenticated/partners/$partnerId'
     | '/_authenticated/parts/$partId'
     | '/_authenticated/cars/new'
     | '/_authenticated/companies/new'
@@ -727,6 +773,7 @@ export interface FileRouteTypes {
     | '/_authenticated/expenses/'
     | '/_authenticated/help-center/'
     | '/_authenticated/inspections/'
+    | '/_authenticated/partners/'
     | '/_authenticated/parts/'
     | '/_authenticated/settings/'
     | '/_authenticated/tasks/'
@@ -740,6 +787,7 @@ export interface FileRouteTypes {
     | '/_authenticated/companies/$companyId/'
     | '/_authenticated/expenses/$expenseId/'
     | '/_authenticated/inspections/$inspectionId/'
+    | '/_authenticated/partners/$partnerId/'
     | '/_authenticated/parts/$partId/'
   fileRoutesById: FileRoutesById
 }
@@ -879,6 +927,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPartsRouteRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/partners': {
+      id: '/_authenticated/partners'
+      path: '/partners'
+      fullPath: '/partners'
+      preLoaderRoute: typeof AuthenticatedPartnersRouteRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/inspections': {
       id: '/_authenticated/inspections'
       path: '/inspections'
@@ -934,6 +989,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/parts/'
       preLoaderRoute: typeof AuthenticatedPartsIndexRouteImport
       parentRoute: typeof AuthenticatedPartsRouteRoute
+    }
+    '/_authenticated/partners/': {
+      id: '/_authenticated/partners/'
+      path: '/'
+      fullPath: '/partners/'
+      preLoaderRoute: typeof AuthenticatedPartnersIndexRouteImport
+      parentRoute: typeof AuthenticatedPartnersRouteRoute
     }
     '/_authenticated/inspections/': {
       id: '/_authenticated/inspections/'
@@ -1082,6 +1144,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPartsPartIdRouteRouteImport
       parentRoute: typeof AuthenticatedPartsRouteRoute
     }
+    '/_authenticated/partners/$partnerId': {
+      id: '/_authenticated/partners/$partnerId'
+      path: '/$partnerId'
+      fullPath: '/partners/$partnerId'
+      preLoaderRoute: typeof AuthenticatedPartnersPartnerIdRouteRouteImport
+      parentRoute: typeof AuthenticatedPartnersRouteRoute
+    }
     '/_authenticated/inspections/$inspectionId': {
       id: '/_authenticated/inspections/$inspectionId'
       path: '/$inspectionId'
@@ -1116,6 +1185,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/parts/$partId/'
       preLoaderRoute: typeof AuthenticatedPartsPartIdIndexRouteImport
       parentRoute: typeof AuthenticatedPartsPartIdRouteRoute
+    }
+    '/_authenticated/partners/$partnerId/': {
+      id: '/_authenticated/partners/$partnerId/'
+      path: '/'
+      fullPath: '/partners/$partnerId/'
+      preLoaderRoute: typeof AuthenticatedPartnersPartnerIdIndexRouteImport
+      parentRoute: typeof AuthenticatedPartnersPartnerIdRouteRoute
     }
     '/_authenticated/inspections/$inspectionId/': {
       id: '/_authenticated/inspections/$inspectionId/'
@@ -1329,6 +1405,38 @@ const AuthenticatedInspectionsRouteRouteWithChildren =
     AuthenticatedInspectionsRouteRouteChildren,
   )
 
+interface AuthenticatedPartnersPartnerIdRouteRouteChildren {
+  AuthenticatedPartnersPartnerIdIndexRoute: typeof AuthenticatedPartnersPartnerIdIndexRoute
+}
+
+const AuthenticatedPartnersPartnerIdRouteRouteChildren: AuthenticatedPartnersPartnerIdRouteRouteChildren =
+  {
+    AuthenticatedPartnersPartnerIdIndexRoute:
+      AuthenticatedPartnersPartnerIdIndexRoute,
+  }
+
+const AuthenticatedPartnersPartnerIdRouteRouteWithChildren =
+  AuthenticatedPartnersPartnerIdRouteRoute._addFileChildren(
+    AuthenticatedPartnersPartnerIdRouteRouteChildren,
+  )
+
+interface AuthenticatedPartnersRouteRouteChildren {
+  AuthenticatedPartnersPartnerIdRouteRoute: typeof AuthenticatedPartnersPartnerIdRouteRouteWithChildren
+  AuthenticatedPartnersIndexRoute: typeof AuthenticatedPartnersIndexRoute
+}
+
+const AuthenticatedPartnersRouteRouteChildren: AuthenticatedPartnersRouteRouteChildren =
+  {
+    AuthenticatedPartnersPartnerIdRouteRoute:
+      AuthenticatedPartnersPartnerIdRouteRouteWithChildren,
+    AuthenticatedPartnersIndexRoute: AuthenticatedPartnersIndexRoute,
+  }
+
+const AuthenticatedPartnersRouteRouteWithChildren =
+  AuthenticatedPartnersRouteRoute._addFileChildren(
+    AuthenticatedPartnersRouteRouteChildren,
+  )
+
 interface AuthenticatedPartsPartIdRouteRouteChildren {
   AuthenticatedPartsPartIdEditRoute: typeof AuthenticatedPartsPartIdEditRoute
   AuthenticatedPartsPartIdIndexRoute: typeof AuthenticatedPartsPartIdIndexRoute
@@ -1392,6 +1500,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCompaniesRouteRoute: typeof AuthenticatedCompaniesRouteRouteWithChildren
   AuthenticatedExpensesRouteRoute: typeof AuthenticatedExpensesRouteRouteWithChildren
   AuthenticatedInspectionsRouteRoute: typeof AuthenticatedInspectionsRouteRouteWithChildren
+  AuthenticatedPartnersRouteRoute: typeof AuthenticatedPartnersRouteRouteWithChildren
   AuthenticatedPartsRouteRoute: typeof AuthenticatedPartsRouteRouteWithChildren
   AuthenticatedSettingsRouteRoute: typeof AuthenticatedSettingsRouteRouteWithChildren
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
@@ -1410,6 +1519,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedExpensesRouteRoute: AuthenticatedExpensesRouteRouteWithChildren,
   AuthenticatedInspectionsRouteRoute:
     AuthenticatedInspectionsRouteRouteWithChildren,
+  AuthenticatedPartnersRouteRoute: AuthenticatedPartnersRouteRouteWithChildren,
   AuthenticatedPartsRouteRoute: AuthenticatedPartsRouteRouteWithChildren,
   AuthenticatedSettingsRouteRoute: AuthenticatedSettingsRouteRouteWithChildren,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
