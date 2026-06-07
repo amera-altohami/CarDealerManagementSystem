@@ -70,6 +70,7 @@ export function getSidebarData(locale: Locale): SidebarData {
           },
           { title: t('expenses'), url: '/expenses', icon: ReceiptText },
           { title: t('reports'), url: '/reports', icon: FileText },
+          { title: t('notifications'), url: '/notifications', icon: Bell },
           { title: t('parts'), url: '/parts', icon: Package },
           { title: t('inspections'), url: '/inspections', icon: ShieldCheck },
           { title: t('companies'), url: '/companies', icon: Building2 },

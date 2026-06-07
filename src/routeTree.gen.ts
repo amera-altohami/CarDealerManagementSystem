@@ -38,6 +38,7 @@ import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authen
 import { Route as AuthenticatedReportsIndexRouteImport } from './routes/_authenticated/reports/index'
 import { Route as AuthenticatedPartsIndexRouteImport } from './routes/_authenticated/parts/index'
 import { Route as AuthenticatedPartnersIndexRouteImport } from './routes/_authenticated/partners/index'
+import { Route as AuthenticatedNotificationsIndexRouteImport } from './routes/_authenticated/notifications/index'
 import { Route as AuthenticatedInspectionsIndexRouteImport } from './routes/_authenticated/inspections/index'
 import { Route as AuthenticatedHelpCenterIndexRouteImport } from './routes/_authenticated/help-center/index'
 import { Route as AuthenticatedExpensesIndexRouteImport } from './routes/_authenticated/expenses/index'
@@ -230,6 +231,12 @@ const AuthenticatedPartnersIndexRoute =
     id: '/',
     path: '/',
     getParentRoute: () => AuthenticatedPartnersRouteRoute,
+  } as any)
+const AuthenticatedNotificationsIndexRoute =
+  AuthenticatedNotificationsIndexRouteImport.update({
+    id: '/notifications/',
+    path: '/notifications/',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedInspectionsIndexRoute =
   AuthenticatedInspectionsIndexRouteImport.update({
@@ -521,6 +528,7 @@ export interface FileRoutesByFullPath {
   '/expenses/': typeof AuthenticatedExpensesIndexRoute
   '/help-center/': typeof AuthenticatedHelpCenterIndexRoute
   '/inspections/': typeof AuthenticatedInspectionsIndexRoute
+  '/notifications/': typeof AuthenticatedNotificationsIndexRoute
   '/partners/': typeof AuthenticatedPartnersIndexRoute
   '/parts/': typeof AuthenticatedPartsIndexRoute
   '/reports/': typeof AuthenticatedReportsIndexRoute
@@ -576,6 +584,7 @@ export interface FileRoutesByTo {
   '/expenses': typeof AuthenticatedExpensesIndexRoute
   '/help-center': typeof AuthenticatedHelpCenterIndexRoute
   '/inspections': typeof AuthenticatedInspectionsIndexRoute
+  '/notifications': typeof AuthenticatedNotificationsIndexRoute
   '/partners': typeof AuthenticatedPartnersIndexRoute
   '/parts': typeof AuthenticatedPartsIndexRoute
   '/reports': typeof AuthenticatedReportsIndexRoute
@@ -649,6 +658,7 @@ export interface FileRoutesById {
   '/_authenticated/expenses/': typeof AuthenticatedExpensesIndexRoute
   '/_authenticated/help-center/': typeof AuthenticatedHelpCenterIndexRoute
   '/_authenticated/inspections/': typeof AuthenticatedInspectionsIndexRoute
+  '/_authenticated/notifications/': typeof AuthenticatedNotificationsIndexRoute
   '/_authenticated/partners/': typeof AuthenticatedPartnersIndexRoute
   '/_authenticated/parts/': typeof AuthenticatedPartsIndexRoute
   '/_authenticated/reports/': typeof AuthenticatedReportsIndexRoute
@@ -720,6 +730,7 @@ export interface FileRouteTypes {
     | '/expenses/'
     | '/help-center/'
     | '/inspections/'
+    | '/notifications/'
     | '/partners/'
     | '/parts/'
     | '/reports/'
@@ -775,6 +786,7 @@ export interface FileRouteTypes {
     | '/expenses'
     | '/help-center'
     | '/inspections'
+    | '/notifications'
     | '/partners'
     | '/parts'
     | '/reports'
@@ -847,6 +859,7 @@ export interface FileRouteTypes {
     | '/_authenticated/expenses/'
     | '/_authenticated/help-center/'
     | '/_authenticated/inspections/'
+    | '/_authenticated/notifications/'
     | '/_authenticated/partners/'
     | '/_authenticated/parts/'
     | '/_authenticated/reports/'
@@ -1085,6 +1098,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/partners/'
       preLoaderRoute: typeof AuthenticatedPartnersIndexRouteImport
       parentRoute: typeof AuthenticatedPartnersRouteRoute
+    }
+    '/_authenticated/notifications/': {
+      id: '/_authenticated/notifications/'
+      path: '/notifications'
+      fullPath: '/notifications/'
+      preLoaderRoute: typeof AuthenticatedNotificationsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/inspections/': {
       id: '/_authenticated/inspections/'
@@ -1648,6 +1668,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAppsIndexRoute: typeof AuthenticatedAppsIndexRoute
   AuthenticatedChatsIndexRoute: typeof AuthenticatedChatsIndexRoute
   AuthenticatedHelpCenterIndexRoute: typeof AuthenticatedHelpCenterIndexRoute
+  AuthenticatedNotificationsIndexRoute: typeof AuthenticatedNotificationsIndexRoute
   AuthenticatedTasksIndexRoute: typeof AuthenticatedTasksIndexRoute
   AuthenticatedUsersIndexRoute: typeof AuthenticatedUsersIndexRoute
 }
@@ -1668,6 +1689,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAppsIndexRoute: AuthenticatedAppsIndexRoute,
   AuthenticatedChatsIndexRoute: AuthenticatedChatsIndexRoute,
   AuthenticatedHelpCenterIndexRoute: AuthenticatedHelpCenterIndexRoute,
+  AuthenticatedNotificationsIndexRoute: AuthenticatedNotificationsIndexRoute,
   AuthenticatedTasksIndexRoute: AuthenticatedTasksIndexRoute,
   AuthenticatedUsersIndexRoute: AuthenticatedUsersIndexRoute,
 }
