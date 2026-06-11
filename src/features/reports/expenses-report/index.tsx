@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from '@tanstack/react-router'
+import { type ExpenseType } from '@/data/dealerOperationsMockData'
 import { ArrowLeft, ReceiptText, WalletCards } from 'lucide-react'
 import { getExpenseTypeLabel, useI18n } from '@/lib/i18n'
 import { Badge } from '@/components/ui/badge'
@@ -37,7 +38,7 @@ const initialFilters: ReportFilterValues = {
   status: 'all',
 }
 
-const expenseBadgeStyles: Record<string, string> = {
+const expenseBadgeStyles: Record<ExpenseType, string> = {
   Purchase: 'border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300',
   Shipping:
     'border-indigo-500/30 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300',
@@ -142,46 +143,14 @@ export function ExpensesReport() {
               value: formatCurrency(totalExpenses),
               icon: WalletCards,
             },
-            {
-              label: getExpenseTypeLabel('Purchase', locale),
+            ...reportExpenseTypes.map((expenseType) => ({
+              label: getExpenseTypeLabel(expenseType, locale),
               value: formatCurrency(
-                totalsByType.find((item) => item.expenseType === 'Purchase')
+                totalsByType.find((item) => item.expenseType === expenseType)
                   ?.amount ?? 0
               ),
               icon: ReceiptText,
-            },
-            {
-              label: getExpenseTypeLabel('Shipping', locale),
-              value: formatCurrency(
-                totalsByType.find((item) => item.expenseType === 'Shipping')
-                  ?.amount ?? 0
-              ),
-              icon: ReceiptText,
-            },
-            {
-              label: getExpenseTypeLabel('Repair', locale),
-              value: formatCurrency(
-                totalsByType.find((item) => item.expenseType === 'Repair')
-                  ?.amount ?? 0
-              ),
-              icon: ReceiptText,
-            },
-            {
-              label: getExpenseTypeLabel('Parts', locale),
-              value: formatCurrency(
-                totalsByType.find((item) => item.expenseType === 'Parts')
-                  ?.amount ?? 0
-              ),
-              icon: ReceiptText,
-            },
-            {
-              label: getExpenseTypeLabel('Inspection', locale),
-              value: formatCurrency(
-                totalsByType.find((item) => item.expenseType === 'Inspection')
-                  ?.amount ?? 0
-              ),
-              icon: ReceiptText,
-            },
+            })),
           ]}
         />
 

@@ -1,14 +1,17 @@
 import { carsMockData, type Car } from '@/data/carsMockData'
 
-export type ExpenseType =
-  | 'Purchase'
-  | 'Shipping'
-  | 'Repair'
-  | 'Parts'
-  | 'Labor'
-  | 'Inspection'
-  | 'Fees'
-  | 'Other'
+export const expenseTypeOptions = [
+  'Purchase',
+  'Shipping',
+  'Repair',
+  'Parts',
+  'Labor',
+  'Inspection',
+  'Fees',
+  'Other',
+] as const
+
+export type ExpenseType = (typeof expenseTypeOptions)[number]
 
 export type PaymentMethod = 'Zelle' | 'Cash' | 'Card'
 
@@ -419,7 +422,9 @@ export function getPartById(partId: string) {
 }
 
 export function getInspectionById(inspectionId: string) {
-  return inspectionsMockData.find((inspection) => inspection.id === inspectionId)
+  return inspectionsMockData.find(
+    (inspection) => inspection.id === inspectionId
+  )
 }
 
 export function getExpensesByCarId(carId: string) {
@@ -448,10 +453,14 @@ export function calculateCarExpenseSummary(carId: string) {
   }
 
   expenses.forEach((expense) => {
-    summary[expense.expenseType.toLowerCase() as keyof typeof summary] += expense.amount
+    summary[expense.expenseType.toLowerCase() as keyof typeof summary] +=
+      expense.amount
   })
 
-  const totalCost = Object.values(summary).reduce((sum, value) => sum + value, 0)
+  const totalCost = Object.values(summary).reduce(
+    (sum, value) => sum + value,
+    0
+  )
 
   return {
     ...summary,
@@ -459,22 +468,39 @@ export function calculateCarExpenseSummary(carId: string) {
   }
 }
 
-export function calculateCarProfit(car: Pick<Car, 'sellingPrice' | 'purchasePrice'> & { totalCost: number }) {
+export function calculateCarProfit(
+  car: Pick<Car, 'sellingPrice' | 'purchasePrice'> & { totalCost: number }
+) {
   return car.sellingPrice - car.totalCost
 }
 
 export function getDashboardTotals() {
-  const totalPurchasePrice = carsMockData.reduce((sum, car) => sum + car.purchasePrice, 0)
-  const totalSellingPrice = carsMockData.reduce((sum, car) => sum + car.sellingPrice, 0)
-  const totalExpenses = expensesMockData.reduce((sum, expense) => sum + expense.amount, 0)
+  const totalPurchasePrice = carsMockData.reduce(
+    (sum, car) => sum + car.purchasePrice,
+    0
+  )
+  const totalSellingPrice = carsMockData.reduce(
+    (sum, car) => sum + car.sellingPrice,
+    0
+  )
+  const totalExpenses = expensesMockData.reduce(
+    (sum, expense) => sum + expense.amount,
+    0
+  )
   const totalProfit = totalSellingPrice - totalExpenses
   const totalParts = partsMockData.length
   const installedParts = partsMockData.filter((part) => part.installed).length
   const pendingParts = totalParts - installedParts
-  const salvageCars = carsMockData.filter((car) => car.titleType === 'Salvage').length
+  const salvageCars = carsMockData.filter(
+    (car) => car.titleType === 'Salvage'
+  ).length
   const totalInspections = inspectionsMockData.length
-  const pendingInspections = inspectionsMockData.filter((inspection) => inspection.status === 'Pending').length
-  const failedInspections = inspectionsMockData.filter((inspection) => inspection.status === 'Failed').length
+  const pendingInspections = inspectionsMockData.filter(
+    (inspection) => inspection.status === 'Pending'
+  ).length
+  const failedInspections = inspectionsMockData.filter(
+    (inspection) => inspection.status === 'Failed'
+  ).length
 
   return {
     totalPurchasePrice,

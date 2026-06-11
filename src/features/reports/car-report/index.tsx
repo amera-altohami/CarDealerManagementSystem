@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react'
 import { Link } from '@tanstack/react-router'
+import { type ExpenseType } from '@/data/dealerOperationsMockData'
 import {
   ArrowLeft,
   CircleDollarSign,
   TrendingUp,
   WalletCards,
 } from 'lucide-react'
-import { useI18n } from '@/lib/i18n'
+import { getExpenseTypeLabel, useI18n } from '@/lib/i18n'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -29,11 +30,26 @@ import {
   formatNumber,
   getCarPartnerRows,
   getReportCarById,
+  reportExpenseTypes,
 } from '../data/reportsMockData'
 import {
   type CarPartnerReportRow,
   type ReportFilterValues,
 } from '../data/schema'
+
+const expenseTypeCostKeys: Record<
+  ExpenseType,
+  keyof NonNullable<ReturnType<typeof getReportCarById>>['costBreakdown']
+> = {
+  Purchase: 'purchase',
+  Shipping: 'shipping',
+  Repair: 'repair',
+  Parts: 'parts',
+  Labor: 'labor',
+  Inspection: 'inspection',
+  Fees: 'fees',
+  Other: 'other',
+}
 
 const initialFilters: ReportFilterValues = {
   startDate: '',
@@ -47,7 +63,7 @@ const initialFilters: ReportFilterValues = {
 }
 
 export function CarReport() {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const [filters, setFilters] = useState(initialFilters)
   const selectedCar = getReportCarById(filters.carId)
 
@@ -58,14 +74,10 @@ export function CarReport() {
 
   const costRows = selectedCar
     ? [
-        { label: t('purchase'), value: selectedCar.costBreakdown.purchase },
-        { label: t('shipping'), value: selectedCar.costBreakdown.shipping },
-        { label: t('inspection'), value: selectedCar.costBreakdown.inspection },
-        { label: t('repair'), value: selectedCar.costBreakdown.repair },
-        { label: t('partsCost'), value: selectedCar.costBreakdown.parts },
-        { label: t('labor'), value: selectedCar.costBreakdown.labor },
-        { label: t('fees'), value: selectedCar.costBreakdown.fees },
-        { label: t('other'), value: selectedCar.costBreakdown.other },
+        ...reportExpenseTypes.map((expenseType) => ({
+          label: getExpenseTypeLabel(expenseType, locale),
+          value: selectedCar.costBreakdown[expenseTypeCostKeys[expenseType]],
+        })),
         { label: t('totalCost'), value: selectedCar.totalCost },
       ]
     : []

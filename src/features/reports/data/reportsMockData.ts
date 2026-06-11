@@ -1,5 +1,6 @@
 import { carsMockData, formatCarName } from '@/data/carsMockData'
 import {
+  expenseTypeOptions,
   expensesMockData,
   type ExpenseType,
 } from '@/data/dealerOperationsMockData'
@@ -80,16 +81,7 @@ const extraReportExpenses: ExpenseReportRow[] = [
   },
 ]
 
-export const reportExpenseTypes: ExpenseType[] = [
-  'Purchase',
-  'Shipping',
-  'Repair',
-  'Parts',
-  'Labor',
-  'Inspection',
-  'Fees',
-  'Other',
-]
+export const reportExpenseTypes: ExpenseType[] = [...expenseTypeOptions]
 
 export const currencyFormatter = new Intl.NumberFormat('en-US', {
   style: 'currency',
