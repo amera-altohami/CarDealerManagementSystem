@@ -33,7 +33,6 @@ import { Route as AuthenticatedExpensesRouteRouteImport } from './routes/_authen
 import { Route as AuthenticatedCompaniesRouteRouteImport } from './routes/_authenticated/companies/route'
 import { Route as AuthenticatedCarsRouteRouteImport } from './routes/_authenticated/cars/route'
 import { Route as AuthenticatedUsersIndexRouteImport } from './routes/_authenticated/users/index'
-import { Route as AuthenticatedTasksIndexRouteImport } from './routes/_authenticated/tasks/index'
 import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings/index'
 import { Route as AuthenticatedReportsIndexRouteImport } from './routes/_authenticated/reports/index'
 import { Route as AuthenticatedPartsIndexRouteImport } from './routes/_authenticated/parts/index'
@@ -43,9 +42,7 @@ import { Route as AuthenticatedInspectionsIndexRouteImport } from './routes/_aut
 import { Route as AuthenticatedHelpCenterIndexRouteImport } from './routes/_authenticated/help-center/index'
 import { Route as AuthenticatedExpensesIndexRouteImport } from './routes/_authenticated/expenses/index'
 import { Route as AuthenticatedCompaniesIndexRouteImport } from './routes/_authenticated/companies/index'
-import { Route as AuthenticatedChatsIndexRouteImport } from './routes/_authenticated/chats/index'
 import { Route as AuthenticatedCarsIndexRouteImport } from './routes/_authenticated/cars/index'
-import { Route as AuthenticatedAppsIndexRouteImport } from './routes/_authenticated/apps/index'
 import { Route as AuthenticatedActivityLogsIndexRouteImport } from './routes/_authenticated/activity-logs/index'
 import { Route as ClerkAuthenticatedUserManagementRouteImport } from './routes/clerk/_authenticated/user-management'
 import { Route as ClerkauthSignUpRouteImport } from './routes/clerk/(auth)/sign-up'
@@ -205,11 +202,6 @@ const AuthenticatedUsersIndexRoute = AuthenticatedUsersIndexRouteImport.update({
   path: '/users/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedTasksIndexRoute = AuthenticatedTasksIndexRouteImport.update({
-  id: '/tasks/',
-  path: '/tasks/',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedSettingsIndexRoute =
   AuthenticatedSettingsIndexRouteImport.update({
     id: '/',
@@ -263,20 +255,10 @@ const AuthenticatedCompaniesIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedCompaniesRouteRoute,
   } as any)
-const AuthenticatedChatsIndexRoute = AuthenticatedChatsIndexRouteImport.update({
-  id: '/chats/',
-  path: '/chats/',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedCarsIndexRoute = AuthenticatedCarsIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AuthenticatedCarsRouteRoute,
-} as any)
-const AuthenticatedAppsIndexRoute = AuthenticatedAppsIndexRouteImport.update({
-  id: '/apps/',
-  path: '/apps/',
-  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedActivityLogsIndexRoute =
   AuthenticatedActivityLogsIndexRouteImport.update({
@@ -529,9 +511,7 @@ export interface FileRoutesByFullPath {
   '/clerk/sign-up': typeof ClerkauthSignUpRoute
   '/clerk/user-management': typeof ClerkAuthenticatedUserManagementRoute
   '/activity-logs/': typeof AuthenticatedActivityLogsIndexRoute
-  '/apps/': typeof AuthenticatedAppsIndexRoute
   '/cars/': typeof AuthenticatedCarsIndexRoute
-  '/chats/': typeof AuthenticatedChatsIndexRoute
   '/companies/': typeof AuthenticatedCompaniesIndexRoute
   '/expenses/': typeof AuthenticatedExpensesIndexRoute
   '/help-center/': typeof AuthenticatedHelpCenterIndexRoute
@@ -541,7 +521,6 @@ export interface FileRoutesByFullPath {
   '/parts/': typeof AuthenticatedPartsIndexRoute
   '/reports/': typeof AuthenticatedReportsIndexRoute
   '/settings/': typeof AuthenticatedSettingsIndexRoute
-  '/tasks/': typeof AuthenticatedTasksIndexRoute
   '/users/': typeof AuthenticatedUsersIndexRoute
   '/cars/$carId/edit': typeof AuthenticatedCarsCarIdEditRoute
   '/companies/$companyId/edit': typeof AuthenticatedCompaniesCompanyIdEditRoute
@@ -586,9 +565,7 @@ export interface FileRoutesByTo {
   '/clerk/sign-up': typeof ClerkauthSignUpRoute
   '/clerk/user-management': typeof ClerkAuthenticatedUserManagementRoute
   '/activity-logs': typeof AuthenticatedActivityLogsIndexRoute
-  '/apps': typeof AuthenticatedAppsIndexRoute
   '/cars': typeof AuthenticatedCarsIndexRoute
-  '/chats': typeof AuthenticatedChatsIndexRoute
   '/companies': typeof AuthenticatedCompaniesIndexRoute
   '/expenses': typeof AuthenticatedExpensesIndexRoute
   '/help-center': typeof AuthenticatedHelpCenterIndexRoute
@@ -598,7 +575,6 @@ export interface FileRoutesByTo {
   '/parts': typeof AuthenticatedPartsIndexRoute
   '/reports': typeof AuthenticatedReportsIndexRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
-  '/tasks': typeof AuthenticatedTasksIndexRoute
   '/users': typeof AuthenticatedUsersIndexRoute
   '/cars/$carId/edit': typeof AuthenticatedCarsCarIdEditRoute
   '/companies/$companyId/edit': typeof AuthenticatedCompaniesCompanyIdEditRoute
@@ -661,9 +637,7 @@ export interface FileRoutesById {
   '/clerk/(auth)/sign-up': typeof ClerkauthSignUpRoute
   '/clerk/_authenticated/user-management': typeof ClerkAuthenticatedUserManagementRoute
   '/_authenticated/activity-logs/': typeof AuthenticatedActivityLogsIndexRoute
-  '/_authenticated/apps/': typeof AuthenticatedAppsIndexRoute
   '/_authenticated/cars/': typeof AuthenticatedCarsIndexRoute
-  '/_authenticated/chats/': typeof AuthenticatedChatsIndexRoute
   '/_authenticated/companies/': typeof AuthenticatedCompaniesIndexRoute
   '/_authenticated/expenses/': typeof AuthenticatedExpensesIndexRoute
   '/_authenticated/help-center/': typeof AuthenticatedHelpCenterIndexRoute
@@ -673,7 +647,6 @@ export interface FileRoutesById {
   '/_authenticated/parts/': typeof AuthenticatedPartsIndexRoute
   '/_authenticated/reports/': typeof AuthenticatedReportsIndexRoute
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
-  '/_authenticated/tasks/': typeof AuthenticatedTasksIndexRoute
   '/_authenticated/users/': typeof AuthenticatedUsersIndexRoute
   '/_authenticated/cars/$carId/edit': typeof AuthenticatedCarsCarIdEditRoute
   '/_authenticated/companies/$companyId/edit': typeof AuthenticatedCompaniesCompanyIdEditRoute
@@ -734,9 +707,7 @@ export interface FileRouteTypes {
     | '/clerk/sign-up'
     | '/clerk/user-management'
     | '/activity-logs/'
-    | '/apps/'
     | '/cars/'
-    | '/chats/'
     | '/companies/'
     | '/expenses/'
     | '/help-center/'
@@ -746,7 +717,6 @@ export interface FileRouteTypes {
     | '/parts/'
     | '/reports/'
     | '/settings/'
-    | '/tasks/'
     | '/users/'
     | '/cars/$carId/edit'
     | '/companies/$companyId/edit'
@@ -791,9 +761,7 @@ export interface FileRouteTypes {
     | '/clerk/sign-up'
     | '/clerk/user-management'
     | '/activity-logs'
-    | '/apps'
     | '/cars'
-    | '/chats'
     | '/companies'
     | '/expenses'
     | '/help-center'
@@ -803,7 +771,6 @@ export interface FileRouteTypes {
     | '/parts'
     | '/reports'
     | '/settings'
-    | '/tasks'
     | '/users'
     | '/cars/$carId/edit'
     | '/companies/$companyId/edit'
@@ -865,9 +832,7 @@ export interface FileRouteTypes {
     | '/clerk/(auth)/sign-up'
     | '/clerk/_authenticated/user-management'
     | '/_authenticated/activity-logs/'
-    | '/_authenticated/apps/'
     | '/_authenticated/cars/'
-    | '/_authenticated/chats/'
     | '/_authenticated/companies/'
     | '/_authenticated/expenses/'
     | '/_authenticated/help-center/'
@@ -877,7 +842,6 @@ export interface FileRouteTypes {
     | '/_authenticated/parts/'
     | '/_authenticated/reports/'
     | '/_authenticated/settings/'
-    | '/_authenticated/tasks/'
     | '/_authenticated/users/'
     | '/_authenticated/cars/$carId/edit'
     | '/_authenticated/companies/$companyId/edit'
@@ -1077,13 +1041,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedUsersIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/tasks/': {
-      id: '/_authenticated/tasks/'
-      path: '/tasks'
-      fullPath: '/tasks/'
-      preLoaderRoute: typeof AuthenticatedTasksIndexRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/settings/': {
       id: '/_authenticated/settings/'
       path: '/'
@@ -1147,26 +1104,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCompaniesIndexRouteImport
       parentRoute: typeof AuthenticatedCompaniesRouteRoute
     }
-    '/_authenticated/chats/': {
-      id: '/_authenticated/chats/'
-      path: '/chats'
-      fullPath: '/chats/'
-      preLoaderRoute: typeof AuthenticatedChatsIndexRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/cars/': {
       id: '/_authenticated/cars/'
       path: '/'
       fullPath: '/cars/'
       preLoaderRoute: typeof AuthenticatedCarsIndexRouteImport
       parentRoute: typeof AuthenticatedCarsRouteRoute
-    }
-    '/_authenticated/apps/': {
-      id: '/_authenticated/apps/'
-      path: '/apps'
-      fullPath: '/apps/'
-      preLoaderRoute: typeof AuthenticatedAppsIndexRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/activity-logs/': {
       id: '/_authenticated/activity-logs/'
@@ -1686,11 +1629,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedErrorsErrorRoute: typeof AuthenticatedErrorsErrorRoute
   AuthenticatedActivityLogsIndexRoute: typeof AuthenticatedActivityLogsIndexRoute
-  AuthenticatedAppsIndexRoute: typeof AuthenticatedAppsIndexRoute
-  AuthenticatedChatsIndexRoute: typeof AuthenticatedChatsIndexRoute
   AuthenticatedHelpCenterIndexRoute: typeof AuthenticatedHelpCenterIndexRoute
   AuthenticatedNotificationsIndexRoute: typeof AuthenticatedNotificationsIndexRoute
-  AuthenticatedTasksIndexRoute: typeof AuthenticatedTasksIndexRoute
   AuthenticatedUsersIndexRoute: typeof AuthenticatedUsersIndexRoute
 }
 
@@ -1708,11 +1648,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedErrorsErrorRoute: AuthenticatedErrorsErrorRoute,
   AuthenticatedActivityLogsIndexRoute: AuthenticatedActivityLogsIndexRoute,
-  AuthenticatedAppsIndexRoute: AuthenticatedAppsIndexRoute,
-  AuthenticatedChatsIndexRoute: AuthenticatedChatsIndexRoute,
   AuthenticatedHelpCenterIndexRoute: AuthenticatedHelpCenterIndexRoute,
   AuthenticatedNotificationsIndexRoute: AuthenticatedNotificationsIndexRoute,
-  AuthenticatedTasksIndexRoute: AuthenticatedTasksIndexRoute,
   AuthenticatedUsersIndexRoute: AuthenticatedUsersIndexRoute,
 }
 
