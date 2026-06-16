@@ -5,7 +5,9 @@ import { Main } from '@/components/layout/main'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
-import { getCompanyById } from '@/data/dealerOperationsMockData'
+import { Skeleton } from '@/components/ui/skeleton'
+import { getFirestoreErrorMessage } from '@/lib/firebase-errors'
+import { useCompanyQuery, useUpdateCompanyMutation } from '../hooks/use-companies'
 import { CompanyForm } from '../components/company-form'
 import { useI18n } from '@/lib/i18n'
 
@@ -15,8 +17,42 @@ type CompanyEditProps = {
 
 export function CompanyEdit({ companyId }: CompanyEditProps) {
   const navigate = useNavigate()
-  const company = getCompanyById(companyId)
   const { t } = useI18n()
+  const companyQuery = useCompanyQuery(companyId)
+  const updateCompanyMutation = useUpdateCompanyMutation()
+
+  if (companyQuery.isLoading) {
+    return (
+      <>
+        <Header fixed>
+          <Search className='me-auto' />
+          <ThemeSwitch />
+          <ConfigDrawer />
+          <ProfileDropdown />
+        </Header>
+        <Main className='flex flex-1 flex-col gap-4 sm:gap-6'>
+          <div className='space-y-1'>
+            <Skeleton className='h-8 w-56' />
+            <Skeleton className='h-4 w-72' />
+          </div>
+          <Skeleton className='h-96 w-full rounded-lg' />
+        </Main>
+      </>
+    )
+  }
+
+  if (companyQuery.isError) {
+    return (
+      <Main className='flex flex-1 items-center justify-center'>
+        <div className='rounded-lg border p-6 text-center'>
+          <h1 className='text-lg font-semibold'>{t('companyNotFound')}</h1>
+          <p className='mt-2 text-sm text-destructive'>{getFirestoreErrorMessage(companyQuery.error)}</p>
+        </div>
+      </Main>
+    )
+  }
+
+  const company = companyQuery.data
 
   if (!company) {
     return (
@@ -49,10 +85,17 @@ export function CompanyEdit({ companyId }: CompanyEditProps) {
             phoneNumber: company.phoneNumber,
             address: company.address,
             email: company.email ?? '',
+            notes: company.notes ?? '',
           }}
           submitLabel={t('saveChanges')}
           cancelHref='/companies'
-          onSubmit={() => navigate({ to: '/companies' })}
+          onSubmit={async (values) => {
+            await updateCompanyMutation.mutateAsync({
+              id: companyId,
+              data: values,
+            })
+            navigate({ to: '/companies' })
+          }}
         />
       </Main>
     </>

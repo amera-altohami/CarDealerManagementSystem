@@ -1,14 +1,7 @@
 import { z } from 'zod'
-import type { CompanyType } from '@/data/dealerOperationsMockData'
+import { companyTypes } from '../model'
 
-export const companyTypes: CompanyType[] = [
-  'Auction',
-  'Shipping',
-  'Repair Shop',
-  'Parts Store',
-  'DMV/BMV',
-  'Inspection Center',
-]
+export { companyTypes } from '../model'
 
 export const companyFormSchema = z.object({
   name: z.string().min(2, 'Please enter a company name.'),

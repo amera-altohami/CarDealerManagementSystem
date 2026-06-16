@@ -156,7 +156,9 @@ export function CompanyForm({
           )}
         />
         <div className='flex flex-wrap items-center gap-3'>
-          <Button type='submit'>{submitLabel}</Button>
+          <Button type='submit' disabled={form.formState.isSubmitting}>
+            {submitLabel}
+          </Button>
           <Button asChild variant='outline'>
             <Link to={cancelHref}>{t('cancel')}</Link>
           </Button>

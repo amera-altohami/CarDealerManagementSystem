@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Link } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import { Search, Plus } from 'lucide-react'
 import { ConfigDrawer } from '@/components/config-drawer'
 import { Header } from '@/components/layout/header'
@@ -12,32 +12,37 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-import { companiesMockData, type CompanyType } from '@/data/dealerOperationsMockData'
+import { Skeleton } from '@/components/ui/skeleton'
+import { getFirestoreErrorMessage } from '@/lib/firebase-errors'
 import { getCompanyTypeLabel, useI18n } from '@/lib/i18n'
+import { useCompaniesQuery } from './hooks/use-companies'
+import { companyTypes, type CompanyType } from './model'
 
-const companyTypes: Array<'all' | CompanyType> = [
-  'all',
-  'Auction',
-  'Shipping',
-  'Repair Shop',
-  'Parts Store',
-  'DMV/BMV',
-  'Inspection Center',
-]
+const filterCompanyTypes: Array<'all' | CompanyType> = ['all', ...companyTypes]
 
 export function CompaniesManagement() {
   const { t, locale } = useI18n()
+  const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [type, setType] = useState<'all' | CompanyType>('all')
+  const companiesQuery = useCompaniesQuery()
+
   const filteredCompanies = useMemo(() => {
     const query = search.trim().toLowerCase()
+    const companies = companiesQuery.data ?? []
 
-    return companiesMockData.filter((company) => {
+    return companies.filter((company) => {
       const matchesSearch = !query || [company.name, company.phoneNumber, company.address].join(' ').toLowerCase().includes(query)
       const matchesType = type === 'all' || company.type === type
       return matchesSearch && matchesType
     })
-  }, [search, type])
+  }, [companiesQuery.data, search, type])
+
+  const companies = companiesQuery.data ?? []
+  const totalCompanies = companies.length
+  const auctionCompanies = companies.filter((company) => company.type === 'Auction').length
+  const shippingCompanies = companies.filter((company) => company.type === 'Shipping').length
+  const inspectionCompanies = companies.filter((company) => company.type === 'Inspection Center').length
 
   return (
     <>
@@ -62,10 +67,21 @@ export function CompaniesManagement() {
         </div>
 
         <div className='grid gap-4 sm:grid-cols-2 xl:grid-cols-4'>
-          <SummaryCard label={t('companies')} value={String(companiesMockData.length)} />
-          <SummaryCard label={getCompanyTypeLabel('Auction', locale)} value={String(companiesMockData.filter((company) => company.type === 'Auction').length)} />
-          <SummaryCard label={getCompanyTypeLabel('Shipping', locale)} value={String(companiesMockData.filter((company) => company.type === 'Shipping').length)} />
-          <SummaryCard label={getCompanyTypeLabel('Inspection Center', locale)} value={String(companiesMockData.filter((company) => company.type === 'Inspection Center').length)} />
+          {companiesQuery.isLoading ? (
+            <>
+              <SummarySkeleton />
+              <SummarySkeleton />
+              <SummarySkeleton />
+              <SummarySkeleton />
+            </>
+          ) : (
+            <>
+              <SummaryCard label={t('companies')} value={String(totalCompanies)} />
+              <SummaryCard label={getCompanyTypeLabel('Auction', locale)} value={String(auctionCompanies)} />
+              <SummaryCard label={getCompanyTypeLabel('Shipping', locale)} value={String(shippingCompanies)} />
+              <SummaryCard label={getCompanyTypeLabel('Inspection Center', locale)} value={String(inspectionCompanies)} />
+            </>
+          )}
         </div>
 
         <Card className='border-border/60'>
@@ -78,7 +94,7 @@ export function CompaniesManagement() {
                   <SelectValue placeholder={t('filterCompaniesByType')} />
                 </SelectTrigger>
                 <SelectContent>
-                  {companyTypes.map((item) => (
+                  {filterCompanyTypes.map((item) => (
                     <SelectItem key={item} value={item}>
                       {item === 'all' ? t('allTypes') : getCompanyTypeLabel(item, locale)}
                     </SelectItem>
@@ -100,9 +116,42 @@ export function CompaniesManagement() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredCompanies.length ? (
+                  {companiesQuery.isLoading ? (
+                    <>
+                      <TableRow>
+                        <TableCell colSpan={5}>
+                          <Skeleton className='h-4 w-full' />
+                        </TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell colSpan={5}>
+                          <Skeleton className='h-4 w-5/6' />
+                        </TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell colSpan={5}>
+                          <Skeleton className='h-4 w-2/3' />
+                        </TableCell>
+                      </TableRow>
+                    </>
+                  ) : companiesQuery.isError ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className='h-24 text-center text-destructive'>
+                        {getFirestoreErrorMessage(companiesQuery.error)}
+                      </TableCell>
+                    </TableRow>
+                  ) : filteredCompanies.length ? (
                     filteredCompanies.map((company) => (
-                      <TableRow key={company.id}>
+                      <TableRow
+                        key={company.id}
+                        className='cursor-pointer'
+                        onDoubleClick={() =>
+                          navigate({
+                            to: '/companies/$companyId',
+                            params: { companyId: company.id },
+                          })
+                        }
+                      >
                         <TableCell className='font-medium'>{company.name}</TableCell>
                         <TableCell><Badge variant='outline'>{getCompanyTypeLabel(company.type, locale)}</Badge></TableCell>
                         <TableCell>{company.phoneNumber}</TableCell>
@@ -138,6 +187,17 @@ function SummaryCard({ label, value }: { label: string; value: string }) {
       <CardContent className='p-4'>
         <p className='text-sm text-muted-foreground'>{label}</p>
         <p className='mt-2 text-2xl font-bold tracking-tight'>{value}</p>
+      </CardContent>
+    </Card>
+  )
+}
+
+function SummarySkeleton() {
+  return (
+    <Card className='border-border/60'>
+      <CardContent className='p-4'>
+        <Skeleton className='h-4 w-24' />
+        <Skeleton className='mt-2 h-8 w-16' />
       </CardContent>
     </Card>
   )
