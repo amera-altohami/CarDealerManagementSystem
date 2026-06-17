@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { useForm, type Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { formatCarName, type Car } from '@/data/carsMockData'
+import { formatCarName, type Car } from '@/services/carsService'
 import { useI18n, type MessageKey } from '@/lib/i18n'
 import { Button } from '@/components/ui/button'
 import {
