@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { useForm, type Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { formatCarName, type Car } from '@/data/carsMockData'
+import { formatCarName, type Car } from '@/services/carsService'
 import { useI18n, type MessageKey } from '@/lib/i18n'
 import { Button } from '@/components/ui/button'
 import {
@@ -42,7 +42,7 @@ type ContributionFormProps = {
   partners: Partner[]
   cars: Car[]
   defaultValues?: Partial<ContributionFormValues>
-  onSubmit: (values: ContributionFormValues) => void
+  onSubmit: (values: ContributionFormValues) => void | Promise<void>
 }
 
 const defaults: ContributionFormValues = {
@@ -99,8 +99,8 @@ export function ContributionForm({
           <form
             id='contribution-form'
             className='space-y-4'
-            onSubmit={form.handleSubmit((values) => {
-              onSubmit(values)
+            onSubmit={form.handleSubmit(async (values) => {
+              await onSubmit(values)
               form.reset(defaults)
             })}
           >
@@ -234,7 +234,11 @@ export function ContributionForm({
           >
             {t('cancel')}
           </Button>
-          <Button type='submit' form='contribution-form'>
+          <Button
+            type='submit'
+            form='contribution-form'
+            disabled={form.formState.isSubmitting}
+          >
             {t('addContribution')}
           </Button>
         </DialogFooter>

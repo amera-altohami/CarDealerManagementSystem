@@ -41,6 +41,7 @@ import { partnerStatusOptions, type Partner } from '../data/schema'
 
 type PartnersTableProps = {
   data: Partner[]
+  isLoading?: boolean
   onEdit: (partner: Partner) => void
   onDelete: (partner: Partner) => void
   onToggleStatus: (partner: Partner) => void
@@ -75,6 +76,7 @@ function matchesPercentageRange(percentage: number, filter: PercentageFilter) {
 
 export function PartnersTable({
   data,
+  isLoading = false,
   onEdit,
   onDelete,
   onToggleStatus,
@@ -173,7 +175,13 @@ export function PartnersTable({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredRows.length ? (
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={9} className='h-24 text-center'>
+                    Loading...
+                  </TableCell>
+                </TableRow>
+              ) : filteredRows.length ? (
                 filteredRows.map((partner) => (
                   <TableRow key={partner.id}>
                     <TableCell>
@@ -185,9 +193,6 @@ export function PartnersTable({
                         </Avatar>
                         <div className='min-w-0'>
                           <p className='truncate font-medium'>{partner.name}</p>
-                          <p className='text-xs text-muted-foreground'>
-                            {partner.id}
-                          </p>
                         </div>
                       </div>
                     </TableCell>

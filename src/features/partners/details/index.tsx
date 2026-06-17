@@ -1,5 +1,6 @@
+import { useEffect, useMemo } from 'react'
 import { Link } from '@tanstack/react-router'
-import { carsMockData } from '@/data/carsMockData'
+import type { Car } from '@/services/carsService'
 import {
   ArrowLeft,
   CircleDollarSign,
@@ -8,6 +9,7 @@ import {
   TrendingUp,
   UserRound,
 } from 'lucide-react'
+import { toast } from 'sonner'
 import { useI18n, type MessageKey } from '@/lib/i18n'
 import { getDisplayNameInitials, cn } from '@/lib/utils'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -32,12 +34,17 @@ import { ThemeSwitch } from '@/components/theme-switch'
 import { ContributionsTable } from '../components/contributions-table'
 import { ProfitShareTable } from '../components/profit-share-table'
 import {
-  getPartnerById,
-  getPartnerContributions,
-  getPartnerProfitShares,
-  partnersMockData,
-} from '../data/partnersMockData'
-import { type Partner } from '../data/schema'
+  type Partner,
+  type PartnerContribution,
+  type ProfitShare,
+} from '../data/schema'
+import {
+  useContributionsByPartnerQuery,
+  usePartnerCarsQuery,
+  usePartnerQuery,
+  usePartnersQuery,
+  useProfitSharesByPartnerQuery,
+} from '../hooks/use-partners'
 
 type PartnerDetailsProps = {
   partnerId: string
@@ -61,11 +68,121 @@ const statusLabelKeys: Record<Partner['status'], MessageKey> = {
   Inactive: 'inactiveStatus',
 }
 
+function getCarInvestmentBase(car?: Car) {
+  return car?.purchasePrice ?? 0
+}
+
+function calculatePartnerTotals(
+  partnerId: string,
+  contributions: PartnerContribution[],
+  profitShares: ProfitShare[],
+  cars: Car[]
+) {
+  const carMap = new Map(cars.map((car) => [car.id, car]))
+  const partnerContributions = contributions.filter(
+    (contribution) => contribution.partnerId === partnerId
+  )
+  const partnerProfitShares = profitShares.filter(
+    (profitShare) => profitShare.partnerId === partnerId
+  )
+  const totalContribution = partnerContributions.reduce(
+    (sum, contribution) => sum + contribution.contributionAmount,
+    0
+  )
+  const totalInvestmentBase = partnerContributions.reduce(
+    (sum, contribution) =>
+      sum + getCarInvestmentBase(carMap.get(contribution.carId)),
+    0
+  )
+  const investmentPercentage =
+    totalInvestmentBase > 0
+      ? Number(((totalContribution / totalInvestmentBase) * 100).toFixed(2))
+      : 0
+  const totalProfit = partnerProfitShares.reduce(
+    (sum, profitShare) =>
+      profitShare.partnerProfitShare > 0
+        ? sum + profitShare.partnerProfitShare
+        : sum,
+    0
+  )
+  const totalLoss = partnerProfitShares.reduce(
+    (sum, profitShare) =>
+      profitShare.partnerProfitShare < 0
+        ? sum + Math.abs(profitShare.partnerProfitShare)
+        : sum,
+    0
+  )
+
+  return {
+    investmentPercentage,
+    totalContribution,
+    totalProfit,
+    totalLoss,
+    finalBalance: totalContribution + totalProfit - totalLoss,
+  }
+}
+
 export function PartnerDetails({ partnerId }: PartnerDetailsProps) {
   const { t } = useI18n()
-  const partner = getPartnerById(partnerId)
+  const partnerQuery = usePartnerQuery(partnerId)
+  const partnersQuery = usePartnersQuery()
+  const contributionsQuery = useContributionsByPartnerQuery(partnerId)
+  const profitSharesQuery = useProfitSharesByPartnerQuery(partnerId)
+  const carsQuery = usePartnerCarsQuery()
+  const partner = partnerQuery.data
+  const contributions = contributionsQuery.data ?? []
+  const profitShares = profitSharesQuery.data ?? []
+  const cars = carsQuery.data ?? []
 
-  if (!partner) {
+  useEffect(() => {
+    if (partnerQuery.isError) toast.error('Failed to load partners.')
+  }, [partnerQuery.isError])
+
+  useEffect(() => {
+    if (contributionsQuery.isError) {
+      toast.error('Failed to load contributions.')
+    }
+  }, [contributionsQuery.isError])
+
+  useEffect(() => {
+    if (profitSharesQuery.isError) {
+      toast.error('Failed to load profit shares.')
+    }
+  }, [profitSharesQuery.isError])
+
+  const partnerWithTotals = useMemo(() => {
+    if (!partner) return null
+
+    return {
+      ...partner,
+      ...calculatePartnerTotals(partner.id, contributions, profitShares, cars),
+    }
+  }, [cars, contributions, partner, profitShares])
+
+  if (partnerQuery.isLoading) {
+    return (
+      <>
+        <Header fixed>
+          <Search className='me-auto' />
+          <ThemeSwitch />
+          <ConfigDrawer />
+          <ProfileDropdown />
+        </Header>
+        <Main>
+          <Card className='border-border/60'>
+            <CardContent className='flex min-h-64 flex-col items-center justify-center gap-3 text-center'>
+              <UserRound className='h-10 w-10 text-muted-foreground' />
+              <div>
+                <h1 className='text-xl font-semibold'>Loading...</h1>
+              </div>
+            </CardContent>
+          </Card>
+        </Main>
+      </>
+    )
+  }
+
+  if (!partnerWithTotals) {
     return (
       <>
         <Header fixed>
@@ -96,8 +213,6 @@ export function PartnerDetails({ partnerId }: PartnerDetailsProps) {
     )
   }
 
-  const contributions = getPartnerContributions(partner.id)
-  const profitShares = getPartnerProfitShares(partner.id)
   const relatedCarIds = Array.from(
     new Set([
       ...contributions.map((contribution) => contribution.carId),
@@ -125,7 +240,7 @@ export function PartnerDetails({ partnerId }: PartnerDetailsProps) {
             </Button>
             <div>
               <h1 className='text-2xl font-bold tracking-tight md:text-3xl'>
-                {partner.name}
+                {partnerWithTotals.name}
               </h1>
               <p className='text-muted-foreground'>{t('partnerDetails')}</p>
             </div>
@@ -141,37 +256,48 @@ export function PartnerDetails({ partnerId }: PartnerDetailsProps) {
               <div className='flex items-center gap-3'>
                 <Avatar className='h-14 w-14 rounded-md'>
                   <AvatarFallback className='rounded-md bg-muted text-base font-semibold'>
-                    {getDisplayNameInitials(partner.name)}
+                    {getDisplayNameInitials(partnerWithTotals.name)}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <p className='font-semibold'>{partner.name}</p>
-                  <p className='text-sm text-muted-foreground'>{partner.id}</p>
+                  <p className='font-semibold'>{partnerWithTotals.name}</p>
+                  <p className='text-sm text-muted-foreground'>
+                    {partnerWithTotals.id}
+                  </p>
                 </div>
               </div>
               <div className='space-y-3 text-sm'>
-                <InfoRow label={t('email')} value={partner.email || '-'} />
-                <InfoRow label={t('phone')} value={partner.phone || '-'} />
+                <InfoRow
+                  label={t('email')}
+                  value={partnerWithTotals.email || '-'}
+                />
+                <InfoRow
+                  label={t('phone')}
+                  value={partnerWithTotals.phone || '-'}
+                />
                 <InfoRow
                   label={t('investmentPercentage')}
-                  value={`${partner.investmentPercentage}%`}
+                  value={`${partnerWithTotals.investmentPercentage}%`}
                 />
                 <InfoRow
                   label={t('status')}
                   value={
                     <Badge
                       variant='outline'
-                      className={statusStyles[partner.status]}
+                      className={statusStyles[partnerWithTotals.status]}
                     >
-                      {t(statusLabelKeys[partner.status])}
+                      {t(statusLabelKeys[partnerWithTotals.status])}
                     </Badge>
                   }
                 />
-                <InfoRow label={t('createdAt')} value={partner.createdAt} />
+                <InfoRow
+                  label={t('createdAt')}
+                  value={partnerWithTotals.createdAt}
+                />
               </div>
-              {partner.notes ? (
+              {partnerWithTotals.notes ? (
                 <p className='rounded-md border bg-muted/30 p-3 text-sm text-muted-foreground'>
-                  {partner.notes}
+                  {partnerWithTotals.notes}
                 </p>
               ) : null}
             </CardContent>
@@ -181,20 +307,20 @@ export function PartnerDetails({ partnerId }: PartnerDetailsProps) {
             <MetricCard
               icon={<HandCoins className='h-4 w-4' />}
               label={t('totalContribution')}
-              value={money.format(partner.totalContribution)}
+              value={money.format(partnerWithTotals.totalContribution)}
             />
             <MetricCard
               icon={<TrendingUp className='h-4 w-4' />}
               label={t('profit')}
-              value={money.format(partner.totalProfit)}
+              value={money.format(partnerWithTotals.totalProfit)}
               className='border-emerald-500/20 bg-emerald-500/5'
             />
             <MetricCard
               icon={<TrendingDown className='h-4 w-4' />}
               label={t('loss')}
               value={
-                partner.totalLoss > 0
-                  ? `-${money.format(partner.totalLoss)}`
+                partnerWithTotals.totalLoss > 0
+                  ? `-${money.format(partnerWithTotals.totalLoss)}`
                   : money.format(0)
               }
               className='border-red-500/20 bg-red-500/5'
@@ -202,7 +328,7 @@ export function PartnerDetails({ partnerId }: PartnerDetailsProps) {
             <MetricCard
               icon={<CircleDollarSign className='h-4 w-4' />}
               label={t('finalBalance')}
-              value={money.format(partner.finalBalance)}
+              value={money.format(partnerWithTotals.finalBalance)}
             />
           </div>
         </div>
@@ -220,7 +346,8 @@ export function PartnerDetails({ partnerId }: PartnerDetailsProps) {
           <TabsContent value='overview' className='grid gap-4 lg:grid-cols-2'>
             <ContributionsTable
               contributions={contributions.slice(0, 3)}
-              partners={partnersMockData}
+              isLoading={contributionsQuery.isLoading}
+              partners={partnersQuery.data ?? []}
               title={t('recentContributions')}
             />
             <ProfitShareTable
@@ -232,7 +359,8 @@ export function PartnerDetails({ partnerId }: PartnerDetailsProps) {
           <TabsContent value='contributions' className='space-y-4'>
             <ContributionsTable
               contributions={contributions}
-              partners={partnersMockData}
+              isLoading={contributionsQuery.isLoading}
+              partners={partnersQuery.data ?? []}
             />
           </TabsContent>
 
@@ -242,6 +370,7 @@ export function PartnerDetails({ partnerId }: PartnerDetailsProps) {
 
           <TabsContent value='related-cars' className='space-y-4'>
             <RelatedCarsTable
+              cars={cars}
               relatedCarIds={relatedCarIds}
               contributions={contributions}
               profitShares={profitShares}
@@ -289,13 +418,15 @@ function MetricCard({
 }
 
 function RelatedCarsTable({
+  cars,
   relatedCarIds,
   contributions,
   profitShares,
 }: {
+  cars: Car[]
   relatedCarIds: string[]
-  contributions: ReturnType<typeof getPartnerContributions>
-  profitShares: ReturnType<typeof getPartnerProfitShares>
+  contributions: PartnerContribution[]
+  profitShares: ProfitShare[]
 }) {
   const { t } = useI18n()
 
@@ -324,7 +455,7 @@ function RelatedCarsTable({
                   const profitShare = profitShares.find(
                     (item) => item.carId === carId
                   )
-                  const car = carsMockData.find((item) => item.id === carId)
+                  const car = cars.find((item) => item.id === carId)
                   const carName =
                     contribution?.carName ?? profitShare?.carName ?? carId
 

@@ -20,6 +20,7 @@ import {
 type ContributionsTableProps = {
   contributions: PartnerContribution[]
   partners: Partner[]
+  isLoading?: boolean
   title?: string
   onDelete?: (contribution: PartnerContribution) => void
 }
@@ -48,6 +49,7 @@ function isKnownCarId(carId: string) {
 export function ContributionsTable({
   contributions,
   partners,
+  isLoading = false,
   title,
   onDelete,
 }: ContributionsTableProps) {
@@ -79,7 +81,16 @@ export function ContributionsTable({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {contributions.length ? (
+              {isLoading ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={onDelete ? 8 : 7}
+                    className='h-24 text-center'
+                  >
+                    Loading...
+                  </TableCell>
+                </TableRow>
+              ) : contributions.length ? (
                 contributions.map((contribution) => (
                   <TableRow key={contribution.id}>
                     <TableCell>{contribution.contributionDate}</TableCell>

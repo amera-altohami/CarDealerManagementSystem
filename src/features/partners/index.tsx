@@ -1,6 +1,7 @@
-import { useState } from 'react'
-import { carsMockData, formatCarName } from '@/data/carsMockData'
+import { useEffect, useMemo, useState } from 'react'
+import { formatCarName, type Car } from '@/services/carsService'
 import { HandCoins, Plus } from 'lucide-react'
+import { toast } from 'sonner'
 import { useI18n } from '@/lib/i18n'
 import { Button } from '@/components/ui/button'
 import { ConfigDrawer } from '@/components/config-drawer'
@@ -16,53 +17,177 @@ import { PartnerForm } from './components/partner-form'
 import { PartnerSummaryCards } from './components/partner-summary-cards'
 import { PartnersTable } from './components/partners-table'
 import {
-  calculateContributionPercentage,
-  calculatePartnerTotals,
-  createProfitShareFromContribution,
-  partnerContributionsMock,
-  partnersMockData,
-  profitSharesMock,
-} from './data/partnersMockData'
-import {
   type ContributionFormValues,
   type Partner,
   type PartnerContribution,
   type PartnerFormValues,
   type ProfitShare,
 } from './data/schema'
+import {
+  useCreateContributionMutation,
+  useCreatePartnerMutation,
+  useCreateProfitShareMutation,
+  useDeleteContributionMutation,
+  useDeletePartnerMutation,
+  usePartnerCarsQuery,
+  usePartnerContributionsQuery,
+  usePartnersQuery,
+  useProfitSharesQuery,
+  useUpdatePartnerMutation,
+} from './hooks/use-partners'
 
 const CURRENT_PARTNER_MOCK_ID = 'partner-001'
 
+function getCarInvestmentBase(car?: Car) {
+  return car?.purchasePrice ?? 0
+}
+
+function calculateContributionPercentage(
+  car: Car | undefined,
+  contributionAmount: number
+) {
+  const investmentBase = getCarInvestmentBase(car)
+
+  if (investmentBase <= 0) {
+    return 0
+  }
+
+  return Number(((contributionAmount / investmentBase) * 100).toFixed(2))
+}
+
+function calculatePartnerTotals(
+  partnerId: string,
+  contributions: PartnerContribution[],
+  profitShares: ProfitShare[],
+  cars: Car[]
+) {
+  const carMap = new Map(cars.map((car) => [car.id, car]))
+  const partnerContributions = contributions.filter(
+    (contribution) => contribution.partnerId === partnerId
+  )
+  const partnerProfitShares = profitShares.filter(
+    (profitShare) => profitShare.partnerId === partnerId
+  )
+  const totalContribution = partnerContributions.reduce(
+    (sum, contribution) => sum + contribution.contributionAmount,
+    0
+  )
+  const totalInvestmentBase = partnerContributions.reduce(
+    (sum, contribution) =>
+      sum + getCarInvestmentBase(carMap.get(contribution.carId)),
+    0
+  )
+  const investmentPercentage =
+    totalInvestmentBase > 0
+      ? Number(((totalContribution / totalInvestmentBase) * 100).toFixed(2))
+      : 0
+  const totalProfit = partnerProfitShares.reduce(
+    (sum, profitShare) =>
+      profitShare.partnerProfitShare > 0
+        ? sum + profitShare.partnerProfitShare
+        : sum,
+    0
+  )
+  const totalLoss = partnerProfitShares.reduce(
+    (sum, profitShare) =>
+      profitShare.partnerProfitShare < 0
+        ? sum + Math.abs(profitShare.partnerProfitShare)
+        : sum,
+    0
+  )
+
+  return {
+    investmentPercentage,
+    totalContribution,
+    totalProfit,
+    totalLoss,
+    finalBalance: totalContribution + totalProfit - totalLoss,
+  }
+}
+
+function enrichPartnersWithTotals(
+  partners: Partner[],
+  contributions: PartnerContribution[],
+  profitShares: ProfitShare[],
+  cars: Car[]
+) {
+  return partners.map((partner) => ({
+    ...partner,
+    ...calculatePartnerTotals(partner.id, contributions, profitShares, cars),
+  }))
+}
+
+function createProfitShareFromContribution(
+  contribution: PartnerContribution,
+  car?: Car
+): Omit<ProfitShare, 'id'> {
+  const carCost = getCarInvestmentBase(car)
+  const sellingPrice = car?.sellingPrice ?? carCost
+  const netProfit = sellingPrice - carCost
+
+  return {
+    partnerId: contribution.partnerId,
+    carId: contribution.carId,
+    carName: contribution.carName,
+    carCost,
+    sellingPrice,
+    netProfit,
+    partnerPercentage: contribution.investmentPercentage,
+    partnerProfitShare: (netProfit * contribution.investmentPercentage) / 100,
+    status:
+      netProfit < 0 ? 'Loss' : car?.status === 'sold' ? 'Paid' : 'Pending',
+  }
+}
+
 export function Partners() {
   const { t } = useI18n()
-  const [partners, setPartners] = useState<Partner[]>(partnersMockData)
-  const [contributions, setContributions] = useState<PartnerContribution[]>(
-    partnerContributionsMock
-  )
-  const [profitShares, setProfitShares] =
-    useState<ProfitShare[]>(profitSharesMock)
+  const partnersQuery = usePartnersQuery()
+  const contributionsQuery = usePartnerContributionsQuery()
+  const profitSharesQuery = useProfitSharesQuery()
+  const carsQuery = usePartnerCarsQuery()
+  const createPartnerMutation = useCreatePartnerMutation()
+  const updatePartnerMutation = useUpdatePartnerMutation()
+  const deletePartnerMutation = useDeletePartnerMutation()
+  const createContributionMutation = useCreateContributionMutation()
+  const deleteContributionMutation = useDeleteContributionMutation()
+  const createProfitShareMutation = useCreateProfitShareMutation()
   const [partnerFormOpen, setPartnerFormOpen] = useState(false)
   const [contributionFormOpen, setContributionFormOpen] = useState(false)
   const [editingPartner, setEditingPartner] = useState<Partner | null>(null)
   const [partnerToDelete, setPartnerToDelete] = useState<Partner | null>(null)
   const [contributionToDelete, setContributionToDelete] =
     useState<PartnerContribution | null>(null)
-  const currentPartner =
-    partners.find((partner) => partner.id === CURRENT_PARTNER_MOCK_ID) ?? null
 
-  const recalculatePartners = (
-    nextPartners: Partner[],
-    nextContributions: PartnerContribution[],
-    nextProfitShares: ProfitShare[]
-  ) =>
-    nextPartners.map((partner) => ({
-      ...partner,
-      ...calculatePartnerTotals(
-        partner.id,
-        nextContributions,
-        nextProfitShares
-      ),
-    }))
+  const partners = partnersQuery.data ?? []
+  const contributions = contributionsQuery.data ?? []
+  const profitShares = profitSharesQuery.data ?? []
+  const cars = carsQuery.data ?? []
+
+  const partnersWithTotals = useMemo(
+    () => enrichPartnersWithTotals(partners, contributions, profitShares, cars),
+    [cars, contributions, partners, profitShares]
+  )
+
+  const currentPartner =
+    partnersWithTotals.find(
+      (partner) => partner.id === CURRENT_PARTNER_MOCK_ID
+    ) ?? null
+
+  useEffect(() => {
+    if (partnersQuery.isError) toast.error('Failed to load partners.')
+  }, [partnersQuery.isError])
+
+  useEffect(() => {
+    if (contributionsQuery.isError) {
+      toast.error('Failed to load contributions.')
+    }
+  }, [contributionsQuery.isError])
+
+  useEffect(() => {
+    if (profitSharesQuery.isError) {
+      toast.error('Failed to load profit shares.')
+    }
+  }, [profitSharesQuery.isError])
 
   const handleAddPartner = () => {
     setEditingPartner(null)
@@ -74,109 +199,66 @@ export function Partners() {
     setPartnerFormOpen(true)
   }
 
-  const handleSubmitPartner = (values: PartnerFormValues) => {
+  const handleSubmitPartner = async (values: PartnerFormValues) => {
     if (editingPartner) {
-      setPartners((currentPartners) =>
-        currentPartners.map((partner) =>
-          partner.id === editingPartner.id ? { ...partner, ...values } : partner
-        )
-      )
+      await updatePartnerMutation.mutateAsync({
+        id: editingPartner.id,
+        data: values,
+      })
     } else {
-      const today = new Date().toISOString().slice(0, 10)
-      setPartners((currentPartners) => [
-        {
-          id: `partner-${Date.now()}`,
-          ...values,
-          investmentPercentage: 0,
-          totalContribution: 0,
-          totalProfit: 0,
-          totalLoss: 0,
-          finalBalance: 0,
-          createdAt: today,
-        },
-        ...currentPartners,
-      ])
+      await createPartnerMutation.mutateAsync(values)
     }
 
     setPartnerFormOpen(false)
     setEditingPartner(null)
   }
 
-  const handleSubmitContribution = (values: ContributionFormValues) => {
-    const car = carsMockData.find((item) => item.id === values.carId)
-    const newContribution: PartnerContribution = {
-      id: `contribution-${Date.now()}`,
+  const handleSubmitContribution = async (values: ContributionFormValues) => {
+    const car = cars.find((item) => item.id === values.carId)
+    const newContribution = await createContributionMutation.mutateAsync({
       ...values,
       investmentPercentage: calculateContributionPercentage(
-        values.carId,
+        car,
         values.contributionAmount
       ),
       carName: car ? formatCarName(car) : values.carId,
-    }
-    const newProfitShare = createProfitShareFromContribution(newContribution)
-    const nextContributions = [newContribution, ...contributions]
-    const nextProfitShares = [newProfitShare, ...profitShares]
+    })
 
-    setContributions(nextContributions)
-    setProfitShares(nextProfitShares)
-    setPartners((currentPartners) =>
-      recalculatePartners(currentPartners, nextContributions, nextProfitShares)
+    await createProfitShareMutation.mutateAsync(
+      createProfitShareFromContribution(newContribution, car)
     )
     setContributionFormOpen(false)
   }
 
-  const handleToggleStatus = (targetPartner: Partner) => {
-    setPartners((currentPartners) =>
-      currentPartners.map((partner) =>
-        partner.id === targetPartner.id
-          ? {
-              ...partner,
-              status: partner.status === 'Active' ? 'Inactive' : 'Active',
-            }
-          : partner
-      )
-    )
+  const handleToggleStatus = async (targetPartner: Partner) => {
+    await updatePartnerMutation.mutateAsync({
+      id: targetPartner.id,
+      data: {
+        status: targetPartner.status === 'Active' ? 'Inactive' : 'Active',
+      },
+    })
   }
 
-  const handleConfirmDeletePartner = () => {
+  const handleConfirmDeletePartner = async () => {
     if (!partnerToDelete) return
 
-    setPartners((currentPartners) =>
-      currentPartners.filter((partner) => partner.id !== partnerToDelete.id)
-    )
-    setContributions((currentContributions) =>
-      currentContributions.filter(
-        (contribution) => contribution.partnerId !== partnerToDelete.id
-      )
-    )
-    setProfitShares((currentProfitShares) =>
-      currentProfitShares.filter(
-        (profitShare) => profitShare.partnerId !== partnerToDelete.id
-      )
-    )
-    setPartnerToDelete(null)
+    try {
+      await deletePartnerMutation.mutateAsync(partnerToDelete.id)
+      setPartnerToDelete(null)
+    } catch {
+      // The mutation already shows the matching toast.
+    }
   }
 
-  const handleConfirmDeleteContribution = () => {
+  const handleConfirmDeleteContribution = async () => {
     if (!contributionToDelete) return
 
-    const relatedProfitShareId = `profit-${contributionToDelete.id.replace(
-      'contribution-',
-      ''
-    )}`
-    const nextContributions = contributions.filter(
-      (contribution) => contribution.id !== contributionToDelete.id
-    )
-    const nextProfitShares = profitShares.filter(
-      (profitShare) => profitShare.id !== relatedProfitShareId
-    )
-
-    setContributions(nextContributions)
-    setProfitShares(nextProfitShares)
-    setPartners((currentPartners) =>
-      recalculatePartners(currentPartners, nextContributions, nextProfitShares)
-    )
-    setContributionToDelete(null)
+    try {
+      await deleteContributionMutation.mutateAsync(contributionToDelete.id)
+      setContributionToDelete(null)
+    } catch {
+      // The mutation already shows the matching toast.
+    }
   }
 
   return (
@@ -214,12 +296,13 @@ export function Partners() {
         </div>
 
         <PartnerSummaryCards
-          partners={partners}
+          partners={partnersWithTotals}
           currentPartner={currentPartner}
         />
 
         <PartnersTable
-          data={partners}
+          data={partnersWithTotals}
+          isLoading={partnersQuery.isLoading}
           onEdit={handleEditPartner}
           onDelete={setPartnerToDelete}
           onToggleStatus={handleToggleStatus}
@@ -227,7 +310,8 @@ export function Partners() {
 
         <ContributionsTable
           contributions={contributions}
-          partners={partners}
+          isLoading={contributionsQuery.isLoading}
+          partners={partnersWithTotals}
           onDelete={setContributionToDelete}
         />
       </Main>
@@ -257,8 +341,8 @@ export function Partners() {
       <ContributionForm
         open={contributionFormOpen}
         onOpenChange={setContributionFormOpen}
-        partners={partners}
-        cars={carsMockData}
+        partners={partnersWithTotals}
+        cars={cars}
         onSubmit={handleSubmitContribution}
       />
 
@@ -280,6 +364,7 @@ export function Partners() {
         destructive
         confirmText={t('delete')}
         cancelBtnText={t('cancel')}
+        isLoading={deletePartnerMutation.isPending}
         handleConfirm={handleConfirmDeletePartner}
       />
 
@@ -301,6 +386,7 @@ export function Partners() {
         destructive
         confirmText={t('delete')}
         cancelBtnText={t('cancel')}
+        isLoading={deleteContributionMutation.isPending}
         handleConfirm={handleConfirmDeleteContribution}
       />
     </>

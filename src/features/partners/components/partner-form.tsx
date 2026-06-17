@@ -38,7 +38,7 @@ type PartnerFormProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   defaultValues?: Partial<PartnerFormValues>
-  onSubmit: (values: PartnerFormValues) => void
+  onSubmit: (values: PartnerFormValues) => void | Promise<void>
 }
 
 const defaults: PartnerFormValues = {
@@ -89,8 +89,8 @@ export function PartnerForm({
           <form
             id='partner-form'
             className='space-y-4'
-            onSubmit={form.handleSubmit((values) => {
-              onSubmit(values)
+            onSubmit={form.handleSubmit(async (values) => {
+              await onSubmit(values)
               form.reset(defaults)
             })}
           >
@@ -189,7 +189,11 @@ export function PartnerForm({
           >
             {t('cancel')}
           </Button>
-          <Button type='submit' form='partner-form'>
+          <Button
+            type='submit'
+            form='partner-form'
+            disabled={form.formState.isSubmitting}
+          >
             {isEdit ? t('saveChanges') : t('addPartner')}
           </Button>
         </DialogFooter>
