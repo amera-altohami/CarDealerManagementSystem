@@ -1,20 +1,33 @@
+import { useEffect } from 'react'
 import { Link } from '@tanstack/react-router'
 import { Info } from 'lucide-react'
-import { carsMockData } from '@/data/carsMockData'
+import { toast } from 'sonner'
+import { useI18n } from '@/lib/i18n'
 import { Button } from '@/components/ui/button'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { ConfigDrawer } from '@/components/config-drawer'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
-import { useI18n } from '@/lib/i18n'
 import { CarsTable } from './components/cars-table'
+import { useCarsQuery } from './hooks/use-cars'
 
 export function CarsManagement() {
   const { t } = useI18n()
   const hintText = t('doubleClickHint')
+  const carsQuery = useCarsQuery()
+
+  useEffect(() => {
+    if (carsQuery.isError) {
+      toast.error('Failed to load cars.')
+    }
+  }, [carsQuery.isError])
 
   return (
     <>
@@ -46,15 +59,17 @@ export function CarsManagement() {
                 <TooltipContent>{hintText}</TooltipContent>
               </Tooltip>
             </div>
-            <p className='text-muted-foreground'>
-              {t('carsManagementDesc')}
-            </p>
+            <p className='text-muted-foreground'>{t('carsManagementDesc')}</p>
           </div>
           <Button asChild>
             <Link to='/cars/new'>{t('addCar')}</Link>
           </Button>
         </div>
-        <CarsTable data={carsMockData} />
+        <CarsTable
+          data={carsQuery.data ?? []}
+          error={carsQuery.isError}
+          isLoading={carsQuery.isLoading}
+        />
       </Main>
     </>
   )

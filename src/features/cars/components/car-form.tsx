@@ -1,7 +1,9 @@
 import { useEffect } from 'react'
-import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm, useWatch, type Resolver } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { Link } from '@tanstack/react-router'
+import { carStatusOptions } from '@/services/carsService'
+import { useI18n } from '@/lib/i18n'
 import { showSubmittedData } from '@/lib/show-submitted-data'
 import { Button } from '@/components/ui/button'
 import {
@@ -14,19 +16,23 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { carStatusOptions, titleTypeOptions } from '@/data/carsMockData'
 import { SearchableCombobox } from '@/components/searchable-combobox'
-import { companiesMockData } from '@/data/dealerOperationsMockData'
-import { useI18n } from '@/lib/i18n'
+import { useCompaniesQuery } from '@/features/companies/hooks/use-companies'
 import { carFormSchema, type CarFormValues } from '../data/schema'
 import { buildCarFormData } from '../lib/car-form-data'
-import { getTitleTypeLabel } from '../types/title'
+import { getTitleTypeLabel, titleTypeOptions } from '../types/title'
 
 type CarFormProps = {
   defaultValues?: Partial<CarFormValues>
-  onSubmit?: (values: CarFormValues, formData: FormData) => void
+  onSubmit?: (values: CarFormValues, formData: FormData) => void | Promise<void>
   submitLabel?: string
   cancelHref?: string
   lockTitleType?: boolean
@@ -61,9 +67,10 @@ export function CarForm({
 }: CarFormProps) {
   const { t, locale } = useI18n()
   const supportedLocale = locale === 'ar' ? 'ar' : 'en'
-  const companyOptions = companiesMockData.map((company) => ({
+  const companiesQuery = useCompaniesQuery()
+  const companyOptions = (companiesQuery.data ?? []).map((company) => ({
     label: company.name,
-    value: company.name,
+    value: company.id,
     description: company.type,
   }))
   const form = useForm<CarFormValues>({
@@ -72,7 +79,10 @@ export function CarForm({
     mode: 'onChange',
   })
   const carfaxType = useWatch({ control: form.control, name: 'carfaxType' })
-  const carfaxPdfName = useWatch({ control: form.control, name: 'carfaxPdfName' })
+  const carfaxPdfName = useWatch({
+    control: form.control,
+    name: 'carfaxPdfName',
+  })
 
   useEffect(() => {
     form.reset({ ...defaults, ...defaultValues })
@@ -85,8 +95,7 @@ export function CarForm({
         onSubmit={form.handleSubmit((values) => {
           const formData = buildCarFormData(values)
           if (onSubmit) {
-            onSubmit(values, formData)
-            return
+            return onSubmit(values, formData)
           }
 
           showSubmittedData(values)
@@ -182,7 +191,10 @@ export function CarForm({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t('status')}</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
                     <FormControl>
                       <SelectTrigger className='w-full'>
                         <SelectValue placeholder={t('selectStatus')} />
@@ -213,7 +225,9 @@ export function CarForm({
 
         <section className='space-y-4'>
           <div>
-            <h3 className='text-lg font-semibold'>{t('purchaseInformation')}</h3>
+            <h3 className='text-lg font-semibold'>
+              {t('purchaseInformation')}
+            </h3>
             <p className='text-sm text-muted-foreground'>
               {t('purchaseInformation')}
             </p>
@@ -312,7 +326,10 @@ export function CarForm({
                       {getTitleTypeLabel(field.value, supportedLocale)}
                     </div>
                   ) : (
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger className='w-full'>
                           <SelectValue placeholder={t('selectTitleType')} />
@@ -364,7 +381,9 @@ export function CarForm({
                     />
                   </FormControl>
                   <FormDescription>
-                    {field.value ? `${t('currentFile')}: ${field.value}` : t('imagesOnly')}
+                    {field.value
+                      ? `${t('currentFile')}: ${field.value}`
+                      : t('imagesOnly')}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -471,9 +490,7 @@ export function CarForm({
         <section className='space-y-4'>
           <div>
             <h3 className='text-lg font-semibold'>{t('notes')}</h3>
-            <p className='text-sm text-muted-foreground'>
-              {t('notes')}
-            </p>
+            <p className='text-sm text-muted-foreground'>{t('notes')}</p>
           </div>
           <FormField
             control={form.control}
@@ -494,7 +511,9 @@ export function CarForm({
         </section>
 
         <div className='flex flex-wrap items-center gap-3'>
-          <Button type='submit'>{submitLabel}</Button>
+          <Button type='submit' disabled={form.formState.isSubmitting}>
+            {submitLabel}
+          </Button>
           <Button asChild variant='outline'>
             <Link to={cancelHref}>{t('cancel')}</Link>
           </Button>

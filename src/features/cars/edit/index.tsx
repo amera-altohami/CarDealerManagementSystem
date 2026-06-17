@@ -1,4 +1,5 @@
 import { useNavigate } from '@tanstack/react-router'
+import { useI18n } from '@/lib/i18n'
 import { ConfigDrawer } from '@/components/config-drawer'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
@@ -6,8 +7,7 @@ import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
 import { CarForm } from '../components/car-form'
-import { getCarById } from '@/data/carsMockData'
-import { useI18n } from '@/lib/i18n'
+import { useCarQuery, useUpdateCarMutation } from '../hooks/use-cars'
 
 type CarEditProps = {
   carId: string
@@ -16,12 +16,24 @@ type CarEditProps = {
 export function CarEdit({ carId }: CarEditProps) {
   const navigate = useNavigate()
   const { t } = useI18n()
-  const car = getCarById(carId)
+  const carQuery = useCarQuery(carId)
+  const updateCarMutation = useUpdateCarMutation()
+  const car = carQuery.data
+
+  if (carQuery.isLoading) {
+    return (
+      <Main className='flex flex-1 items-center justify-center'>
+        <div className='rounded-lg border p-6 text-center'>
+          <h1 className='text-lg font-semibold'>Loading...</h1>
+        </div>
+      </Main>
+    )
+  }
 
   if (!car) {
-      return (
-        <Main className='flex flex-1 items-center justify-center'>
-          <div className='rounded-lg border p-6 text-center'>
+    return (
+      <Main className='flex flex-1 items-center justify-center'>
+        <div className='rounded-lg border p-6 text-center'>
           <h1 className='text-lg font-semibold'>{t('carNotFound')}</h1>
           <p className='mt-2 text-sm text-muted-foreground'>
             {t('carNotFoundDesc')}
@@ -45,9 +57,7 @@ export function CarEdit({ carId }: CarEditProps) {
           <h1 className='text-2xl font-bold tracking-tight md:text-3xl'>
             {t('editCar')}
           </h1>
-          <p className='text-muted-foreground'>
-            {t('carsManagementDesc')}
-          </p>
+          <p className='text-muted-foreground'>{t('carsManagementDesc')}</p>
         </div>
         <CarForm
           lockTitleType
@@ -64,14 +74,20 @@ export function CarEdit({ carId }: CarEditProps) {
             titleType: car.titleType,
             status: car.status,
             carfaxType: car.carfaxType,
-            notes: car.notes,
+            notes: car.notes ?? '',
             photo: car.photo,
             carfaxLink: car.carfaxLink,
             carfaxPdfName: car.carfaxPdfName,
           }}
           submitLabel={t('saveChanges')}
-          cancelHref={`/cars/${car.id}`}
-          onSubmit={() => navigate({ to: `/cars/${car.id}` })}
+          cancelHref='/cars'
+          onSubmit={async (values) => {
+            await updateCarMutation.mutateAsync({
+              id: car.id,
+              data: values,
+            })
+            navigate({ to: '/cars' })
+          }}
         />
       </Main>
     </>

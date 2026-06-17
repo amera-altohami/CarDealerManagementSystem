@@ -1,11 +1,15 @@
 import { useMemo, useRef, useState, type TouchEvent } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
+import {
+  carStatusOptions,
+  formatCarName,
+  type Car,
+  type CarStatus,
+} from '@/services/carsService'
 import { EllipsisVertical, Pencil, Trash2, Eye } from 'lucide-react'
-import { ConfirmDialog } from '@/components/confirm-dialog'
-import { StatusBadge } from '@/components/status-badge'
+import { useI18n } from '@/lib/i18n'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,13 +17,30 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { carStatusOptions, formatCarName, type Car, type CarStatus } from '@/data/carsMockData'
-import { useI18n } from '@/lib/i18n'
+import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { ConfirmDialog } from '@/components/confirm-dialog'
+import { StatusBadge } from '@/components/status-badge'
+import { useDeleteCarMutation } from '../hooks/use-cars'
 
 type CarsTableProps = {
   data: Car[]
+  error?: boolean
+  isLoading?: boolean
 }
 
 const money = new Intl.NumberFormat('en-US', {
@@ -28,19 +49,26 @@ const money = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 0,
 })
 
-export function CarsTable({ data }: CarsTableProps) {
+export function CarsTable({
+  data,
+  error = false,
+  isLoading = false,
+}: CarsTableProps) {
   const { t } = useI18n()
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState<CarStatus | 'all'>('all')
-  const [rows, setRows] = useState(data)
   const [carToDelete, setCarToDelete] = useState<Car | null>(null)
-  const lastTapRef = useRef<{ carId: string; time: number }>({ carId: '', time: 0 })
+  const deleteCarMutation = useDeleteCarMutation()
+  const lastTapRef = useRef<{ carId: string; time: number }>({
+    carId: '',
+    time: 0,
+  })
 
   const filteredRows = useMemo(() => {
     const query = search.trim().toLowerCase()
 
-    return rows.filter((car) => {
+    return data.filter((car) => {
       const matchesSearch =
         !query ||
         [car.brand, car.model, car.vin, car.lotNumber]
@@ -51,7 +79,7 @@ export function CarsTable({ data }: CarsTableProps) {
 
       return matchesSearch && matchesStatus
     })
-  }, [rows, search, status])
+  }, [data, search, status])
 
   const openCarDetails = (carId: string) => {
     navigate({ to: '/cars/$carId', params: { carId } })
@@ -62,7 +90,9 @@ export function CarsTable({ data }: CarsTableProps) {
       return false
     }
 
-    return Boolean(target.closest('button, a, input, select, textarea, [role="button"]'))
+    return Boolean(
+      target.closest('button, a, input, select, textarea, [role="button"]')
+    )
   }
 
   const handleTouchEnd = (
@@ -91,9 +121,7 @@ export function CarsTable({ data }: CarsTableProps) {
           <div className='flex flex-wrap items-center gap-3'>
             <div className='grid flex-1 gap-2 sm:max-w-sm'>
               <CardTitle className='text-base'>{t('carsManagement')}</CardTitle>
-              <p className='text-sm text-muted-foreground'>
-                {t('searchCars')}
-              </p>
+              <p className='text-sm text-muted-foreground'>{t('searchCars')}</p>
             </div>
           </div>
           <div className='grid gap-3 md:grid-cols-[1fr_220px]'>
@@ -146,7 +174,19 @@ export function CarsTable({ data }: CarsTableProps) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredRows.length ? (
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={10} className='h-24 text-center'>
+                      Loading...
+                    </TableCell>
+                  </TableRow>
+                ) : error ? (
+                  <TableRow>
+                    <TableCell colSpan={10} className='h-24 text-center'>
+                      Failed to load cars.
+                    </TableCell>
+                  </TableRow>
+                ) : filteredRows.length ? (
                   filteredRows.map((car) => (
                     <TableRow
                       key={car.id}
@@ -166,7 +206,9 @@ export function CarsTable({ data }: CarsTableProps) {
                       <TableCell className='font-medium'>{car.brand}</TableCell>
                       <TableCell>{car.model}</TableCell>
                       <TableCell>{car.year}</TableCell>
-                      <TableCell className='font-mono text-xs'>{car.vin}</TableCell>
+                      <TableCell className='font-mono text-xs'>
+                        {car.vin}
+                      </TableCell>
                       <TableCell>{car.lotNumber}</TableCell>
                       <TableCell>{money.format(car.purchasePrice)}</TableCell>
                       <TableCell>{money.format(car.sellingPrice)}</TableCell>
@@ -245,15 +287,18 @@ export function CarsTable({ data }: CarsTableProps) {
         }
         destructive
         confirmText={t('delete')}
-        handleConfirm={() => {
+        isLoading={deleteCarMutation.isPending}
+        handleConfirm={async () => {
           if (!carToDelete) {
             return
           }
 
-          setRows((currentRows) =>
-            currentRows.filter((car) => car.id !== carToDelete.id)
-          )
-          setCarToDelete(null)
+          try {
+            await deleteCarMutation.mutateAsync(carToDelete.id)
+            setCarToDelete(null)
+          } catch {
+            // The mutation already shows the matching toast.
+          }
         }}
       />
     </>

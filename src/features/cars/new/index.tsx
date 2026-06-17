@@ -1,4 +1,5 @@
 import { useNavigate } from '@tanstack/react-router'
+import { useI18n } from '@/lib/i18n'
 import { ConfigDrawer } from '@/components/config-drawer'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
@@ -6,11 +7,12 @@ import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
 import { CarForm } from '../components/car-form'
-import { useI18n } from '@/lib/i18n'
+import { useCreateCarMutation } from '../hooks/use-cars'
 
 export function CarCreate() {
   const navigate = useNavigate()
   const { t } = useI18n()
+  const createCarMutation = useCreateCarMutation()
 
   return (
     <>
@@ -26,14 +28,15 @@ export function CarCreate() {
           <h1 className='text-2xl font-bold tracking-tight md:text-3xl'>
             {t('addCar')}
           </h1>
-          <p className='text-muted-foreground'>
-            {t('carsManagementDesc')}
-          </p>
+          <p className='text-muted-foreground'>{t('carsManagementDesc')}</p>
         </div>
         <CarForm
           submitLabel={t('createCar')}
           cancelHref='/cars'
-          onSubmit={() => navigate({ to: '/cars' })}
+          onSubmit={async (values) => {
+            await createCarMutation.mutateAsync(values)
+            navigate({ to: '/cars' })
+          }}
         />
       </Main>
     </>
