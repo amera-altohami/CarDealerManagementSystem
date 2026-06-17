@@ -1,7 +1,12 @@
 import { useEffect, useMemo } from 'react'
-import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm, useWatch, type Resolver } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
+import { formatCarName } from '@/services/carsService'
+import { getAll as getPartners } from '@/services/partnersService'
+import { getExpenseTypeLabel, getPaymentMethodLabel, useI18n } from '@/lib/i18n'
+import { showSubmittedData } from '@/lib/show-submitted-data'
 import { Button } from '@/components/ui/button'
 import {
   Form,
@@ -12,13 +17,16 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { SearchableCombobox } from '@/components/searchable-combobox'
-import { showSubmittedData } from '@/lib/show-submitted-data'
-import { carsMockData } from '@/data/carsMockData'
-import { financialActorsMockData } from '@/data/dealerOperationsMockData'
-import { getExpenseTypeLabel, getPaymentMethodLabel, useI18n } from '@/lib/i18n'
+import { useCarsQuery } from '@/features/cars/hooks/use-cars'
 import {
   expenseFormSchema,
   expenseTypes,
@@ -28,7 +36,7 @@ import {
 
 type ExpenseFormProps = {
   defaultValues?: Partial<ExpenseFormValues>
-  onSubmit?: (values: ExpenseFormValues) => void
+  onSubmit?: (values: ExpenseFormValues) => void | Promise<void>
   submitLabel?: string
   cancelHref?: string
 }
@@ -51,6 +59,12 @@ export function ExpenseForm({
   cancelHref = '/expenses',
 }: ExpenseFormProps) {
   const { t, locale } = useI18n()
+  const carsQuery = useCarsQuery()
+  const partnersQuery = useQuery({
+    queryKey: ['expense-paid-by-partners'],
+    queryFn: getPartners,
+  })
+  const defaultPaidBy = defaultValues?.paidBy
   const form = useForm<ExpenseFormValues>({
     resolver: zodResolver(expenseFormSchema) as Resolver<ExpenseFormValues>,
     defaultValues: { ...defaults, ...defaultValues },
@@ -60,23 +74,45 @@ export function ExpenseForm({
 
   const carOptions = useMemo(
     () =>
-      carsMockData.map((car) => ({
-        label: `${car.brand} ${car.model} ${car.year}`,
+      (carsQuery.data ?? []).map((car) => ({
+        label: formatCarName(car),
         value: car.id,
         description: car.vin,
       })),
-    []
+    [carsQuery.data]
   )
 
-  const paidByOptions = useMemo(
-    () =>
-      financialActorsMockData.map((actor) => ({
-        label: actor.name,
-        value: actor.name,
-        description: actor.type === 'Investor' ? t('investor') : t('partner'),
-      })),
-    [t]
-  )
+  const paidByOptions = useMemo(() => {
+    const options = (partnersQuery.data ?? []).map((partner) => ({
+      label: partner.name,
+      value: partner.name,
+      description: t('partner'),
+    }))
+    const companyAccountOption = {
+      label: 'Company Account',
+      value: 'Company Account',
+      description: '',
+    }
+
+    if (
+      !options.some((option) => option.value === companyAccountOption.value)
+    ) {
+      options.push(companyAccountOption)
+    }
+
+    if (
+      defaultPaidBy &&
+      !options.some((option) => option.value === defaultPaidBy)
+    ) {
+      options.unshift({
+        label: defaultPaidBy,
+        value: defaultPaidBy,
+        description: '',
+      })
+    }
+
+    return options
+  }, [defaultPaidBy, partnersQuery.data, t])
 
   useEffect(() => {
     form.reset({ ...defaults, ...defaultValues })
@@ -88,8 +124,7 @@ export function ExpenseForm({
         className='space-y-6'
         onSubmit={form.handleSubmit((values) => {
           if (onSubmit) {
-            onSubmit(values)
-            return
+            return onSubmit(values)
           }
 
           showSubmittedData(values)
@@ -121,7 +156,10 @@ export function ExpenseForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>{t('expenseType')}</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
                   <FormControl>
                     <SelectTrigger className='w-full'>
                       <SelectValue placeholder={t('selectType')} />
@@ -153,7 +191,9 @@ export function ExpenseForm({
                     value={field.value}
                     onChange={(event) =>
                       field.onChange(
-                        event.target.value === '' ? '' : Number(event.target.value)
+                        event.target.value === ''
+                          ? ''
+                          : Number(event.target.value)
                       )
                     }
                   />
@@ -187,7 +227,10 @@ export function ExpenseForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>{t('paymentMethod')}</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
                   <FormControl>
                     <SelectTrigger className='w-full'>
                       <SelectValue placeholder={t('selectMethod')} />
@@ -229,7 +272,11 @@ export function ExpenseForm({
               <FormControl>
                 <Textarea
                   className='min-h-24 resize-none'
-                  placeholder={locale === 'ar' ? 'أضف ملاحظات حول هذا المصروف...' : 'Add notes about this expense...'}
+                  placeholder={
+                    locale === 'ar'
+                      ? 'أضف ملاحظات حول هذا المصروف...'
+                      : 'Add notes about this expense...'
+                  }
                   {...field}
                 />
               </FormControl>
@@ -265,7 +312,9 @@ export function ExpenseForm({
         />
 
         <div className='flex flex-wrap items-center gap-3'>
-          <Button type='submit'>{submitLabel}</Button>
+          <Button type='submit' disabled={form.formState.isSubmitting}>
+            {submitLabel}
+          </Button>
           <Button asChild variant='outline'>
             <Link to={cancelHref}>{t('cancel')}</Link>
           </Button>

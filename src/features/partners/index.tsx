@@ -159,15 +159,47 @@ export function Partners() {
     useState<PartnerContribution | null>(null)
 
   const partners = partnersQuery.data ?? []
-  const contributions = contributionsQuery.data ?? []
-  const profitShares = profitSharesQuery.data ?? []
   const cars = carsQuery.data ?? []
+  const carsById = useMemo(
+    () => new Map(cars.map((car) => [car.id, car])),
+    [cars]
+  )
+  const contributions = useMemo(
+    () =>
+      (contributionsQuery.data ?? []).flatMap((contribution) => {
+        const car = carsById.get(contribution.carId)
 
+        if (!car) return []
+
+        return {
+          ...contribution,
+          carName: formatCarName(car),
+          investmentPercentage: calculateContributionPercentage(
+            car,
+            contribution.contributionAmount
+          ),
+        }
+      }),
+    [carsById, contributionsQuery.data]
+  )
+  const profitShares = useMemo(
+    () =>
+      (profitSharesQuery.data ?? []).flatMap((profitShare) => {
+        const car = carsById.get(profitShare.carId)
+
+        if (!car) return []
+
+        return {
+          ...profitShare,
+          carName: formatCarName(car),
+        }
+      }),
+    [carsById, profitSharesQuery.data]
+  )
   const partnersWithTotals = useMemo(
     () => enrichPartnersWithTotals(partners, contributions, profitShares, cars),
     [cars, contributions, partners, profitShares]
   )
-
   const currentPartner =
     partnersWithTotals.find(
       (partner) => partner.id === CURRENT_PARTNER_MOCK_ID
@@ -214,14 +246,20 @@ export function Partners() {
   }
 
   const handleSubmitContribution = async (values: ContributionFormValues) => {
-    const car = cars.find((item) => item.id === values.carId)
+    const car = carsById.get(values.carId)
+
+    if (!car) {
+      toast.error('Failed to save contribution.')
+      return
+    }
+
     const newContribution = await createContributionMutation.mutateAsync({
       ...values,
+      carName: formatCarName(car),
       investmentPercentage: calculateContributionPercentage(
         car,
         values.contributionAmount
       ),
-      carName: car ? formatCarName(car) : values.carId,
     })
 
     await createProfitShareMutation.mutateAsync(
@@ -310,7 +348,7 @@ export function Partners() {
 
         <ContributionsTable
           contributions={contributions}
-          isLoading={contributionsQuery.isLoading}
+          isLoading={contributionsQuery.isLoading || carsQuery.isLoading}
           partners={partnersWithTotals}
           onDelete={setContributionToDelete}
         />

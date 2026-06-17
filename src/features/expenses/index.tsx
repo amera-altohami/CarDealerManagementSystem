@@ -1,13 +1,13 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import { carsMockData } from '@/data/carsMockData'
 import {
   expenseTypeOptions,
-  expensesMockData,
   type ExpenseType,
   type PaymentMethod,
 } from '@/data/dealerOperationsMockData'
+import { formatCarName } from '@/services/carsService'
 import { Plus } from 'lucide-react'
+import { toast } from 'sonner'
 import { getExpenseTypeLabel, getPaymentMethodLabel, useI18n } from '@/lib/i18n'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -34,6 +34,8 @@ import { Main } from '@/components/layout/main'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
+import { useCarsQuery } from '../cars/hooks/use-cars'
+import { useExpensesQuery } from './hooks/use-expenses'
 
 const expenseTypes: Array<'all' | ExpenseType> = ['all', ...expenseTypeOptions]
 const paymentMethods: Array<'all' | PaymentMethod> = [
@@ -58,15 +60,40 @@ export function ExpensesManagement() {
     'all'
   )
   const [date, setDate] = useState('')
+  const expensesQuery = useExpensesQuery()
+  const carsQuery = useCarsQuery()
 
-  const carOptions = carsMockData.map((car) => ({
+  useEffect(() => {
+    if (expensesQuery.isError) {
+      toast.error('Failed to load expenses.')
+    }
+  }, [expensesQuery.isError])
+
+  const carNameById = useMemo(
+    () =>
+      new Map(
+        (carsQuery.data ?? []).map((car) => [car.id, formatCarName(car)])
+      ),
+    [carsQuery.data]
+  )
+
+  const expenses = useMemo(
+    () =>
+      (expensesQuery.data ?? []).map((expense) => ({
+        ...expense,
+        carName: carNameById.get(expense.carId) ?? expense.carName,
+      })),
+    [carNameById, expensesQuery.data]
+  )
+
+  const carOptions = (carsQuery.data ?? []).map((car) => ({
     id: car.id,
-    label: `${car.brand} ${car.model} ${car.year}`,
+    label: formatCarName(car),
   }))
 
   const filteredExpenses = useMemo(() => {
     const query = search.trim().toLowerCase()
-    return expensesMockData.filter((expense) => {
+    return expenses.filter((expense) => {
       const matchesSearch =
         !query ||
         [
@@ -93,19 +120,19 @@ export function ExpensesManagement() {
         matchesDate
       )
     })
-  }, [carId, date, expenseType, paymentMethod, search])
+  }, [carId, date, expenseType, expenses, paymentMethod, search])
 
-  const totalExpenses = expensesMockData.reduce(
+  const totalExpenses = expenses.reduce(
     (sum, expense) => sum + expense.amount,
     0
   )
   const thisMonthKey = new Date().toISOString().slice(0, 7)
-  const thisMonthExpenses = expensesMockData
+  const thisMonthExpenses = expenses
     .filter((expense) => expense.date.startsWith(thisMonthKey))
     .reduce((sum, expense) => sum + expense.amount, 0)
   const highestExpenseType =
     Object.entries(
-      expensesMockData.reduce<Record<string, number>>((acc, expense) => {
+      expenses.reduce<Record<string, number>>((acc, expense) => {
         acc[expense.expenseType] =
           (acc[expense.expenseType] ?? 0) + expense.amount
         return acc
@@ -157,7 +184,7 @@ export function ExpensesManagement() {
           />
           <SummaryCard
             label={t('expensesCount')}
-            value={String(expensesMockData.length)}
+            value={String(expenses.length)}
           />
         </div>
 
@@ -244,7 +271,19 @@ export function ExpensesManagement() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredExpenses.length ? (
+                  {expensesQuery.isLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={8} className='h-24 text-center'>
+                        Loading...
+                      </TableCell>
+                    </TableRow>
+                  ) : expensesQuery.isError ? (
+                    <TableRow>
+                      <TableCell colSpan={8} className='h-24 text-center'>
+                        Failed to load expenses.
+                      </TableCell>
+                    </TableRow>
+                  ) : filteredExpenses.length ? (
                     filteredExpenses.map((expense) => (
                       <TableRow key={expense.id}>
                         <TableCell className='font-medium'>
