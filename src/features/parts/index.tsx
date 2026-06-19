@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import { Link } from '@tanstack/react-router'
+import { useEffect, useMemo, useRef, useState, type TouchEvent } from 'react'
+import { Link, useNavigate } from '@tanstack/react-router'
 import { Plus } from 'lucide-react'
 import { ConfigDrawer } from '@/components/config-drawer'
 import { Header } from '@/components/layout/header'
@@ -13,9 +13,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { carsMockData } from '@/data/carsMockData'
-import { companiesMockData, partsMockData } from '@/data/dealerOperationsMockData'
+import { useCarsQuery } from '@/features/cars/hooks/use-cars'
+import { useCompaniesQuery } from '@/features/companies/hooks/use-companies'
+import { getFirestoreErrorMessage } from '@/lib/firebase-errors'
 import { useI18n } from '@/lib/i18n'
+import { toast } from 'sonner'
+import {
+  usePartsQuery,
+  usePartsSummaryQuery,
+} from './hooks/use-parts'
 
 const money = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -25,25 +31,89 @@ const money = new Intl.NumberFormat('en-US', {
 
 export function PartsManagement() {
   const { t } = useI18n()
+  const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [carId, setCarId] = useState('all')
   const [supplierId, setSupplierId] = useState('all')
   const [status, setStatus] = useState<'all' | 'installed' | 'pending'>('all')
+  const lastTapRef = useRef<{ partId: string; time: number }>({
+    partId: '',
+    time: 0,
+  })
 
-  const filteredParts = useMemo(() => {
-    const query = search.trim().toLowerCase()
-    return partsMockData.filter((part) => {
-      const matchesSearch = !query || [part.partName, part.supplierName, part.relatedCarName ?? '', part.invoiceName ?? ''].join(' ').toLowerCase().includes(query)
-      const matchesCar = carId === 'all' || part.relatedCarId === carId
-      const matchesSupplier = supplierId === 'all' || part.supplierId === supplierId
-      const matchesStatus = status === 'all' || (status === 'installed' ? part.installed : !part.installed)
-      return matchesSearch && matchesCar && matchesSupplier && matchesStatus
-    })
-  }, [carId, search, status, supplierId])
+  const filters = useMemo(
+    () => ({
+      search: search.trim() || undefined,
+      carId: carId === 'all' ? undefined : carId,
+      supplierId: supplierId === 'all' ? undefined : supplierId,
+      installed:
+        status === 'all' ? undefined : status === 'installed' ? true : false,
+    }),
+    [carId, search, status, supplierId]
+  )
 
-  const totalCost = partsMockData.reduce((sum, part) => sum + part.price, 0)
-  const installedParts = partsMockData.filter((part) => part.installed).length
-  const notInstalledParts = partsMockData.length - installedParts
+  const partsQuery = usePartsQuery(filters)
+  const summaryQuery = usePartsSummaryQuery()
+  const carsQuery = useCarsQuery()
+  const companiesQuery = useCompaniesQuery()
+
+  useEffect(() => {
+    if (partsQuery.isError) {
+      toast.error(getFirestoreErrorMessage(partsQuery.error))
+    }
+  }, [partsQuery.error, partsQuery.isError])
+
+  const parts = partsQuery.data ?? []
+  const summary = summaryQuery.data
+  const cars = carsQuery.data ?? []
+  const companies = companiesQuery.data ?? []
+
+  const carOptions = useMemo(() => {
+    return cars.map((car) => ({
+      id: car.id,
+      label: `${car.brand} ${car.model} ${car.year}`,
+    }))
+  }, [cars])
+
+  const supplierOptions = useMemo(() => {
+    return companies.map((company) => ({
+      id: company.id,
+      label: company.name,
+    }))
+  }, [companies])
+
+  const openPartDetails = (partId: string) => {
+    navigate({ to: '/parts/$partId', params: { partId } })
+  }
+
+  const isInteractiveElement = (target: EventTarget | null) => {
+    if (!(target instanceof HTMLElement)) {
+      return false
+    }
+
+    return Boolean(
+      target.closest('button, a, input, select, textarea, [role="button"]')
+    )
+  }
+
+  const handleTouchEnd = (
+    event: TouchEvent<HTMLTableRowElement>,
+    partId: string
+  ) => {
+    if (isInteractiveElement(event.target)) {
+      return
+    }
+
+    const now = event.timeStamp
+    const isDoubleTap =
+      lastTapRef.current.partId === partId && now - lastTapRef.current.time < 300
+
+    lastTapRef.current = { partId, time: now }
+
+    if (isDoubleTap) {
+      openPartDetails(partId)
+    }
+  }
 
   return (
     <>
@@ -68,26 +138,42 @@ export function PartsManagement() {
         </div>
 
         <div className='grid gap-4 sm:grid-cols-2 xl:grid-cols-4'>
-          <SummaryCard label={t('totalParts')} value={String(partsMockData.length)} />
-          <SummaryCard label={t('installedParts')} value={String(installedParts)} />
-          <SummaryCard label={t('notInstalledParts')} value={String(notInstalledParts)} />
-          <SummaryCard label={t('totalPartsCost')} value={money.format(totalCost)} />
+          <SummaryCard
+            label={t('totalParts')}
+            value={String(summary?.totalParts ?? 0)}
+          />
+          <SummaryCard
+            label={t('installedParts')}
+            value={String(summary?.installedParts ?? 0)}
+          />
+          <SummaryCard
+            label={t('notInstalledParts')}
+            value={String(summary?.pendingParts ?? 0)}
+          />
+          <SummaryCard
+            label={t('totalPartsCost')}
+            value={money.format(summary?.totalCost ?? 0)}
+          />
         </div>
 
         <Card className='border-border/60'>
           <CardHeader className='space-y-4'>
             <CardTitle>{t('partsList')}</CardTitle>
             <div className='grid gap-3 md:grid-cols-[1fr_220px_220px_220px]'>
-              <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={t('searchParts')} />
+              <Input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder={t('searchParts')}
+              />
               <Select value={carId} onValueChange={setCarId}>
                 <SelectTrigger className='w-full'>
                   <SelectValue placeholder={t('filterByCar')} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value='all'>{t('allCars')}</SelectItem>
-                  {carsMockData.map((car) => (
+                  {carOptions.map((car) => (
                     <SelectItem key={car.id} value={car.id}>
-                      {car.brand} {car.model} {car.year}
+                      {car.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -98,14 +184,19 @@ export function PartsManagement() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value='all'>{t('allSuppliers')}</SelectItem>
-                  {companiesMockData.map((company) => (
-                    <SelectItem key={company.id} value={company.id}>
-                      {company.name}
+                  {supplierOptions.map((supplier) => (
+                    <SelectItem key={supplier.id} value={supplier.id}>
+                      {supplier.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              <Select value={status} onValueChange={(value) => setStatus(value as 'all' | 'installed' | 'pending')}>
+              <Select
+                value={status}
+                onValueChange={(value) =>
+                  setStatus(value as 'all' | 'installed' | 'pending')
+                }
+              >
                 <SelectTrigger className='w-full'>
                   <SelectValue placeholder={t('installationStatus')} />
                 </SelectTrigger>
@@ -133,33 +224,66 @@ export function PartsManagement() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredParts.length ? (
-                    filteredParts.map((part) => (
-                      <TableRow key={part.id}>
-                        <TableCell className='font-medium'>{part.partName}</TableCell>
-                        <TableCell>{part.relatedCarName ?? t('standaloneInventory')}</TableCell>
+                  {partsQuery.isLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={8} className='h-24 text-center'>
+                        Loading...
+                      </TableCell>
+                    </TableRow>
+                  ) : parts.length ? (
+                    parts.map((part) => (
+                      <TableRow
+                        key={part.id}
+                        className='cursor-pointer'
+                        onDoubleClick={() => openPartDetails(part.id)}
+                        onTouchEnd={(event) => handleTouchEnd(event, part.id)}
+                      >
+                        <TableCell className='font-medium'>
+                          {part.partName}
+                        </TableCell>
+                        <TableCell>
+                          {part.relatedCarName ?? t('standaloneInventory')}
+                        </TableCell>
                         <TableCell>{money.format(part.price)}</TableCell>
                         <TableCell>{part.supplierName}</TableCell>
                         <TableCell>{part.purchaseDate}</TableCell>
                         <TableCell>
-                          <Badge variant='outline' className={part.installed ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' : 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300'}>
+                          <Badge
+                            variant='outline'
+                            className={
+                              part.installed
+                                ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
+                                : 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300'
+                            }
+                          >
                             {part.installed ? t('installed') : t('notInstalled')}
                           </Badge>
                         </TableCell>
-                        <TableCell className='text-muted-foreground'>{part.invoiceName ?? t('uploadInvoice')}</TableCell>
+                        <TableCell className='text-muted-foreground'>
+                          {part.invoiceName ?? t('uploadInvoice')}
+                        </TableCell>
                         <TableCell className='text-end'>
                           <Button asChild variant='ghost' size='sm'>
-                            <Link to='/parts/$partId' params={{ partId: part.id }}>{t('details')}</Link>
+                            <Link to='/parts/$partId' params={{ partId: part.id }}>
+                              {t('details')}
+                            </Link>
                           </Button>
                           <Button asChild variant='ghost' size='sm'>
-                            <Link to='/parts/$partId/edit' params={{ partId: part.id }}>{t('edit')}</Link>
+                            <Link
+                              to='/parts/$partId/edit'
+                              params={{ partId: part.id }}
+                            >
+                              {t('edit')}
+                            </Link>
                           </Button>
                         </TableCell>
                       </TableRow>
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={8} className='h-24 text-center'>{t('noPartsFound')}</TableCell>
+                      <TableCell colSpan={8} className='h-24 text-center'>
+                        {t('noPartsFound')}
+                      </TableCell>
                     </TableRow>
                   )}
                 </TableBody>

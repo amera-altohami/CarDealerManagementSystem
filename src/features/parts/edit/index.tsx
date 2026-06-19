@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { ConfigDrawer } from '@/components/config-drawer'
 import { Header } from '@/components/layout/header'
@@ -5,9 +6,11 @@ import { Main } from '@/components/layout/main'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
-import { getPartById } from '@/data/dealerOperationsMockData'
-import { PartForm } from '../components/part-form'
+import { getFirestoreErrorMessage } from '@/lib/firebase-errors'
 import { useI18n } from '@/lib/i18n'
+import { toast } from 'sonner'
+import { PartForm } from '../components/part-form'
+import { usePartQuery, useUpdatePartMutation } from '../hooks/use-parts'
 
 type PartEditProps = {
   partId: string
@@ -15,19 +18,40 @@ type PartEditProps = {
 
 export function PartEdit({ partId }: PartEditProps) {
   const navigate = useNavigate()
-  const part = getPartById(partId)
   const { t } = useI18n()
+  const partQuery = usePartQuery(partId)
+  const updatePartMutation = useUpdatePartMutation()
 
-  if (!part) {
+  useEffect(() => {
+    if (partQuery.isError) {
+      toast.error(getFirestoreErrorMessage(partQuery.error))
+    }
+  }, [partQuery.error, partQuery.isError])
+
+  if (partQuery.isLoading) {
     return (
       <Main className='flex flex-1 items-center justify-center'>
         <div className='rounded-lg border p-6 text-center'>
-          <h1 className='text-lg font-semibold'>{t('partNotFound')}</h1>
-          <p className='mt-2 text-sm text-muted-foreground'>{t('partNotFoundDesc')}</p>
+          <h1 className='text-lg font-semibold'>Loading...</h1>
         </div>
       </Main>
     )
   }
+
+  if (!partQuery.data) {
+    return (
+      <Main className='flex flex-1 items-center justify-center'>
+        <div className='rounded-lg border p-6 text-center'>
+          <h1 className='text-lg font-semibold'>{t('partNotFound')}</h1>
+          <p className='mt-2 text-sm text-muted-foreground'>
+            {t('partNotFoundDesc')}
+          </p>
+        </div>
+      </Main>
+    )
+  }
+
+  const part = partQuery.data
 
   return (
     <>
@@ -39,7 +63,9 @@ export function PartEdit({ partId }: PartEditProps) {
       </Header>
       <Main className='flex flex-1 flex-col gap-4 sm:gap-6'>
         <div className='space-y-1'>
-          <h1 className='text-2xl font-bold tracking-tight md:text-3xl'>{t('editPart')}</h1>
+          <h1 className='text-2xl font-bold tracking-tight md:text-3xl'>
+            {t('editPart')}
+          </h1>
           <p className='text-muted-foreground'>{t('partsManagementDesc')}</p>
         </div>
         <PartForm
@@ -51,10 +77,27 @@ export function PartEdit({ partId }: PartEditProps) {
             installed: part.installed ? 'yes' : 'no',
             relatedCarId: part.relatedCarId ?? '',
             invoiceName: part.invoiceName ?? '',
+            notes: part.notes ?? '',
           }}
           submitLabel={t('saveChanges')}
           cancelHref='/parts'
-          onSubmit={() => navigate({ to: '/parts' })}
+          onSubmit={async (values) => {
+            await updatePartMutation.mutateAsync({
+              id: part.id,
+              data: {
+                partName: values.partName,
+                price: values.price,
+                supplierId: values.supplierId,
+                purchaseDate: values.purchaseDate,
+                installed: values.installed === 'yes',
+                relatedCarId: values.relatedCarId || null,
+                invoiceName: values.invoiceName || null,
+                notes: values.notes || null,
+              },
+            })
+
+            navigate({ to: '/parts/$partId', params: { partId: part.id } })
+          }}
         />
       </Main>
     </>

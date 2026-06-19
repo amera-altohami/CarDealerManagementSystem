@@ -16,9 +16,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea'
 import { SearchableCombobox } from '@/components/searchable-combobox'
 import { showSubmittedData } from '@/lib/show-submitted-data'
-import { carsMockData } from '@/data/carsMockData'
-import { companiesMockData } from '@/data/dealerOperationsMockData'
 import { getCompanyTypeLabel, useI18n } from '@/lib/i18n'
+import { useCarsQuery } from '@/features/cars/hooks/use-cars'
+import { useCompaniesQuery } from '@/features/companies/hooks/use-companies'
 import { partFormSchema, type PartFormValues } from './part-form-data'
 
 type PartFormProps = {
@@ -46,6 +46,8 @@ export function PartForm({
   cancelHref = '/parts',
 }: PartFormProps) {
   const { t, locale } = useI18n()
+  const carsQuery = useCarsQuery()
+  const companiesQuery = useCompaniesQuery()
   const form = useForm<PartFormValues>({
     resolver: zodResolver(partFormSchema) as Resolver<PartFormValues>,
     defaultValues: { ...defaults, ...defaultValues },
@@ -63,24 +65,23 @@ export function PartForm({
         value: '',
         description: t('standaloneInventory'),
       },
-      ...carsMockData.map((car) => ({
+      ...(carsQuery.data ?? []).map((car) => ({
         label: `${car.brand} ${car.model} ${car.year}`,
         value: car.id,
       })),
     ],
-    [t]
+    [carsQuery.data, t]
   )
 
   const supplierOptions = useMemo(
     () =>
-      companiesMockData
-        .filter((company) => company.type === 'Parts Store' || company.type === 'Shipping')
+      (companiesQuery.data ?? [])
         .map((company) => ({
           label: company.name,
           value: company.id,
           description: getCompanyTypeLabel(company.type, locale),
         })),
-    [locale]
+    [companiesQuery.data, locale]
   )
 
   const invoiceName = useWatch({ control: form.control, name: 'invoiceName' })
