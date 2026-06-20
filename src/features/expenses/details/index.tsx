@@ -1,9 +1,11 @@
-import { Link } from '@tanstack/react-router'
+import { useState } from 'react'
+import { Link, useNavigate } from '@tanstack/react-router'
 import { formatCarName } from '@/services/carsService'
 import { getExpenseTypeLabel, getPaymentMethodLabel, useI18n } from '@/lib/i18n'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 import { ConfigDrawer } from '@/components/config-drawer'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
@@ -11,7 +13,7 @@ import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
 import { useCarsQuery } from '@/features/cars/hooks/use-cars'
-import { useExpenseQuery } from '../hooks/use-expenses'
+import { useDeleteExpenseMutation, useExpenseQuery } from '../hooks/use-expenses'
 
 type ExpenseDetailsProps = {
   expenseId: string
@@ -25,14 +27,19 @@ const money = new Intl.NumberFormat('en-US', {
 
 export function ExpenseDetails({ expenseId }: ExpenseDetailsProps) {
   const { t, locale } = useI18n()
+  const navigate = useNavigate()
   const expenseQuery = useExpenseQuery(expenseId)
+  const deleteExpenseMutation = useDeleteExpenseMutation()
   const carsQuery = useCarsQuery()
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const expense = expenseQuery.data
   const expenseCarName = carsQuery.data?.find(
     (car) => car.id === expense?.carId
   )
     ? formatCarName(carsQuery.data.find((car) => car.id === expense?.carId)!)
-    : expense?.carName
+    : expense?.carId
+      ? expense?.carName || expense?.carId
+      : t('standaloneExpense')
 
   if (expenseQuery.isLoading) {
     return (
@@ -94,6 +101,12 @@ export function ExpenseDetails({ expenseId }: ExpenseDetailsProps) {
               <Button asChild variant='outline'>
                 <Link to='/expenses'>{t('backToExpenses')}</Link>
               </Button>
+              <Button
+                variant='destructive'
+                onClick={() => setDeleteDialogOpen(true)}
+              >
+                {t('delete')}
+              </Button>
               <Button asChild>
                 <Link
                   to='/expenses/$expenseId/edit'
@@ -106,6 +119,32 @@ export function ExpenseDetails({ expenseId }: ExpenseDetailsProps) {
           </CardContent>
         </Card>
       </Main>
+
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteDialogOpen(false)
+          }
+        }}
+        title={t('deleteExpense')}
+        desc={
+          <span>
+            {t('deleteExpenseConfirmStart')}{' '}
+            <strong>{expenseCarName}</strong>
+            {t('deleteExpenseConfirmEnd')}
+          </span>
+        }
+        destructive
+        confirmText={t('delete')}
+        cancelBtnText={t('cancel')}
+        isLoading={deleteExpenseMutation.isPending}
+        handleConfirm={async () => {
+          await deleteExpenseMutation.mutateAsync(expense.id)
+          setDeleteDialogOpen(false)
+          navigate({ to: '/expenses' })
+        }}
+      />
     </>
   )
 }

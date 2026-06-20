@@ -77,12 +77,12 @@ export function EditTitleModal({
         </DialogHeader>
 
         <Form {...form}>
-          <form
-            className='space-y-4'
+            <form
+              className='space-y-4'
             onSubmit={form.handleSubmit((values) => {
-              onSave(values)
+              void Promise.resolve(onSave(values)).catch(() => undefined)
             })}
-          >
+            >
             <FormField
               control={form.control}
               name='titleType'

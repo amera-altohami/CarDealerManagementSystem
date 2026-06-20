@@ -1,8 +1,11 @@
 import { orderBy, where } from 'firebase/firestore'
+import { getCars } from './carsService'
+import { getInspectionsByCarId } from './inspectionsService'
 import type {
   NotificationReadStatus,
   NotificationSeverity,
   NotificationType,
+  AppNotification,
 } from '@/features/notifications/data/schema'
 import {
   createDocument,
@@ -16,6 +19,13 @@ import {
 } from './firestoreService'
 
 const COLLECTION_NAME = 'notifications'
+
+function dateToString(value?: FirestoreDate) {
+  if (!value) return ''
+  if (typeof value === 'string') return value
+  if (value instanceof Date) return value.toISOString().slice(0, 10)
+  return value.toDate().toISOString().slice(0, 10)
+}
 
 export interface NotificationDocument {
   id: string
@@ -71,6 +81,76 @@ export async function getUnreadNotifications(): Promise<
     where('status', '==', 'Unread'),
     orderBy('created_at', 'desc'),
   ])
+}
+
+function mapNotificationDocumentToAppNotification(
+  notification: NotificationDocument
+): AppNotification {
+  return {
+    id: notification.id,
+    title: notification.title,
+    message: notification.message,
+    type: notification.type,
+    severity: notification.severity,
+    status: notification.status,
+    relatedCarId: notification.related_car_id,
+    relatedCarName: notification.related_car_name,
+    createdAt: dateToString(notification.created_at),
+    dueDate: notification.due_date,
+    actionUrl: notification.action_url,
+    createdBy: notification.created_by,
+  }
+}
+
+async function getSalvageCarInspectionAlerts(): Promise<AppNotification[]> {
+  const cars = await getCars()
+  const salvageCars = cars.filter(
+    (car) => car.currentTitleType === 'Salvage' || car.titleType === 'Salvage'
+  )
+
+  const alerts = await Promise.all(
+    salvageCars.map(async (car) => {
+      const inspections = await getInspectionsByCarId(car.id)
+
+      if (inspections.length > 0) {
+        return null
+      }
+
+      const carName = `${car.brand} ${car.model} ${car.year}`.trim()
+
+      return {
+        id: `salvage-inspection-${car.id}`,
+        title: 'Salvage car needs inspection',
+        message: `${carName} is marked as Salvage and has no linked inspection yet.`,
+        type: 'Inspection',
+        severity: 'High',
+        status: 'Unread',
+        relatedCarId: car.id,
+        relatedCarName: carName,
+        createdAt: car.titleLastUpdatedAt || car.purchaseDate || '',
+        dueDate: '',
+        actionUrl: `/inspections/new?carId=${car.id}`,
+        createdBy: 'System',
+      } satisfies AppNotification
+    })
+  )
+
+  return alerts.flatMap((alert) => (alert ? [alert] : []))
+}
+
+export async function getAppNotifications(): Promise<AppNotification[]> {
+  const [storedNotifications, salvageAlerts] = await Promise.all([
+    getAll(),
+    getSalvageCarInspectionAlerts(),
+  ])
+
+  const mappedNotifications = storedNotifications.map(
+    mapNotificationDocumentToAppNotification
+  )
+
+  return [...salvageAlerts, ...mappedNotifications].sort((first, second) =>
+    second.createdAt.localeCompare(first.createdAt)
+  )
 }
 
 export { deleteNotification as delete }

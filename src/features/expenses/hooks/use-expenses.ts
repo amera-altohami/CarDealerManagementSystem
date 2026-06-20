@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   ExpenseDeleteBlockedError,
+  ExpenseNotFoundError,
+  ExpenseValidationError,
   createExpense,
   deleteExpense,
   getExpenseById,
@@ -11,8 +13,21 @@ import {
   type UpdateExpenseData,
 } from '@/services/expensesService'
 import { toast } from 'sonner'
+import { getFirestoreErrorMessage } from '@/lib/firebase-errors'
 
 export const expensesQueryKey = ['expenses'] as const
+
+function getExpenseErrorMessage(error: unknown) {
+  if (error instanceof ExpenseValidationError) {
+    return error.issues[0] ?? 'Expense data is invalid.'
+  }
+
+  if (error instanceof ExpenseNotFoundError) {
+    return error.message
+  }
+
+  return getFirestoreErrorMessage(error)
+}
 
 export function useExpensesQuery() {
   return useQuery({
@@ -38,8 +53,8 @@ export function useCreateExpenseMutation() {
       await queryClient.invalidateQueries({ queryKey: expensesQueryKey })
       toast.success('Expense added successfully.')
     },
-    onError: () => {
-      toast.error('Failed to save expense.')
+    onError: (error) => {
+      toast.error(getExpenseErrorMessage(error))
     },
   })
 }
@@ -54,8 +69,8 @@ export function useUpdateExpenseMutation() {
       await queryClient.invalidateQueries({ queryKey: expensesQueryKey })
       toast.success('Expense updated successfully.')
     },
-    onError: () => {
-      toast.error('Failed to save expense.')
+    onError: (error) => {
+      toast.error(getExpenseErrorMessage(error))
     },
   })
 }
@@ -77,7 +92,7 @@ export function useDeleteExpenseMutation() {
         return
       }
 
-      toast.error('Failed to delete expense.')
+      toast.error(getExpenseErrorMessage(error))
     },
   })
 }

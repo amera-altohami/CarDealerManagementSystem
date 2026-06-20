@@ -74,12 +74,19 @@ export function ExpenseForm({
 
   const carOptions = useMemo(
     () =>
-      (carsQuery.data ?? []).map((car) => ({
-        label: formatCarName(car),
-        value: car.id,
-        description: car.vin,
-      })),
-    [carsQuery.data]
+      [
+        {
+          label: t('standaloneExpense'),
+          value: '',
+          description: t('noCarLinked'),
+        },
+        ...(carsQuery.data ?? []).map((car) => ({
+          label: formatCarName(car),
+          value: car.id,
+          description: car.vin,
+        })),
+      ],
+    [carsQuery.data, t]
   )
 
   const paidByOptions = useMemo(() => {

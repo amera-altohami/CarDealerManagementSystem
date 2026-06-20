@@ -63,7 +63,7 @@ export function ExpenseEdit({ expenseId }: ExpenseEditProps) {
         </div>
         <ExpenseForm
           defaultValues={{
-            carId: expense.carId,
+            carId: expense.carId ?? '',
             expenseType: expense.expenseType,
             amount: expense.amount,
             paidBy: expense.paidBy,

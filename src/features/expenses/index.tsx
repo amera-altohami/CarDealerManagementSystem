@@ -77,19 +77,32 @@ export function ExpensesManagement() {
     [carsQuery.data]
   )
 
+  const standaloneLabel = t('standaloneExpense')
+
   const expenses = useMemo(
     () =>
       (expensesQuery.data ?? []).map((expense) => ({
         ...expense,
-        carName: carNameById.get(expense.carId) ?? expense.carName,
+        carName: expense.carId
+          ? carNameById.get(expense.carId) ?? expense.carName
+          : standaloneLabel,
       })),
-    [carNameById, expensesQuery.data]
+    [carNameById, expensesQuery.data, standaloneLabel]
   )
 
-  const carOptions = (carsQuery.data ?? []).map((car) => ({
-    id: car.id,
-    label: formatCarName(car),
-  }))
+  const carOptions = useMemo(
+    () => [
+      {
+        id: 'standalone',
+        label: standaloneLabel,
+      },
+      ...(carsQuery.data ?? []).map((car) => ({
+        id: car.id,
+        label: formatCarName(car),
+      })),
+    ],
+    [carsQuery.data, standaloneLabel]
+  )
 
   const filteredExpenses = useMemo(() => {
     const query = search.trim().toLowerCase()
@@ -106,7 +119,11 @@ export function ExpensesManagement() {
           .join(' ')
           .toLowerCase()
           .includes(query)
-      const matchesCar = carId === 'all' || expense.carId === carId
+      const matchesCar =
+        carId === 'all' ||
+        (carId === 'standalone'
+          ? !expense.carId
+          : expense.carId === carId)
       const matchesType =
         expenseType === 'all' || expense.expenseType === expenseType
       const matchesPayment =

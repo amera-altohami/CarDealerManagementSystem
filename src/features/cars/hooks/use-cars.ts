@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   CarDeleteBlockedError,
+  canDeleteCar,
   createCar,
   deleteCar,
   getCarById,
@@ -11,6 +12,7 @@ import {
   type UpdateCarData,
 } from '@/services/carsService'
 import { toast } from 'sonner'
+import { getFirestoreErrorMessage } from '@/lib/firebase-errors'
 
 export const carsQueryKey = ['cars'] as const
 
@@ -29,6 +31,14 @@ export function useCarQuery(carId: string) {
   })
 }
 
+export function useCarDeleteCheckQuery(carId: string) {
+  return useQuery({
+    queryKey: [...carsQueryKey, carId, 'delete-check'] as const,
+    queryFn: () => canDeleteCar(carId),
+    enabled: Boolean(carId),
+  })
+}
+
 export function useCreateCarMutation() {
   const queryClient = useQueryClient()
 
@@ -36,10 +46,13 @@ export function useCreateCarMutation() {
     mutationFn: (data: CreateCarData) => createCar(data),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: carsQueryKey })
+      await queryClient.invalidateQueries({
+        queryKey: ['notifications'] as const,
+      })
       toast.success('Car added successfully.')
     },
-    onError: () => {
-      toast.error('Failed to save car.')
+    onError: (error) => {
+      toast.error(getFirestoreErrorMessage(error))
     },
   })
 }
@@ -52,10 +65,13 @@ export function useUpdateCarMutation() {
       updateCar(id, data),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: carsQueryKey })
+      await queryClient.invalidateQueries({
+        queryKey: ['notifications'] as const,
+      })
       toast.success('Car updated successfully.')
     },
-    onError: () => {
-      toast.error('Failed to save car.')
+    onError: (error) => {
+      toast.error(getFirestoreErrorMessage(error))
     },
   })
 }
@@ -67,6 +83,9 @@ export function useDeleteCarMutation() {
     mutationFn: (id: string) => deleteCar(id),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: carsQueryKey })
+      await queryClient.invalidateQueries({
+        queryKey: ['notifications'] as const,
+      })
       toast.success('Car deleted successfully.')
     },
     onError: (error) => {

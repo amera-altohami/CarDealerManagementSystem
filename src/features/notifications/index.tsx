@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { CheckCheck } from 'lucide-react'
 import { useI18n } from '@/lib/i18n'
 import { Button } from '@/components/ui/button'
@@ -12,11 +13,11 @@ import { ThemeSwitch } from '@/components/theme-switch'
 import { NotificationFilters } from './components/notification-filters'
 import { NotificationSummaryCards } from './components/notification-summary-cards'
 import { NotificationsList } from './components/notifications-list'
-import { notificationsMockData } from './data/notificationsMockData'
 import {
   type AppNotification,
   type NotificationFilters as NotificationFiltersState,
 } from './data/schema'
+import { getAppNotifications } from '@/services/notificationsService'
 
 const initialFilters: NotificationFiltersState = {
   search: '',
@@ -27,13 +28,21 @@ const initialFilters: NotificationFiltersState = {
 
 export function Notifications() {
   const { t } = useI18n()
-  const [notifications, setNotifications] = useState<AppNotification[]>(
-    notificationsMockData
-  )
+  const notificationsQuery = useQuery({
+    queryKey: ['notifications'] as const,
+    queryFn: getAppNotifications,
+  })
+  const [notifications, setNotifications] = useState<AppNotification[]>([])
   const [filters, setFilters] =
     useState<NotificationFiltersState>(initialFilters)
   const [notificationToDelete, setNotificationToDelete] =
     useState<AppNotification | null>(null)
+
+  useEffect(() => {
+    if (notificationsQuery.data) {
+      setNotifications(notificationsQuery.data)
+    }
+  }, [notificationsQuery.data])
 
   const hasUnreadNotifications = notifications.some(
     (notification) => notification.status === 'Unread'

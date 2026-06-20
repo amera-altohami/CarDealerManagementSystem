@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
 import {
   AlertTriangle,
@@ -13,15 +14,9 @@ import {
   TrendingUp,
   Wrench,
 } from 'lucide-react'
-import {
-  calculateCarExpenseSummary,
-  getExpensesByCarId,
-  getInspectionsByCarId,
-  getPartsByCarId,
-  type Expense,
-  type Part,
-} from '@/data/dealerOperationsMockData'
-import { type Car } from '@/data/carsMockData'
+import { type Car } from '@/services/carsService'
+import { getExpensesByCarId, type Expense } from '@/services/expensesService'
+import { getPartsByCarId, type Part } from '@/services/partsService'
 import { useAuthStore } from '@/stores/auth-store'
 import {
   getExpenseTypeLabel,
@@ -30,6 +25,8 @@ import {
   type MessageKey,
 } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
+import { getFirestoreErrorMessage } from '@/lib/firebase-errors'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -51,22 +48,34 @@ import { Search } from '@/components/search'
 import { StatusBadge } from '@/components/status-badge'
 import { ThemeSwitch } from '@/components/theme-switch'
 import {
-  partnerContributionsMock,
-  partnersMockData,
-  profitSharesMock,
-} from '@/features/partners/data/partnersMockData'
-import {
   type PartnerContribution,
   type ProfitShare,
 } from '@/features/partners/data/schema'
+import { useCompanyQuery } from '@/features/companies/hooks/use-companies'
 import { EditTitleModal } from '../components/edit-title-modal'
 import { TitleBadge } from '../components/title-badge'
 import { TitleHistoryTable } from '../components/title-history-table'
 import { TitleManagementCard } from '../components/title-management-card'
-import { type TitleUpdateValues } from '../types/title'
+import { type CurrentTitle, type TitleHistoryEntry, type TitleUpdateValues } from '../types/title'
+import { useCarQuery } from '../hooks/use-cars'
+import {
+  useCreateTitleHistoryMutation,
+  useTitleHistoryQuery,
+} from '../hooks/use-title-history'
+import { useInspectionsQuery } from '@/features/inspections/hooks/use-inspections'
+import { type Inspection } from '@/services/inspectionsService'
+import {
+  useContributionsByCarQuery,
+  usePartnersQuery,
+  useProfitSharesByCarQuery,
+} from '@/features/partners/hooks/use-partners'
+import {
+  useCarDeleteCheckQuery,
+  useDeleteCarMutation,
+} from '../hooks/use-cars'
 
 type CarDetailsProps = {
-  car: Car
+  carId: string
 }
 
 const money = new Intl.NumberFormat('en-US', {
@@ -88,18 +97,189 @@ const profitShareStatusLabelKeys: Record<ProfitShare['status'], MessageKey> = {
   Loss: 'lossStatus',
 }
 
-export function CarDetails({ car }: CarDetailsProps) {
+function calculateCarExpenseSummary(expenses: Expense[]) {
+  return expenses.reduce(
+    (summary, expense) => {
+      summary[expense.expenseType.toLowerCase() as keyof typeof summary] +=
+        expense.amount
+      summary.totalCost += expense.amount
+      return summary
+    },
+    {
+      purchase: 0,
+      shipping: 0,
+      repair: 0,
+      parts: 0,
+      labor: 0,
+      inspection: 0,
+      fees: 0,
+      other: 0,
+      totalCost: 0,
+    }
+  )
+}
+
+function getInspectionSortKey(inspection: Inspection) {
+  const createdAt = inspection.createdAt
+  if (createdAt instanceof Date) {
+    return createdAt.getTime()
+  }
+
+  if (typeof createdAt === 'string') {
+    const parsed = Date.parse(createdAt)
+    if (!Number.isNaN(parsed)) {
+      return parsed
+    }
+  }
+
+  if (createdAt && typeof createdAt === 'object' && 'toMillis' in createdAt && typeof createdAt.toMillis === 'function') {
+    return createdAt.toMillis()
+  }
+
+  if (inspection.updatedAt instanceof Date) {
+    return inspection.updatedAt.getTime()
+  }
+
+  if (typeof inspection.updatedAt === 'string') {
+    const parsed = Date.parse(inspection.updatedAt)
+    if (!Number.isNaN(parsed)) {
+      return parsed
+    }
+  }
+
+  return Date.parse(`${inspection.date}T${inspection.time}:00.000Z`)
+}
+
+function getTitleHistorySortKey(entry: {
+  createdAt?: unknown
+  updatedAt?: unknown
+  changeDate: string
+}) {
+  if (entry.createdAt instanceof Date) {
+    return entry.createdAt.getTime()
+  }
+
+  if (typeof entry.createdAt === 'string') {
+    const parsed = Date.parse(entry.createdAt)
+    if (!Number.isNaN(parsed)) {
+      return parsed
+    }
+  }
+
+  if (entry.createdAt && typeof entry.createdAt === 'object' && 'toMillis' in entry.createdAt && typeof entry.createdAt.toMillis === 'function') {
+    return entry.createdAt.toMillis()
+  }
+
+  if (entry.updatedAt instanceof Date) {
+    return entry.updatedAt.getTime()
+  }
+
+  if (typeof entry.updatedAt === 'string') {
+    const parsed = Date.parse(entry.updatedAt)
+    if (!Number.isNaN(parsed)) {
+      return parsed
+    }
+  }
+
+  if (entry.updatedAt && typeof entry.updatedAt === 'object' && 'toMillis' in entry.updatedAt && typeof entry.updatedAt.toMillis === 'function') {
+    return entry.updatedAt.toMillis()
+  }
+
+  const parsedChangeDate = Date.parse(`${entry.changeDate}T00:00:00.000Z`)
+  return Number.isNaN(parsedChangeDate) ? 0 : parsedChangeDate
+}
+
+export function CarDetails({ carId }: CarDetailsProps) {
   const { t, locale } = useI18n()
   const navigate = useNavigate()
   const currentUser = useAuthStore((state) => state.auth.user)
-  const [currentTitle, setCurrentTitle] = useState(car.currentTitle)
-  const [titleHistory, setTitleHistory] = useState(car.titleHistory)
+  const carQuery = useCarQuery(carId)
+  const carDeleteCheckQuery = useCarDeleteCheckQuery(carId)
+  const deleteCarMutation = useDeleteCarMutation()
+  const inspectionsQuery = useInspectionsQuery({ carId })
+  const titleHistoryQuery = useTitleHistoryQuery({ carId })
+  const createTitleHistoryMutation = useCreateTitleHistoryMutation()
+  const expensesQuery = useQuery({
+    queryKey: ['car-details', 'expenses', carId] as const,
+    queryFn: () => getExpensesByCarId(carId),
+    enabled: Boolean(carId),
+  })
+  const partsQuery = useQuery({
+    queryKey: ['car-details', 'parts', carId] as const,
+    queryFn: () => getPartsByCarId(carId),
+    enabled: Boolean(carId),
+  })
+  const contributionsQuery = useContributionsByCarQuery(carId)
+  const profitSharesQuery = useProfitSharesByCarQuery(carId)
+  const partnersQuery = usePartnersQuery()
+  const car = carQuery.data
+  const purchasePlaceQuery = useCompanyQuery(car?.purchasePlaceId ?? '')
   const [titleModalOpen, setTitleModalOpen] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
 
-  const expenses = getExpensesByCarId(car.id)
-  const parts = getPartsByCarId(car.id)
-  const inspections = getInspectionsByCarId(car.id)
-  const expenseSummary = calculateCarExpenseSummary(car.id)
+  if (carQuery.isLoading) {
+    return (
+      <Main className='flex flex-1 items-center justify-center'>
+        <div className='rounded-lg border p-6 text-center'>
+          <h1 className='text-lg font-semibold'>Loading...</h1>
+        </div>
+      </Main>
+    )
+  }
+
+  if (carQuery.isError) {
+    return (
+      <Main className='flex flex-1 items-center justify-center'>
+        <div className='rounded-lg border p-6 text-center'>
+          <h1 className='text-lg font-semibold'>{t('carNotFound')}</h1>
+          <p className='mt-2 text-sm text-destructive'>
+            {getFirestoreErrorMessage(carQuery.error)}
+          </p>
+        </div>
+      </Main>
+    )
+  }
+
+  if (!car) {
+    return (
+      <Main className='flex flex-1 items-center justify-center'>
+        <div className='rounded-lg border p-6 text-center'>
+          <h1 className='text-lg font-semibold'>{t('carNotFound')}</h1>
+          <p className='mt-2 text-sm text-muted-foreground'>{t('carNotFoundDesc')}</p>
+        </div>
+      </Main>
+    )
+  }
+
+  const currentTitle: CurrentTitle = {
+    type: car.currentTitleType,
+    lastUpdatedAt: car.titleLastUpdatedAt,
+    updatedBy: car.titleUpdatedBy,
+  }
+  const titleHistory: TitleHistoryEntry[] = (titleHistoryQuery.data ?? []).map((entry) => ({
+    id: entry.id,
+    previousTitleType: entry.previousTitleType,
+    newTitleType: entry.newTitleType,
+    changeDate: entry.changeDate,
+    updatedBy: entry.updatedBy,
+    notes: entry.notes,
+  }))
+  const latestSalvageHistory = [...(titleHistoryQuery.data ?? [])]
+    .filter((entry) => entry.newTitleType === 'Salvage')
+    .sort((first, second) => getTitleHistorySortKey(second) - getTitleHistorySortKey(first))[0]
+  const expenses = expensesQuery.data ?? []
+  const parts = partsQuery.data ?? []
+  const inspections = inspectionsQuery.data ?? []
+  const latestInspection = [...inspections].sort(
+    (first, second) => getInspectionSortKey(second) - getInspectionSortKey(first)
+  )[0]
+  const latestInspectionAfterSalvage =
+    latestSalvageHistory &&
+    latestInspection &&
+    latestInspection.status === 'Passed' &&
+    getInspectionSortKey(latestInspection) >
+      getTitleHistorySortKey(latestSalvageHistory ?? { changeDate: '1970-01-01' })
+  const expenseSummary = calculateCarExpenseSummary(expenses)
   const expenseBreakdown = {
     purchase: expenseSummary.purchase,
     shipping: expenseSummary.shipping,
@@ -121,52 +301,38 @@ export function CarDetails({ car }: CarDetailsProps) {
     .sort(([, a], [, b]) => b - a)[0]?.[0]
   const highestExpenseTypeLabel = highestExpenseType
     ? getExpenseTypeLabel(
-        highestExpenseType as Expense['expenseType'],
+        `${highestExpenseType.charAt(0).toUpperCase()}${highestExpenseType.slice(1)}` as Expense['expenseType'],
         locale === 'ar' ? 'ar' : 'en'
       )
     : '-'
-  const carPartnerContributions = partnerContributionsMock.filter(
-    (contribution) => contribution.carId === car.id
-  )
-  const carProfitShares = profitSharesMock.filter(
-    (profitShare) => profitShare.carId === car.id
-  )
+  const carPartnerContributions = contributionsQuery.data ?? []
+  const carProfitShares = profitSharesQuery.data ?? []
   const partnerNameById = new Map(
-    partnersMockData.map((partner) => [partner.id, partner.name])
+    (partnersQuery.data ?? []).map((partner) => [partner.id, partner.name])
   )
+  const purchasePlaceName =
+    purchasePlaceQuery.data?.name?.trim() || car.purchasePlace
+  const canDelete = carDeleteCheckQuery.data?.canDelete ?? false
+  const deleteBlockedReason = canDelete
+    ? null
+    : locale === 'ar'
+      ? 'لا يمكن حذف هذه السيارة لأنها مرتبطة بسجلات أخرى.'
+      : 'Cannot delete this car because it has related records.'
 
   const openTitleModal = () => setTitleModalOpen(true)
 
-  const convertToRebuiltTitle = () => {
-    handleSaveTitle({
-      titleType: 'Rebuilt',
-      notes: t('rebuildTitleNotes'),
-    })
-  }
-
-  const handleSaveTitle = (values: TitleUpdateValues) => {
+  const handleSaveTitle = async (values: TitleUpdateValues) => {
     const today = new Date().toISOString().slice(0, 10)
     const updatedBy =
       currentUser?.email || currentUser?.accountNo || t('currentAccount')
-    const previousTitleType = currentTitle.type
-    const nextTitle = {
-      type: values.titleType,
-      lastUpdatedAt: today,
+    await createTitleHistoryMutation.mutateAsync({
+      carId: car.id,
+      previousTitleType: currentTitle.type,
+      newTitleType: values.titleType,
+      changeDate: today,
       updatedBy,
-    }
-
-    setCurrentTitle(nextTitle)
-    setTitleHistory((current) => [
-      {
-        id: `title-${car.id}-${Date.now()}`,
-        previousTitleType,
-        newTitleType: values.titleType,
-        changeDate: today,
-        updatedBy,
-        notes: values.notes.trim() || undefined,
-      },
-      ...current,
-    ])
+      notes: values.notes.trim() || undefined,
+    })
     setTitleModalOpen(false)
 
     if (values.titleType === 'Salvage') {
@@ -175,6 +341,13 @@ export function CarDetails({ car }: CarDetailsProps) {
         search: { carId: car.id },
       })
     }
+  }
+
+  const convertToRebuiltTitle = () => {
+    void handleSaveTitle({
+      titleType: 'Rebuilt',
+      notes: t('rebuildTitleNotes'),
+    })
   }
 
   return (
@@ -250,13 +423,20 @@ export function CarDetails({ car }: CarDetailsProps) {
               </div>
 
               <div className='flex flex-wrap gap-3'>
-                <Button asChild>
-                  <Link to='/cars/$carId/edit' params={{ carId: car.id }}>
-                    {t('edit')}
-                  </Link>
-                </Button>
-                <Button asChild variant='outline'>
-                  {car.carfaxType === 'pdf' ? (
+              <Button asChild>
+                <Link to='/cars/$carId/edit' params={{ carId: car.id }}>
+                  {t('edit')}
+                </Link>
+              </Button>
+              <Button
+                variant='destructive'
+                disabled={carDeleteCheckQuery.isLoading || deleteCarMutation.isPending}
+                onClick={() => setDeleteDialogOpen(true)}
+              >
+                {t('delete')}
+              </Button>
+              <Button asChild variant='outline'>
+                {car.carfaxType === 'pdf' ? (
                     car.carfaxPdfUrl ? (
                       <a
                         href={car.carfaxPdfUrl}
@@ -293,7 +473,6 @@ export function CarDetails({ car }: CarDetailsProps) {
             <TabsTrigger value='inspection'>{t('inspection')}</TabsTrigger>
             <TabsTrigger value='partners'>{t('partners')}</TabsTrigger>
             <TabsTrigger value='documents'>{t('documents')}</TabsTrigger>
-            <TabsTrigger value='timeline'>{t('timeline')}</TabsTrigger>
           </TabsList>
 
           <TabsContent
@@ -311,7 +490,7 @@ export function CarDetails({ car }: CarDetailsProps) {
                 <InfoRow label={t('vin')} value={car.vin} />
                 <InfoRow label={t('lotNumber')} value={car.lotNumber} />
                 <InfoRow label={t('purchaseDate')} value={car.purchaseDate} />
-                <InfoRow label={t('purchasePlace')} value={car.purchasePlace} />
+                <InfoRow label={t('purchasePlace')} value={purchasePlaceName} />
                 <InfoRow
                   label={t('carfax')}
                   value={
@@ -360,15 +539,13 @@ export function CarDetails({ car }: CarDetailsProps) {
           </TabsContent>
 
           <TabsContent value='title' className='space-y-4'>
-            <TitleManagementCard
-              currentTitle={currentTitle}
-              onEditTitle={openTitleModal}
-              onAddNotes={openTitleModal}
-              onConvertToRebuilt={convertToRebuiltTitle}
-              canConvertToRebuilt={inspections.some(
-                (inspection) => inspection.status === 'Passed'
-              )}
-            />
+              <TitleManagementCard
+                currentTitle={currentTitle}
+                onEditTitle={openTitleModal}
+                onAddNotes={openTitleModal}
+                onConvertToRebuilt={convertToRebuiltTitle}
+                canConvertToRebuilt={Boolean(latestInspectionAfterSalvage)}
+              />
             <TitleHistoryTable history={titleHistory} />
           </TabsContent>
 
@@ -437,7 +614,18 @@ export function CarDetails({ car }: CarDetailsProps) {
           </TabsContent>
 
           <TabsContent value='inspection' className='space-y-4'>
-            {salvageInspectionRequired ? (
+            {inspectionsQuery.isError ? (
+              <Card className='border-destructive/20 bg-destructive/5'>
+                <CardContent className='space-y-2 p-4'>
+                  <p className='font-medium text-destructive'>
+                    {t('inspectionDetails')}
+                  </p>
+                  <p className='text-sm text-muted-foreground'>
+                    {getFirestoreErrorMessage(inspectionsQuery.error)}
+                  </p>
+                </CardContent>
+              </Card>
+            ) : salvageInspectionRequired ? (
               <>
                 <Card className='border-amber-500/20 bg-amber-500/5'>
                   <CardContent className='space-y-4 p-4'>
@@ -486,15 +674,6 @@ export function CarDetails({ car }: CarDetailsProps) {
               inspections={inspections}
             />
           </TabsContent>
-
-          <TabsContent value='timeline' className='space-y-4'>
-            <TitleHistoryTable history={titleHistory} />
-            <RecentOperationalActivity
-              expenses={expenses}
-              parts={parts}
-              inspections={inspections}
-            />
-          </TabsContent>
         </Tabs>
       </Main>
 
@@ -503,6 +682,44 @@ export function CarDetails({ car }: CarDetailsProps) {
         onOpenChange={setTitleModalOpen}
         currentTitle={currentTitle}
         onSave={handleSaveTitle}
+      />
+
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title={t('deleteCar')}
+        desc={
+          canDelete
+            ? locale === 'ar'
+              ? (
+                <span>
+                  هل أنت متأكد من حذف <strong>{car.brand} {car.model} {car.year}</strong>؟
+                  <br />
+                  هذا الإجراء سيحذف السيارة فقط ولا يمكن التراجع عنه.
+                </span>
+                )
+              : (
+                <span>
+                  Are you sure you want to delete <strong>{car.brand} {car.model} {car.year}</strong>?
+                  This action will delete only the car record and cannot be undone.
+                </span>
+                )
+            : deleteBlockedReason ?? ''
+        }
+        destructive
+        confirmText={t('delete')}
+        cancelBtnText={t('cancel')}
+        disabled={!canDelete}
+        isLoading={carDeleteCheckQuery.isLoading || deleteCarMutation.isPending}
+        handleConfirm={async () => {
+          try {
+            await deleteCarMutation.mutateAsync(car.id)
+            setDeleteDialogOpen(false)
+            navigate({ to: '/cars' })
+          } catch {
+            // The mutation hook already shows the warning or error toast.
+          }
+        }}
       />
     </>
   )
@@ -785,7 +1002,7 @@ function PartnerInvestmentsTable({
 function InspectionTimeline({
   inspections,
 }: {
-  inspections: ReturnType<typeof getInspectionsByCarId>
+  inspections: Inspection[]
 }) {
   const { t } = useI18n()
 
@@ -803,7 +1020,7 @@ function InspectionTimeline({
                   {inspection.date} {t('at')} {inspection.time}
                 </p>
                 <p className='text-sm text-muted-foreground'>
-                  {inspection.place}
+                  {inspection.placeName}
                 </p>
               </div>
               <StatusBadge status={inspection.status} />
@@ -844,11 +1061,13 @@ function DocumentsCard({
   car: Car
   expenses: Expense[]
   parts: Part[]
-  inspections: ReturnType<typeof getInspectionsByCarId>
+  inspections: Inspection[]
 }) {
   const { t } = useI18n()
+  const carDocuments = (car as Car & { documents?: Array<{ name: string }> })
+    .documents ?? []
   const documentNames = [
-    ...car.documents.map((document) => document.name),
+    ...carDocuments.map((document) => document.name),
     ...(expenses
       .map((expense) => expense.invoiceName)
       .filter(Boolean) as string[]),
@@ -878,59 +1097,6 @@ function DocumentsCard({
             {t('noUploadedFilesYet')}
           </div>
         )}
-      </CardContent>
-    </Card>
-  )
-}
-
-function RecentOperationalActivity({
-  expenses,
-  parts,
-  inspections,
-}: {
-  expenses: Expense[]
-  parts: Part[]
-  inspections: ReturnType<typeof getInspectionsByCarId>
-}) {
-  const { t } = useI18n()
-  const items = [
-    ...expenses.slice(0, 2),
-    ...parts.slice(0, 2),
-    ...inspections.slice(0, 2),
-  ]
-
-  return (
-    <Card className='border-border/60'>
-      <CardHeader>
-        <CardTitle>{t('recentOperationalActivity')}</CardTitle>
-      </CardHeader>
-      <CardContent className='space-y-3'>
-        {items.map((item, index) => (
-          <div
-            key={index}
-            className='flex items-center justify-between rounded-lg border px-4 py-3'
-          >
-            <div>
-              <p className='font-medium'>
-                {'expenseType' in item
-                  ? `${item.expenseType} ${t('expense')}`
-                  : 'installed' in item
-                    ? `${t('part')}: ${item.partName}`
-                    : `${t('inspectionItem')}: ${item.status}`}
-              </p>
-              <p className='text-sm text-muted-foreground'>
-                {'date' in item ? item.date : ''}
-              </p>
-            </div>
-            <Badge variant='outline'>
-              {'amount' in item
-                ? money.format(item.amount)
-                : 'price' in item
-                  ? money.format(item.price)
-                  : item.status}
-            </Badge>
-          </div>
-        ))}
       </CardContent>
     </Card>
   )

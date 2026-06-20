@@ -5,13 +5,15 @@ import { Main } from '@/components/layout/main'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
-import { InspectionForm } from '../components/inspection-form'
 import { useI18n } from '@/lib/i18n'
+import { InspectionForm } from '../components/inspection-form'
+import { useCreateInspectionMutation } from '../hooks/use-inspections'
 
 export function InspectionCreate() {
   const navigate = useNavigate()
   const { t } = useI18n()
   const { carId } = useSearch({ from: '/_authenticated/inspections/new' })
+  const createInspectionMutation = useCreateInspectionMutation()
 
   return (
     <>
@@ -30,7 +32,24 @@ export function InspectionCreate() {
           defaultValues={{ carId: carId ?? '' }}
           submitLabel={t('createInspection')}
           cancelHref='/inspections'
-          onSubmit={() => navigate({ to: '/inspections' })}
+          isSubmitting={createInspectionMutation.isPending}
+          onSubmit={async (values) => {
+            await createInspectionMutation.mutateAsync({
+              carId: values.carId,
+              placeId: values.placeId,
+              date: values.date,
+              time: values.time,
+              status: values.status,
+              notes: values.notes,
+              files: values.files,
+              receipts: values.receipts,
+              beforeImages: values.beforeImages,
+              afterImages: values.afterImages,
+              reminderSent: values.reminderSent,
+            })
+
+            navigate({ to: '/inspections' })
+          }}
         />
       </Main>
     </>

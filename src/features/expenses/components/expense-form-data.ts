@@ -10,7 +10,7 @@ export const expenseTypes: ExpenseType[] = [...expenseTypeOptions]
 export const paymentMethods: PaymentMethod[] = ['Zelle', 'Cash', 'Card']
 
 export const expenseFormSchema = z.object({
-  carId: z.string().min(1, 'Please select a car.'),
+  carId: z.string().trim().optional().default(''),
   expenseType: z.enum(expenseTypeOptions),
   amount: z.coerce.number().min(0, 'Please enter a valid amount.'),
   paidBy: z.string().min(2, 'Please select who paid this expense.'),

@@ -1,5 +1,6 @@
 import { z } from 'zod'
-import type { InspectionStatus } from '@/data/dealerOperationsMockData'
+
+export type InspectionStatus = 'Pending' | 'Passed' | 'Failed'
 
 export const inspectionStatuses: InspectionStatus[] = ['Pending', 'Passed', 'Failed']
 

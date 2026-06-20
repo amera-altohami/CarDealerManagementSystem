@@ -3,6 +3,7 @@ import {
   collection,
   deleteDoc,
   doc,
+  getCountFromServer,
   getDoc,
   getDocs,
   orderBy,
@@ -35,6 +36,14 @@ export type CarStatus =
 
 export type CarTitleType = TitleType
 export type CarfaxType = 'link' | 'pdf'
+
+export function getNormalizedCarTitleTypeForStatus(
+  status: CarStatus,
+  currentTitleType: CarTitleType = 'Clean'
+): CarTitleType {
+  void status
+  return currentTitleType
+}
 
 export const carStatusOptions: Array<{ value: CarStatus; label: string }> = [
   { value: 'purchased', label: 'Purchased' },
@@ -91,6 +100,7 @@ export interface Car extends CarDocument {
 }
 
 export interface CarReferences {
+  activityLogs: number
   expenses: number
   parts: number
   inspections: number
@@ -179,12 +189,13 @@ function mapCarSnapshot(
   const carfaxPdfName = normalizeOptionalText(data.carfax_pdf_name)
   const carfaxPdfUrl = normalizeOptionalText(data.carfax_pdf_url)
   const photo = normalizeOptionalText(data.photo_url) || DEFAULT_CAR_PHOTO
+  const currentTitleType = data.current_title_type ?? data.title_type ?? 'Clean'
 
   return {
     ...data,
     lotNumber: data.lot_number,
-    titleType: data.title_type,
-    currentTitleType: data.current_title_type,
+    titleType: data.title_type ?? currentTitleType,
+    currentTitleType,
     titleLastUpdatedAt: data.title_last_updated_at,
     titleUpdatedBy: data.title_updated_by,
     purchaseDate: data.purchase_date,
@@ -265,6 +276,9 @@ function toUpdateDocumentData(data: UpdateCarData): CarUpdateDocumentData {
 
   if (data.titleType !== undefined) {
     documentData.title_type = data.titleType
+    documentData.current_title_type = data.titleType
+    documentData.title_last_updated_at = getToday()
+    documentData.title_updated_by = 'System'
   }
 
   if (data.purchaseDate !== undefined) {
@@ -289,8 +303,13 @@ function toUpdateDocumentData(data: UpdateCarData): CarUpdateDocumentData {
       data.carfaxType === 'link' ? normalizeText(data.carfaxLink) : null
     documentData.carfax_pdf_name =
       data.carfaxType === 'pdf' ? normalizeText(data.carfaxPdfName) : null
-    documentData.carfax_pdf_url =
-      data.carfaxType === 'pdf' ? normalizeText(data.carfaxPdfUrl) : null
+    if (data.carfaxType === 'pdf') {
+      if (data.carfaxPdfUrl !== undefined) {
+        documentData.carfax_pdf_url = normalizeText(data.carfaxPdfUrl)
+      }
+    } else {
+      documentData.carfax_pdf_url = null
+    }
   } else {
     if (data.carfaxLink !== undefined) {
       documentData.carfax_link = normalizeText(data.carfaxLink)
@@ -405,6 +424,33 @@ export async function getCarsByStatus(status: CarStatus): Promise<Car[]> {
 }
 
 export async function canDeleteCar(id: string): Promise<CarDeleteCheck> {
+  const carSnapshot = await getDoc(doc(db, COLLECTION_NAME, id))
+
+  if (!carSnapshot.exists()) {
+    return {
+      canDelete: false,
+      references: {
+        activityLogs: 0,
+        expenses: 0,
+        parts: 0,
+        inspections: 0,
+        partnerContributions: 0,
+        profitShares: 0,
+        notifications: 0,
+        titleHistory: 0,
+      },
+    }
+  }
+
+  const car = carSnapshot.data() as {
+    brand?: string
+    model?: string
+    year?: number
+  }
+  const carName = [car.brand?.trim(), car.model?.trim(), car.year]
+    .filter(Boolean)
+    .join(' ')
+
   const [
     expenses,
     parts,
@@ -423,7 +469,18 @@ export async function canDeleteCar(id: string): Promise<CarDeleteCheck> {
     getReferenceCount('car_title_history', 'car_id', id),
   ])
 
+  const activityLogs = carName
+    ? await getCountFromServer(
+        query(
+          collection(db, 'activity_logs'),
+          where('entity_type', '==', 'car'),
+          where('entity_name', '==', carName)
+        )
+      ).then((snapshot) => snapshot.data().count)
+    : 0
+
   const references = {
+    activityLogs,
     expenses,
     parts,
     inspections,

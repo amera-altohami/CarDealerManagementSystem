@@ -12,20 +12,31 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { SearchableCombobox } from '@/components/searchable-combobox'
-import { showSubmittedData } from '@/lib/show-submitted-data'
-import { carsMockData } from '@/data/carsMockData'
-import { companiesMockData } from '@/data/dealerOperationsMockData'
+import { useCarsQuery } from '@/features/cars/hooks/use-cars'
+import { useCompaniesQuery } from '@/features/companies/hooks/use-companies'
 import { getCompanyTypeLabel, getInspectionStatusLabel, useI18n } from '@/lib/i18n'
-import { inspectionFormSchema, inspectionStatuses, type InspectionFormValues } from './inspection-form-data'
+import { showSubmittedData } from '@/lib/show-submitted-data'
+import {
+  inspectionFormSchema,
+  inspectionStatuses,
+  type InspectionFormValues,
+} from './inspection-form-data'
 
 type InspectionFormProps = {
   defaultValues?: Partial<InspectionFormValues>
-  onSubmit?: (values: InspectionFormValues) => void
+  onSubmit?: (values: InspectionFormValues) => void | Promise<void>
   submitLabel?: string
   cancelHref?: string
+  isSubmitting?: boolean
 }
 
 const defaults: InspectionFormValues = {
@@ -47,8 +58,11 @@ export function InspectionForm({
   onSubmit,
   submitLabel = 'Save Inspection',
   cancelHref = '/inspections',
+  isSubmitting = false,
 }: InspectionFormProps) {
   const { t, locale } = useI18n()
+  const carsQuery = useCarsQuery()
+  const companiesQuery = useCompaniesQuery()
   const form = useForm<InspectionFormValues>({
     resolver: zodResolver(inspectionFormSchema) as Resolver<InspectionFormValues>,
     defaultValues: { ...defaults, ...defaultValues },
@@ -57,22 +71,26 @@ export function InspectionForm({
 
   const carOptions = useMemo(
     () =>
-      carsMockData.map((car) => ({
+      (carsQuery.data ?? []).map((car) => ({
         label: `${car.brand} ${car.model} ${car.year}`,
         value: car.id,
       })),
-    []
+    [carsQuery.data]
   )
+
   const placeOptions = useMemo(
     () =>
-      companiesMockData
-        .filter((company) => company.type === 'Inspection Center' || company.type === 'Repair Shop')
+      (companiesQuery.data ?? [])
+        .filter(
+          (company) =>
+            company.type === 'Inspection Center' || company.type === 'Repair Shop'
+        )
         .map((company) => ({
           label: company.name,
           value: company.id,
-          description: `${getCompanyTypeLabel(company.type, locale)} • ${company.address}`,
+          description: `${getCompanyTypeLabel(company.type, locale)} - ${company.address}`,
         })),
-    [locale]
+    [companiesQuery.data, locale]
   )
 
   useEffect(() => {
@@ -85,7 +103,7 @@ export function InspectionForm({
         className='space-y-6'
         onSubmit={form.handleSubmit((values) => {
           if (onSubmit) {
-            onSubmit(values)
+            void Promise.resolve(onSubmit(values)).catch(() => undefined)
             return
           }
 
@@ -163,7 +181,7 @@ export function InspectionForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>{t('inspectionStatus')}</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger className='w-full'>
                       <SelectValue placeholder={t('selectStatus')} />
@@ -187,7 +205,7 @@ export function InspectionForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>{t('reminderStatus')}</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger className='w-full'>
                       <SelectValue placeholder={t('reminderStatus')} />
@@ -213,7 +231,11 @@ export function InspectionForm({
               <FormControl>
                 <Textarea
                   className='min-h-24 resize-none'
-                  placeholder={locale === 'ar' ? 'أضف ملاحظات الفحص...' : 'Add inspection notes...'}
+                  placeholder={
+                    locale === 'ar'
+                      ? 'أضف ملاحظات الفحص...'
+                      : 'Add inspection notes...'
+                  }
                   {...field}
                 />
               </FormControl>
@@ -230,7 +252,9 @@ export function InspectionForm({
         </div>
 
         <div className='flex flex-wrap items-center gap-3'>
-          <Button type='submit'>{submitLabel}</Button>
+          <Button type='submit' disabled={isSubmitting}>
+            {submitLabel}
+          </Button>
           <Button asChild variant='outline'>
             <Link to={cancelHref}>{t('cancel')}</Link>
           </Button>
@@ -246,7 +270,10 @@ function FileUploadField({
   label,
 }: {
   control: Control<InspectionFormValues>
-  name: keyof Pick<InspectionFormValues, 'files' | 'receipts' | 'beforeImages' | 'afterImages'>
+  name: keyof Pick<
+    InspectionFormValues,
+    'files' | 'receipts' | 'beforeImages' | 'afterImages'
+  >
   label: string
 }) {
   const { t, locale } = useI18n()

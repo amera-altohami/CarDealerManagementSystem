@@ -10,11 +10,36 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { inspectionsMockData } from '@/data/dealerOperationsMockData'
+import { getFirestoreErrorMessage } from '@/lib/firebase-errors'
 import { getInspectionStatusLabel, useI18n } from '@/lib/i18n'
+import { useInspectionsQuery } from './hooks/use-inspections'
 
 export function InspectionManagement() {
   const { t, locale } = useI18n()
+  const inspectionsQuery = useInspectionsQuery()
+  const inspections = inspectionsQuery.data ?? []
+
+  if (inspectionsQuery.isError) {
+    return (
+      <>
+        <Header fixed>
+          <Search className='me-auto' />
+          <ThemeSwitch />
+          <ConfigDrawer />
+          <ProfileDropdown />
+        </Header>
+        <Main className='flex flex-1 items-center justify-center'>
+          <div className='rounded-lg border p-6 text-center'>
+            <h1 className='text-lg font-semibold'>{t('inspectionsManagement')}</h1>
+            <p className='mt-2 text-sm text-destructive'>
+              {getFirestoreErrorMessage(inspectionsQuery.error)}
+            </p>
+          </div>
+        </Main>
+      </>
+    )
+  }
+
   return (
     <>
       <Header fixed>
@@ -44,10 +69,10 @@ export function InspectionManagement() {
         </div>
 
         <div className='grid gap-4 sm:grid-cols-2 xl:grid-cols-4'>
-          <SummaryCard label={t('upcomingInspections')} value={String(inspectionsMockData.length)} />
-          <SummaryCard label={t('pending')} value={String(inspectionsMockData.filter((inspection) => inspection.status === 'Pending').length)} />
-          <SummaryCard label={t('passed')} value={String(inspectionsMockData.filter((inspection) => inspection.status === 'Passed').length)} />
-          <SummaryCard label={t('failed')} value={String(inspectionsMockData.filter((inspection) => inspection.status === 'Failed').length)} />
+          <SummaryCard label={t('upcomingInspections')} value={String(inspections.length)} />
+          <SummaryCard label={t('pending')} value={String(inspections.filter((inspection) => inspection.status === 'Pending').length)} />
+          <SummaryCard label={t('passed')} value={String(inspections.filter((inspection) => inspection.status === 'Passed').length)} />
+          <SummaryCard label={t('failed')} value={String(inspections.filter((inspection) => inspection.status === 'Failed').length)} />
         </div>
 
         <Card className='border-border/60'>
@@ -55,7 +80,7 @@ export function InspectionManagement() {
             <CardTitle>{t('upcomingInspections')}</CardTitle>
           </CardHeader>
           <CardContent className='grid gap-4 md:grid-cols-2 xl:grid-cols-3'>
-            {inspectionsMockData.map((inspection) => (
+            {inspections.map((inspection) => (
               <div key={inspection.id} className='rounded-lg border p-4'>
                 <div className='flex items-center justify-between gap-3'>
                   <div>
@@ -66,7 +91,7 @@ export function InspectionManagement() {
                     {getInspectionStatusLabel(inspection.status, locale)}
                   </Badge>
                 </div>
-                <p className='mt-2 text-sm text-muted-foreground'>{inspection.place}</p>
+                <p className='mt-2 text-sm text-muted-foreground'>{inspection.placeName}</p>
                 <div className='mt-4 flex flex-wrap gap-2'>
                   <Button asChild variant='outline' size='sm'>
                     <Link to='/inspections/$inspectionId' params={{ inspectionId: inspection.id }}>{t('details')}</Link>
@@ -98,12 +123,12 @@ export function InspectionManagement() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {inspectionsMockData.map((inspection) => (
+                  {inspections.map((inspection) => (
                     <TableRow key={inspection.id}>
                       <TableCell className='font-medium'>{inspection.carName}</TableCell>
                       <TableCell>{inspection.date}</TableCell>
                       <TableCell>{inspection.time}</TableCell>
-                      <TableCell>{inspection.place}</TableCell>
+                      <TableCell>{inspection.placeName}</TableCell>
                       <TableCell>
                         <Badge variant='outline' className={inspection.status === 'Passed' ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' : inspection.status === 'Failed' ? 'border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300' : 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300'}>
                           {getInspectionStatusLabel(inspection.status, locale)}
