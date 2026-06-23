@@ -1,12 +1,16 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { type ExpenseType } from '@/data/dealerOperationsMockData'
+import { getCarReport, reportExpenseTypes } from '@/services/reportsService'
 import {
   ArrowLeft,
   CircleDollarSign,
   TrendingUp,
   WalletCards,
 } from 'lucide-react'
+import { toast } from 'sonner'
+import { getFirestoreErrorMessage } from '@/lib/firebase-errors'
 import { getExpenseTypeLabel, useI18n } from '@/lib/i18n'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -23,23 +27,16 @@ import { ReportFilters } from '../components/report-filters'
 import { ReportPreviewCard } from '../components/report-preview-card'
 import { ReportSummaryCards } from '../components/report-summary-cards'
 import { ReportTable } from '../components/report-table'
-import {
-  carOptions,
-  formatCurrency,
-  formatDate,
-  formatNumber,
-  getCarPartnerRows,
-  getReportCarById,
-  reportExpenseTypes,
-} from '../data/reportsMockData'
+import { formatCurrency, formatDate, formatNumber } from '../data/formatters'
 import {
   type CarPartnerReportRow,
+  type ReportCar,
   type ReportFilterValues,
 } from '../data/schema'
 
 const expenseTypeCostKeys: Record<
   ExpenseType,
-  keyof NonNullable<ReturnType<typeof getReportCarById>>['costBreakdown']
+  keyof ReportCar['costBreakdown']
 > = {
   Purchase: 'purchase',
   Shipping: 'shipping',
@@ -54,7 +51,7 @@ const expenseTypeCostKeys: Record<
 const initialFilters: ReportFilterValues = {
   startDate: '',
   endDate: '',
-  carId: 'car-001',
+  carId: 'all',
   partnerId: 'all',
   expenseType: 'all',
   companyPlace: 'all',
@@ -65,11 +62,33 @@ const initialFilters: ReportFilterValues = {
 export function CarReport() {
   const { t, locale } = useI18n()
   const [filters, setFilters] = useState(initialFilters)
-  const selectedCar = getReportCarById(filters.carId)
+  const carReportQuery = useQuery({
+    queryKey: ['reports', 'car'],
+    queryFn: () => getCarReport(),
+  })
+
+  useEffect(() => {
+    if (carReportQuery.isError) {
+      toast.error(getFirestoreErrorMessage(carReportQuery.error))
+    }
+  }, [carReportQuery.error, carReportQuery.isError])
+
+  const selectedCar = useMemo(() => {
+    const cars = carReportQuery.data?.cars ?? []
+
+    if (filters.carId === 'all') {
+      return cars[0]
+    }
+
+    return cars.find((car) => car.id === filters.carId)
+  }, [carReportQuery.data?.cars, filters.carId])
 
   const partnerRows = useMemo(
-    () => (selectedCar ? getCarPartnerRows(selectedCar.id) : []),
-    [selectedCar]
+    () =>
+      selectedCar
+        ? (carReportQuery.data?.partnerRowsByCarId[selectedCar.id] ?? [])
+        : [],
+    [carReportQuery.data?.partnerRowsByCarId, selectedCar]
   )
 
   const costRows = selectedCar
@@ -112,7 +131,7 @@ export function CarReport() {
           fields={['car']}
           value={filters}
           onChange={setFilters}
-          cars={carOptions}
+          cars={carReportQuery.data?.carOptions ?? []}
         />
 
         {selectedCar ? (

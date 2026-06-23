@@ -1,7 +1,14 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { type ExpenseType } from '@/data/dealerOperationsMockData'
+import {
+  getExpensesReport,
+  reportExpenseTypes,
+} from '@/services/reportsService'
 import { ArrowLeft, ReceiptText, WalletCards } from 'lucide-react'
+import { toast } from 'sonner'
+import { getFirestoreErrorMessage } from '@/lib/firebase-errors'
 import { getExpenseTypeLabel, useI18n } from '@/lib/i18n'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -16,15 +23,10 @@ import { ReportFilters } from '../components/report-filters'
 import { ReportSummaryCards } from '../components/report-summary-cards'
 import { ReportTable } from '../components/report-table'
 import {
-  carOptions,
-  companyPlaceOptions,
-  expensesReportRows,
   formatCurrency,
   formatDate,
   isInsideDateRange,
-  payerOptions,
-  reportExpenseTypes,
-} from '../data/reportsMockData'
+} from '../data/formatters'
 import { type ExpenseReportRow, type ReportFilterValues } from '../data/schema'
 
 const initialFilters: ReportFilterValues = {
@@ -57,13 +59,25 @@ const expenseBadgeStyles: Record<ExpenseType, string> = {
 export function ExpensesReport() {
   const { t, locale } = useI18n()
   const [filters, setFilters] = useState(initialFilters)
+  const expensesReportQuery = useQuery({
+    queryKey: ['reports', 'expenses'],
+    queryFn: () => getExpensesReport(),
+  })
+
+  useEffect(() => {
+    if (expensesReportQuery.isError) {
+      toast.error(getFirestoreErrorMessage(expensesReportQuery.error))
+    }
+  }, [expensesReportQuery.error, expensesReportQuery.isError])
+
   const expenseTypeOptions = reportExpenseTypes.map((expenseType) => ({
     value: expenseType,
     label: getExpenseTypeLabel(expenseType, locale),
   }))
+  const rows = expensesReportQuery.data?.rows ?? []
   const filteredRows = useMemo(
     () =>
-      expensesReportRows.filter((row) => {
+      rows.filter((row) => {
         const matchesDate = isInsideDateRange(
           row.date,
           filters.startDate,
@@ -88,7 +102,7 @@ export function ExpensesReport() {
           matchesPayer
         )
       }),
-    [filters]
+    [filters, rows]
   )
   const totalsByType = reportExpenseTypes.map((expenseType) => ({
     expenseType,
@@ -130,10 +144,10 @@ export function ExpensesReport() {
           fields={['dateRange', 'car', 'expenseType', 'companyPlace', 'payer']}
           value={filters}
           onChange={setFilters}
-          cars={carOptions}
+          cars={expensesReportQuery.data?.carOptions ?? []}
           expenseTypes={expenseTypeOptions}
-          companyPlaces={companyPlaceOptions}
-          payers={payerOptions}
+          companyPlaces={expensesReportQuery.data?.companyPlaceOptions ?? []}
+          payers={expensesReportQuery.data?.payerOptions ?? []}
         />
 
         <ReportSummaryCards

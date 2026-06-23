@@ -1,5 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
+import { getPartnerReport } from '@/services/reportsService'
 import {
   ArrowLeft,
   CircleDollarSign,
@@ -7,6 +9,8 @@ import {
   TrendingDown,
   TrendingUp,
 } from 'lucide-react'
+import { toast } from 'sonner'
+import { getFirestoreErrorMessage } from '@/lib/firebase-errors'
 import { useI18n } from '@/lib/i18n'
 import { getDisplayNameInitials } from '@/lib/utils'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -27,17 +31,15 @@ import {
   formatCurrency,
   formatDate,
   formatNumber,
-  getPartnerReportSummary,
   isInsideDateRange,
-  partnerOptions,
-} from '../data/reportsMockData'
+} from '../data/formatters'
 import { type PartnerReportRow, type ReportFilterValues } from '../data/schema'
 
 const initialFilters: ReportFilterValues = {
   startDate: '',
   endDate: '',
   carId: 'all',
-  partnerId: 'partner-001',
+  partnerId: 'all',
   expenseType: 'all',
   companyPlace: 'all',
   payer: 'all',
@@ -47,17 +49,34 @@ const initialFilters: ReportFilterValues = {
 export function PartnerReport() {
   const { t } = useI18n()
   const [filters, setFilters] = useState(initialFilters)
-  const reportSummary = getPartnerReportSummary(filters.partnerId)
+  const partnerReportQuery = useQuery({
+    queryKey: ['reports', 'partner'],
+    queryFn: () => getPartnerReport(),
+  })
+
+  useEffect(() => {
+    if (partnerReportQuery.isError) {
+      toast.error(getFirestoreErrorMessage(partnerReportQuery.error))
+    }
+  }, [partnerReportQuery.error, partnerReportQuery.isError])
+
+  const partnerOptions = partnerReportQuery.data?.partnerOptions ?? []
+  const selectedPartnerId =
+    filters.partnerId === 'all' ? partnerOptions[0]?.value : filters.partnerId
+  const reportSummary = selectedPartnerId
+    ? partnerReportQuery.data?.summariesByPartnerId[selectedPartnerId]
+    : undefined
+  const reportRows = reportSummary?.rows ?? []
   const filteredRows = useMemo(
     () =>
-      reportSummary.rows.filter((row) =>
+      reportRows.filter((row) =>
         isInsideDateRange(
           row.contributionDate,
           filters.startDate,
           filters.endDate
         )
       ),
-    [filters.endDate, filters.startDate, reportSummary.rows]
+    [filters.endDate, filters.startDate, reportRows]
   )
   const totalContribution = filteredRows.reduce(
     (sum, row) => sum + row.contribution,
@@ -73,7 +92,7 @@ export function PartnerReport() {
     0
   )
   const finalBalance = totalContribution + totalProfit - totalLoss
-  const partner = reportSummary.partner
+  const partner = reportSummary?.partner
 
   return (
     <>

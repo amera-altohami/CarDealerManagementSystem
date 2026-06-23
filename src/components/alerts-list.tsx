@@ -1,12 +1,12 @@
+import { type DashboardAlert } from '@/services/dashboardService'
 import { AlertTriangle, OctagonAlert } from 'lucide-react'
+import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { StatusBadge } from '@/components/status-badge'
-import { type AlertItem } from '@/data/carsMockData'
-import { useI18n } from '@/lib/i18n'
 
 type AlertsListProps = {
-  alerts: AlertItem[]
+  alerts: DashboardAlert[]
   className?: string
 }
 

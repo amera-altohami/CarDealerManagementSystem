@@ -1,11 +1,18 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { StatusBadge } from '@/components/status-badge'
-import { type Transaction } from '@/data/carsMockData'
+import { type DashboardTransaction } from '@/services/dashboardService'
 import { useI18n } from '@/lib/i18n'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { StatusBadge } from '@/components/status-badge'
 
 type LatestTransactionsProps = {
-  transactions: Transaction[]
+  transactions: DashboardTransaction[]
 }
 
 const money = new Intl.NumberFormat('en-US', {
@@ -36,7 +43,9 @@ export function LatestTransactions({ transactions }: LatestTransactionsProps) {
             <TableBody>
               {transactions.map((transaction) => (
                 <TableRow key={transaction.id}>
-                  <TableCell className='font-medium'>{transaction.car}</TableCell>
+                  <TableCell className='font-medium'>
+                    {transaction.car}
+                  </TableCell>
                   <TableCell>{transaction.type}</TableCell>
                   <TableCell>{transaction.date}</TableCell>
                   <TableCell>

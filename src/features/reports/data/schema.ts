@@ -1,9 +1,9 @@
 import { type ReactNode } from 'react'
-import { type CarStatus } from '@/data/carsMockData'
 import {
   type ExpenseType,
   type PaymentMethod,
 } from '@/data/dealerOperationsMockData'
+import { type CarStatus } from '@/services/carsService'
 import { type LucideIcon } from 'lucide-react'
 
 export type ReportKind = 'car' | 'profit' | 'expenses' | 'partner'

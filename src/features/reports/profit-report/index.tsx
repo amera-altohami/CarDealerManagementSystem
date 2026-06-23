@@ -1,11 +1,15 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
+import { getProfitReport } from '@/services/reportsService'
 import {
   ArrowLeft,
   CircleDollarSign,
   TrendingUp,
   WalletCards,
 } from 'lucide-react'
+import { toast } from 'sonner'
+import { getFirestoreErrorMessage } from '@/lib/firebase-errors'
 import { useI18n } from '@/lib/i18n'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -20,12 +24,7 @@ import { ExportButtons } from '../components/export-buttons'
 import { ReportFilters } from '../components/report-filters'
 import { ReportSummaryCards } from '../components/report-summary-cards'
 import { ReportTable } from '../components/report-table'
-import {
-  formatCurrency,
-  getProfitReportRows,
-  isInsideDateRange,
-  statusOptions,
-} from '../data/reportsMockData'
+import { formatCurrency, isInsideDateRange } from '../data/formatters'
 import { type ProfitReportRow, type ReportFilterValues } from '../data/schema'
 
 const initialFilters: ReportFilterValues = {
@@ -42,7 +41,26 @@ const initialFilters: ReportFilterValues = {
 export function ProfitReport() {
   const { t } = useI18n()
   const [filters, setFilters] = useState(initialFilters)
-  const rows = useMemo(() => getProfitReportRows(), [])
+  const profitReportQuery = useQuery({
+    queryKey: ['reports', 'profit'],
+    queryFn: () => getProfitReport(),
+  })
+
+  useEffect(() => {
+    if (profitReportQuery.isError) {
+      toast.error(getFirestoreErrorMessage(profitReportQuery.error))
+    }
+  }, [profitReportQuery.error, profitReportQuery.isError])
+
+  const rows = profitReportQuery.data ?? []
+  const statusOptions = useMemo(
+    () =>
+      Array.from(new Set(rows.map((row) => row.status))).map((status) => ({
+        value: status,
+        label: status,
+      })),
+    [rows]
+  )
   const translatedStatusOptions = statusOptions.map((option) => ({
     ...option,
     label:
