@@ -8,16 +8,20 @@ type NotificationsListProps = {
   notifications: AppNotification[]
   onToggleRead: (notification: AppNotification) => void
   onDelete: (notification: AppNotification) => void
+  isError?: boolean
+  isLoading?: boolean
 }
 
 export function NotificationsList({
   notifications,
   onToggleRead,
   onDelete,
+  isError = false,
+  isLoading = false,
 }: NotificationsListProps) {
   const { t } = useI18n()
 
-  if (!notifications.length) {
+  if (isLoading || isError || !notifications.length) {
     return (
       <Card className='border-border/60'>
         <CardContent className='flex min-h-48 flex-col items-center justify-center gap-3 p-8 text-center'>
@@ -25,7 +29,11 @@ export function NotificationsList({
             <BellOff className='h-6 w-6' />
           </div>
           <p className='text-sm text-muted-foreground'>
-            {t('noNotificationsFound')}
+            {isLoading
+              ? 'Loading...'
+              : isError
+                ? 'Failed to load notifications.'
+                : t('noNotificationsFound')}
           </p>
         </CardContent>
       </Card>

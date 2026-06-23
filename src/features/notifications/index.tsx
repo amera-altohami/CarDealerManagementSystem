@@ -1,6 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  NotificationDeleteBlockedError,
+  deleteNotification,
+  getNotifications,
+  markNotificationAsRead,
+  markNotificationAsUnread,
+} from '@/services/notificationsService'
 import { CheckCheck } from 'lucide-react'
+import { toast } from 'sonner'
+import { getFirestoreErrorMessage } from '@/lib/firebase-errors'
 import { useI18n } from '@/lib/i18n'
 import { Button } from '@/components/ui/button'
 import { ConfigDrawer } from '@/components/config-drawer'
@@ -17,7 +26,6 @@ import {
   type AppNotification,
   type NotificationFilters as NotificationFiltersState,
 } from './data/schema'
-import { getAppNotifications } from '@/services/notificationsService'
 
 const initialFilters: NotificationFiltersState = {
   search: '',
@@ -28,21 +36,77 @@ const initialFilters: NotificationFiltersState = {
 
 export function Notifications() {
   const { t } = useI18n()
+  const queryClient = useQueryClient()
   const notificationsQuery = useQuery({
     queryKey: ['notifications'] as const,
-    queryFn: getAppNotifications,
+    queryFn: getNotifications,
   })
-  const [notifications, setNotifications] = useState<AppNotification[]>([])
   const [filters, setFilters] =
     useState<NotificationFiltersState>(initialFilters)
   const [notificationToDelete, setNotificationToDelete] =
     useState<AppNotification | null>(null)
 
   useEffect(() => {
-    if (notificationsQuery.data) {
-      setNotifications(notificationsQuery.data)
+    if (notificationsQuery.isError) {
+      toast.error('Failed to load notifications.')
     }
-  }, [notificationsQuery.data])
+  }, [notificationsQuery.isError])
+
+  const toggleReadMutation = useMutation({
+    mutationFn: (notification: AppNotification) =>
+      notification.status === 'Unread'
+        ? markNotificationAsRead(notification.id)
+        : markNotificationAsUnread(notification.id),
+    onSuccess: async (_, notification) => {
+      await queryClient.invalidateQueries({ queryKey: ['notifications'] })
+      toast.success(
+        notification.status === 'Unread'
+          ? 'Notification marked as read.'
+          : 'Notification marked as unread.'
+      )
+    },
+    onError: (error) => {
+      toast.error(getFirestoreErrorMessage(error))
+    },
+  })
+
+  const markAllAsReadMutation = useMutation({
+    mutationFn: (notificationsToRead: AppNotification[]) =>
+      Promise.all(
+        notificationsToRead.map((notification) =>
+          markNotificationAsRead(notification.id)
+        )
+      ),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['notifications'] })
+      toast.success('Notification marked as read.')
+    },
+    onError: () => {
+      toast.error('Failed to update notification status.')
+    },
+  })
+
+  const deleteNotificationMutation = useMutation({
+    mutationFn: (notification: AppNotification) =>
+      deleteNotification(notification.id),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['notifications'] })
+      setNotificationToDelete(null)
+      toast.success('Notification deleted successfully.')
+    },
+    onError: (error) => {
+      if (error instanceof NotificationDeleteBlockedError) {
+        toast.warning(
+          'This notification cannot be deleted because it is linked to an active related record.'
+        )
+        return
+      }
+
+      toast.error('Failed to delete notification.')
+    },
+  })
+
+  const notifications = notificationsQuery.data ?? []
 
   const hasUnreadNotifications = notifications.some(
     (notification) => notification.status === 'Unread'
@@ -78,36 +142,19 @@ export function Notifications() {
   }, [filters, notifications])
 
   const handleToggleRead = (targetNotification: AppNotification) => {
-    setNotifications((currentNotifications) =>
-      currentNotifications.map((notification) =>
-        notification.id === targetNotification.id
-          ? {
-              ...notification,
-              status: notification.status === 'Unread' ? 'Read' : 'Unread',
-            }
-          : notification
-      )
-    )
+    toggleReadMutation.mutate(targetNotification)
   }
 
   const handleMarkAllAsRead = () => {
-    setNotifications((currentNotifications) =>
-      currentNotifications.map((notification) => ({
-        ...notification,
-        status: 'Read',
-      }))
+    markAllAsReadMutation.mutate(
+      notifications.filter((notification) => notification.status === 'Unread')
     )
   }
 
   const handleConfirmDelete = () => {
     if (!notificationToDelete) return
 
-    setNotifications((currentNotifications) =>
-      currentNotifications.filter(
-        (notification) => notification.id !== notificationToDelete.id
-      )
-    )
-    setNotificationToDelete(null)
+    deleteNotificationMutation.mutate(notificationToDelete)
   }
 
   return (
@@ -130,7 +177,9 @@ export function Notifications() {
           <Button
             variant='outline'
             onClick={handleMarkAllAsRead}
-            disabled={!hasUnreadNotifications}
+            disabled={
+              !hasUnreadNotifications || markAllAsReadMutation.isPending
+            }
           >
             <CheckCheck className='h-4 w-4' />
             {t('markAllAsRead')}
@@ -145,6 +194,8 @@ export function Notifications() {
           notifications={filteredNotifications}
           onToggleRead={handleToggleRead}
           onDelete={setNotificationToDelete}
+          isError={notificationsQuery.isError}
+          isLoading={notificationsQuery.isLoading}
         />
       </Main>
 
