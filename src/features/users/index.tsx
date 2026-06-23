@@ -1,5 +1,17 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  ProtectedUserDeleteError,
+  UserDeleteBlockedError,
+  createUser,
+  deleteUser,
+  disableUser,
+  enableUser,
+  getUsers,
+  updateUser,
+} from '@/services/usersService'
 import { UserPlus } from 'lucide-react'
+import { toast } from 'sonner'
 import { useI18n } from '@/lib/i18n'
 import { Button } from '@/components/ui/button'
 import { ConfigDrawer } from '@/components/config-drawer'
@@ -12,14 +24,102 @@ import { ThemeSwitch } from '@/components/theme-switch'
 import { UserForm } from './components/user-form'
 import { UsersTable } from './components/users-table'
 import { type ManagedUser, type UserManagementFormValues } from './data/schema'
-import { usersMockData } from './data/usersMockData'
 
 export function Users() {
   const { t } = useI18n()
-  const [users, setUsers] = useState<ManagedUser[]>(usersMockData)
+  const queryClient = useQueryClient()
+  const usersQuery = useQuery({
+    queryKey: ['users'] as const,
+    queryFn: getUsers,
+  })
   const [formOpen, setFormOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<ManagedUser | null>(null)
   const [userToDelete, setUserToDelete] = useState<ManagedUser | null>(null)
+
+  useEffect(() => {
+    if (usersQuery.isError) {
+      toast.error('Failed to load users.')
+    }
+  }, [usersQuery.isError])
+
+  const invalidateUserData = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['users'] }),
+      queryClient.invalidateQueries({ queryKey: ['activity-logs'] }),
+    ])
+  }
+
+  const createUserMutation = useMutation({
+    mutationFn: createUser,
+    onSuccess: async () => {
+      await invalidateUserData()
+      setFormOpen(false)
+      setEditingUser(null)
+      toast.success('User added successfully.')
+    },
+    onError: () => {
+      toast.error('Failed to save user.')
+    },
+  })
+
+  const updateUserMutation = useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string
+      data: UserManagementFormValues
+    }) => updateUser(id, data),
+    onSuccess: async () => {
+      await invalidateUserData()
+      setFormOpen(false)
+      setEditingUser(null)
+      toast.success('User updated successfully.')
+    },
+    onError: () => {
+      toast.error('Failed to save user.')
+    },
+  })
+
+  const toggleUserStatusMutation = useMutation({
+    mutationFn: (user: ManagedUser) =>
+      user.status === 'Active' ? disableUser(user.id) : enableUser(user.id),
+    onSuccess: async (_, user) => {
+      await invalidateUserData()
+      toast.success(
+        user.status === 'Active'
+          ? 'User disabled successfully.'
+          : 'User enabled successfully.'
+      )
+    },
+    onError: () => {
+      toast.error('Failed to update user status.')
+    },
+  })
+
+  const deleteUserMutation = useMutation({
+    mutationFn: (user: ManagedUser) => deleteUser(user.id),
+    onSuccess: async () => {
+      await invalidateUserData()
+      setUserToDelete(null)
+      toast.success('User deleted successfully.')
+    },
+    onError: (error) => {
+      if (error instanceof ProtectedUserDeleteError) {
+        toast.warning('This protected user cannot be deleted.')
+        return
+      }
+
+      if (error instanceof UserDeleteBlockedError) {
+        toast.warning(
+          'This user cannot be deleted because related activity records exist. Disable the user instead of deleting to preserve historical records.'
+        )
+        return
+      }
+
+      toast.error('Failed to delete user.')
+    },
+  })
 
   const handleAddUser = () => {
     setEditingUser(null)
@@ -35,41 +135,16 @@ export function Users() {
 
   const handleSubmit = (values: UserManagementFormValues) => {
     if (editingUser) {
-      setUsers((currentUsers) =>
-        currentUsers.map((user) =>
-          user.id === editingUser.id ? { ...user, ...values } : user
-        )
-      )
+      updateUserMutation.mutate({ id: editingUser.id, data: values })
     } else {
-      const today = new Date().toISOString().slice(0, 10)
-      setUsers((currentUsers) => [
-        {
-          id: `user-${Date.now()}`,
-          ...values,
-          createdAt: today,
-          lastLogin: 'Never',
-        },
-        ...currentUsers,
-      ])
+      createUserMutation.mutate(values)
     }
-
-    setFormOpen(false)
-    setEditingUser(null)
   }
 
   const handleToggleStatus = (targetUser: ManagedUser) => {
     if (targetUser.isProtected) return
 
-    setUsers((currentUsers) =>
-      currentUsers.map((user) =>
-        user.id === targetUser.id
-          ? {
-              ...user,
-              status: user.status === 'Active' ? 'Disabled' : 'Active',
-            }
-          : user
-      )
-    )
+    toggleUserStatusMutation.mutate(targetUser)
   }
 
   const handleRequestDelete = (user: ManagedUser) => {
@@ -102,10 +177,12 @@ export function Users() {
         </div>
 
         <UsersTable
-          data={users}
+          data={usersQuery.data ?? []}
           onEdit={handleEditUser}
           onDelete={handleRequestDelete}
           onToggleStatus={handleToggleStatus}
+          isError={usersQuery.isError}
+          isLoading={usersQuery.isLoading}
         />
       </Main>
 
@@ -153,10 +230,7 @@ export function Users() {
           if (!userToDelete) return
           if (userToDelete.isProtected) return
 
-          setUsers((currentUsers) =>
-            currentUsers.filter((user) => user.id !== userToDelete.id)
-          )
-          setUserToDelete(null)
+          deleteUserMutation.mutate(userToDelete)
         }}
       />
     </>

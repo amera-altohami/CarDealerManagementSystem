@@ -21,7 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { formatActivityLogDate } from '../data/logsMockData'
+import { formatActivityLogDate } from '../data/formatters'
 import {
   type ActivityLog,
   type ActivityLogAction,
@@ -30,6 +30,8 @@ import {
 
 type LogsTableProps = {
   logs: ActivityLog[]
+  isError?: boolean
+  isLoading?: boolean
 }
 
 const actionStyles: Record<ActivityLogAction, string> = {
@@ -194,7 +196,11 @@ function LogDetailsDialog({
   )
 }
 
-export function LogsTable({ logs }: LogsTableProps) {
+export function LogsTable({
+  logs,
+  isError = false,
+  isLoading = false,
+}: LogsTableProps) {
   const { t, locale } = useI18n()
   const [selectedLog, setSelectedLog] = useState<ActivityLog | null>(null)
 
@@ -223,7 +229,15 @@ export function LogsTable({ logs }: LogsTableProps) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {logs.length ? (
+                  {isLoading || isError ? (
+                    <TableRow>
+                      <TableCell colSpan={10} className='h-24 text-center'>
+                        {isLoading
+                          ? 'Loading...'
+                          : 'Failed to load activity logs.'}
+                      </TableCell>
+                    </TableRow>
+                  ) : logs.length ? (
                     logs.map((log) => (
                       <TableRow key={log.id}>
                         <TableCell>
@@ -236,9 +250,6 @@ export function LogsTable({ logs }: LogsTableProps) {
                             <div className='min-w-0'>
                               <p className='truncate font-medium'>
                                 {log.userName}
-                              </p>
-                              <p className='text-xs text-muted-foreground'>
-                                {log.userId}
                               </p>
                             </div>
                           </div>

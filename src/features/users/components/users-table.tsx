@@ -43,6 +43,8 @@ type UsersTableProps = {
   onEdit: (user: ManagedUser) => void
   onDelete: (user: ManagedUser) => void
   onToggleStatus: (user: ManagedUser) => void
+  isError?: boolean
+  isLoading?: boolean
 }
 
 type StatusFilter = ManagedUser['status'] | 'all'
@@ -63,6 +65,8 @@ export function UsersTable({
   onEdit,
   onDelete,
   onToggleStatus,
+  isError = false,
+  isLoading = false,
 }: UsersTableProps) {
   const { t } = useI18n()
   const [search, setSearch] = useState('')
@@ -134,7 +138,13 @@ export function UsersTable({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredRows.length ? (
+              {isLoading || isError ? (
+                <TableRow>
+                  <TableCell colSpan={7} className='h-24 text-center'>
+                    {isLoading ? 'Loading...' : 'Failed to load users.'}
+                  </TableCell>
+                </TableRow>
+              ) : filteredRows.length ? (
                 filteredRows.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell>
@@ -156,9 +166,6 @@ export function UsersTable({
                               </Badge>
                             ) : null}
                           </div>
-                          <p className='text-xs text-muted-foreground'>
-                            {user.id}
-                          </p>
                         </div>
                       </div>
                     </TableCell>
