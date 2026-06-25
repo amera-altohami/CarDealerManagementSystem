@@ -9,10 +9,9 @@ const userStatusSchema = z.union([
 export type UserStatus = z.infer<typeof userStatusSchema>
 
 const userRoleSchema = z.union([
-  z.literal('superadmin'),
-  z.literal('admin'),
-  z.literal('cashier'),
-  z.literal('manager'),
+  z.literal('SUPER_ADMIN'),
+  z.literal('ADMIN'),
+  z.literal('USER'),
 ])
 
 const _userSchema = z.object({
@@ -30,11 +29,9 @@ const _userSchema = z.object({
 export type User = z.infer<typeof _userSchema>
 
 export const userManagementRoleOptions = [
-  'Admin',
-  'Manager',
-  'Accountant',
-  'Sales',
-  'Viewer',
+  'SUPER_ADMIN',
+  'ADMIN',
+  'USER',
 ] as const
 
 export const userManagementStatusOptions = ['Active', 'Disabled'] as const

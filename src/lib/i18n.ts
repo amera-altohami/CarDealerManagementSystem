@@ -1,9 +1,9 @@
 import type {
-  CompanyType,
   ExpenseType,
   InspectionStatus,
   PaymentMethod,
-} from '@/data/dealerOperationsMockData'
+} from '@/types/dealer'
+import { type CompanyType } from '@/features/companies/model'
 import { getLocaleFromDir, type Locale } from '@/lib/locale'
 import { useDirection } from '@/context/direction-provider'
 
@@ -30,7 +30,7 @@ const legacyMessages = {
     usersTableDesc: 'Search users and filter by account status.',
     addUser: 'Add User',
     editUser: 'Edit User',
-    addUserDesc: 'Create a mock user account for the dashboard.',
+    addUserDesc: 'Create a user account for the dashboard.',
     editUserDesc: 'Update user details, role, and account status.',
     searchUsers: 'Search name, email, or phone...',
     user: 'User',
@@ -52,11 +52,9 @@ const legacyMessages = {
     disable: 'Disable',
     activeStatus: 'Active',
     disabledStatus: 'Disabled',
+    roleSuperAdmin: 'Super Admin',
     roleAdmin: 'Admin',
-    roleManager: 'Manager',
-    roleAccountant: 'Accountant',
-    roleSales: 'Sales',
-    roleViewer: 'Viewer',
+    roleUser: 'User',
     never: 'Never',
     reports: 'Reports',
     reportsDesc: 'Generate car, profit, expenses, and partner reports.',
@@ -110,7 +108,7 @@ const legacyMessages = {
       'Search partners and filter by account status or investment percentage.',
     addPartner: 'Add Partner',
     editPartner: 'Edit Partner',
-    addPartnerDesc: 'Create a mock partner profile for investment tracking.',
+    addPartnerDesc: 'Create a partner profile for investment tracking.',
     editPartnerDesc: 'Update partner details, percentage, and account status.',
     addContribution: 'Add Contribution',
     addContributionDesc:
@@ -590,6 +588,7 @@ const messages = {
     logActionUpdate: `Update`,
     logActionDelete: `Delete`,
     logActionLogin: `Login`,
+    logActionLogout: `Logout`,
     logModuleCars: `Cars`,
     logModuleExpenses: `Expenses`,
     logModulePartners: `Partners`,

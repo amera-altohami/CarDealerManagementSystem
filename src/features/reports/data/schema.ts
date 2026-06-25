@@ -2,7 +2,7 @@ import { type ReactNode } from 'react'
 import {
   type ExpenseType,
   type PaymentMethod,
-} from '@/data/dealerOperationsMockData'
+} from '@/types/dealer'
 import { type CarStatus } from '@/services/carsService'
 import { type LucideIcon } from 'lucide-react'
 

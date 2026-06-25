@@ -71,7 +71,7 @@ async function seedFirestore() {
       title_type: 'Salvage',
       current_title_type: 'Salvage',
       title_last_updated_at: '2026-06-01',
-      title_updated_by: 'Admin User',
+      title_updated_by: 'Admin',
       purchase_date: '2026-05-20',
       purchase_price: 5000,
       selling_price: 8500,
@@ -96,7 +96,7 @@ async function seedFirestore() {
       title_type: 'Clean',
       current_title_type: 'Clean',
       title_last_updated_at: '2026-06-05',
-      title_updated_by: 'Manager User',
+      title_updated_by: 'Admin',
       purchase_date: '2026-05-25',
       purchase_price: 6500,
       selling_price: 10500,
@@ -124,7 +124,7 @@ async function seedFirestore() {
       previous_title_type: 'Salvage',
       new_title_type: 'Rebuilt',
       change_date: '2026-06-10',
-      updated_by: 'Admin User',
+      updated_by: 'Admin',
       notes: 'Title converted after inspection',
       created_at: now,
     },
@@ -322,9 +322,9 @@ async function seedFirestore() {
   const activityLogs = [
     {
       id: 'activity-001',
-      user_id: 'user-001',
-      user_name: 'Admin User',
-      user_role: 'Admin',
+      user_id: 'admin-default',
+      user_name: 'Admin',
+      user_role: 'SUPER_ADMIN',
       action: 'Create',
       module: 'Cars',
       entity_type: 'car',
@@ -345,13 +345,15 @@ async function seedFirestore() {
   // Managed Users
   const managedUsers = [
     {
-      id: 'user-001',
-      full_name: 'Admin User',
-      email: 'admin@example.com',
+      id: 'admin-default',
+      full_name: 'Admin',
+      email: 'car.d.d.admin@gmail.com',
       phone: '+218 91 111 1111',
-      role: 'Admin',
+      role: 'SUPER_ADMIN',
       status: 'Active',
       is_protected: true,
+      // Firebase Auth password for this protected account should be set to 15221522.
+      // The password itself lives in Firebase Authentication, not in Firestore seed data.
       created_at: now,
       last_login: null,
     },
@@ -360,7 +362,7 @@ async function seedFirestore() {
       full_name: 'Sales User',
       email: 'sales@example.com',
       phone: '+218 92 222 2222',
-      role: 'Sales',
+      role: 'USER',
       status: 'Active',
       is_protected: false,
       created_at: now,

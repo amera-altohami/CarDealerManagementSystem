@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
-import { type CarStatus } from '@/data/carsMockData'
+import { type CarStatus } from '@/services/carsService'
 import { useI18n } from '@/lib/i18n'
 
 type StatusBadgeProps = {

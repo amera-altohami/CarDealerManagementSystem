@@ -4,7 +4,7 @@ import {
   expenseTypeOptions,
   type ExpenseType,
   type PaymentMethod,
-} from '@/data/dealerOperationsMockData'
+} from '@/types/dealer'
 import { formatCarName } from '@/services/carsService'
 import { Plus } from 'lucide-react'
 import { toast } from 'sonner'

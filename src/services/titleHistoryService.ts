@@ -26,7 +26,7 @@ import {
   type CarStatus,
 } from './carsService'
 import type { TitleType } from '@/features/cars/types/title'
-import type { InspectionStatus } from '@/data/dealerOperationsMockData'
+import type { InspectionStatus } from '@/types/dealer'
 
 const COLLECTION_NAME = 'car_title_history'
 const CAR_COLLECTION_NAME = 'cars'

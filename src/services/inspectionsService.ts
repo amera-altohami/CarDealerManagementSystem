@@ -22,7 +22,7 @@ import {
 import { z } from 'zod'
 import { db } from '@/lib/firebase'
 import { getFirestoreErrorMessage } from '@/lib/firebase-errors'
-import type { InspectionStatus } from '@/data/dealerOperationsMockData'
+import type { InspectionStatus } from '@/types/dealer'
 import { createRebuiltTitleFromPassedInspection } from './titleHistoryService'
 
 const COLLECTION_NAME = 'inspections'

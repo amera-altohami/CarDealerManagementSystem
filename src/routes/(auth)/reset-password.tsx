@@ -1,16 +1,16 @@
 import { z } from 'zod'
 import { createFileRoute } from '@tanstack/react-router'
-import { SignIn } from '@/features/auth/sign-in'
+import { ResetPassword } from '@/features/auth/reset-password'
 import { requireUnauthenticated } from '@/lib/auth-guards'
 
 const searchSchema = z.object({
-  redirect: z.string().optional(),
+  oobCode: z.string().optional(),
 })
 
-export const Route = createFileRoute('/(auth)/sign-in')({
+export const Route = createFileRoute('/(auth)/reset-password')({
   beforeLoad: async () => {
     await requireUnauthenticated()
   },
-  component: SignIn,
+  component: ResetPassword,
   validateSearch: searchSchema,
 })

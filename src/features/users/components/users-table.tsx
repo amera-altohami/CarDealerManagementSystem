@@ -43,6 +43,7 @@ type UsersTableProps = {
   onEdit: (user: ManagedUser) => void
   onDelete: (user: ManagedUser) => void
   onToggleStatus: (user: ManagedUser) => void
+  currentUserRole?: ManagedUser['role'] | null
   isError?: boolean
   isLoading?: boolean
 }
@@ -65,6 +66,7 @@ export function UsersTable({
   onEdit,
   onDelete,
   onToggleStatus,
+  currentUserRole,
   isError = false,
   isLoading = false,
 }: UsersTableProps) {
@@ -194,16 +196,26 @@ export function UsersTable({
                             <span className='sr-only'>{t('openMenu')}</span>
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align='end' className='w-44'>
+                      <DropdownMenuContent align='end' className='w-44'>
                           <DropdownMenuItem
-                            disabled={user.isProtected}
+                            disabled={
+                              user.isProtected ||
+                              !currentUserRole ||
+                              (currentUserRole === 'ADMIN' &&
+                                user.role !== 'USER')
+                            }
                             onClick={() => onEdit(user)}
                           >
                             {t('edit')}
                             <Pencil className='ms-auto h-4 w-4' />
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            disabled={user.isProtected}
+                            disabled={
+                              user.isProtected ||
+                              !currentUserRole ||
+                              (currentUserRole === 'ADMIN' &&
+                                user.role !== 'USER')
+                            }
                             onClick={() => onToggleStatus(user)}
                           >
                             {user.status === 'Active'
@@ -218,7 +230,10 @@ export function UsersTable({
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             className='text-red-500!'
-                            disabled={user.isProtected}
+                            disabled={
+                              user.isProtected ||
+                              currentUserRole !== 'SUPER_ADMIN'
+                            }
                             onClick={() => onDelete(user)}
                           >
                             {t('delete')}

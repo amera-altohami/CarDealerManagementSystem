@@ -7,6 +7,7 @@ import {
   getDocs,
   orderBy,
   query,
+  setDoc,
   serverTimestamp,
   updateDoc,
   where,
@@ -24,9 +25,23 @@ import type {
 import { createActivityLog } from './activityLogsService'
 
 const COLLECTION_NAME = 'managed_users'
+export const DEFAULT_SUPER_ADMIN_EMAIL = 'car.d.d.admin@gmail.com'
+const DEFAULT_SUPER_ADMIN_ID = 'admin-default'
+const DEFAULT_SUPER_ADMIN_NAME = 'Admin'
 const PROTECTED_DELETE_MESSAGE = 'This protected user cannot be deleted.'
 const RELATED_DELETE_MESSAGE =
   'This user cannot be deleted because related activity records exist. Disable the user instead of deleting to preserve historical records.'
+const LEGACY_ROLE_MAP: Record<string, ManagedUser['role']> = {
+  superadmin: 'SUPER_ADMIN',
+  'super admin': 'SUPER_ADMIN',
+  admin: 'ADMIN',
+  manager: 'ADMIN',
+  accountant: 'USER',
+  sales: 'USER',
+  cashier: 'USER',
+  viewer: 'USER',
+  user: 'USER',
+}
 const ACTIVITY_LOG_ACTOR: {
   role: ManagedUser['role']
   userId: string
@@ -34,7 +49,7 @@ const ACTIVITY_LOG_ACTOR: {
 } = {
   userId: 'system',
   userName: 'System',
-  role: 'Admin',
+  role: 'SUPER_ADMIN',
 }
 
 type FirestoreDate = Timestamp | Date | string | null
@@ -115,6 +130,12 @@ function normalizeText(value?: string | null) {
   return trimmed.length > 0 ? trimmed : null
 }
 
+function normalizeRole(role: string): ManagedUser['role'] {
+  const normalized = role.trim().replace(/\s+/g, ' ').toLowerCase()
+
+  return LEGACY_ROLE_MAP[normalized] ?? (role as ManagedUser['role'])
+}
+
 function dateToString(value?: FirestoreDate) {
   if (!value) return ''
   if (typeof value === 'string') return value
@@ -135,7 +156,7 @@ function mapUserSnapshot(
     fullName: data.full_name,
     email: data.email,
     phone: data.phone ?? '',
-    role: data.role,
+    role: normalizeRole(data.role),
     status: data.status,
     isProtected: data.is_protected ?? false,
     createdAt: dateToString(data.created_at),
@@ -150,7 +171,7 @@ function toCreateDocumentData(
     full_name: data.fullName.trim(),
     email: data.email.trim(),
     phone: normalizeText(data.phone),
-    role: data.role,
+    role: normalizeRole(data.role),
     status: data.status,
     is_protected: false,
     created_at: serverTimestamp(),
@@ -179,7 +200,7 @@ function toUpdateDocumentData(
   }
 
   if (data.role !== undefined) {
-    documentData.role = data.role
+    documentData.role = normalizeRole(data.role)
   }
 
   if (data.status !== undefined) {
@@ -264,6 +285,22 @@ export async function getUsers(): Promise<ManagedUser[]> {
     query(collection(db, COLLECTION_NAME), orderBy('created_at', 'desc'))
   )
 
+  await Promise.all(
+    snapshot.docs
+      .filter((userSnapshot) => {
+        const data = userSnapshot.data() as ManagedUserDocument
+        return normalizeRole(data.role) !== data.role
+      })
+      .map((userSnapshot) =>
+        updateDoc(doc(db, COLLECTION_NAME, userSnapshot.id), {
+          role: normalizeRole(
+            (userSnapshot.data() as ManagedUserDocument).role
+          ),
+          updated_at: serverTimestamp(),
+        })
+      )
+  )
+
   return snapshot.docs.map(mapUserSnapshot)
 }
 
@@ -271,6 +308,75 @@ export async function getUserById(id: string): Promise<ManagedUser | null> {
   const snapshot = await getDoc(doc(db, COLLECTION_NAME, id))
 
   return snapshot.exists() ? mapUserSnapshot(snapshot) : null
+}
+
+export async function getUserByEmail(
+  email: string
+): Promise<ManagedUser | null> {
+  const snapshot = await getDocs(
+    query(collection(db, COLLECTION_NAME), where('email', '==', email.trim()))
+  )
+
+  return snapshot.docs[0] ? mapUserSnapshot(snapshot.docs[0]) : null
+}
+
+export function isDefaultSuperAdmin(user: Pick<ManagedUser, 'id' | 'role'>) {
+  return user.id === DEFAULT_SUPER_ADMIN_ID || user.role === 'SUPER_ADMIN'
+}
+
+export async function ensureDefaultSuperAdminProfile(
+  email: string
+): Promise<ManagedUser | null> {
+  if (email.trim().toLowerCase() !== DEFAULT_SUPER_ADMIN_EMAIL) {
+    return null
+  }
+
+  const existingById = await getUserById(DEFAULT_SUPER_ADMIN_ID)
+
+  if (existingById) {
+    if (
+      existingById.email !== DEFAULT_SUPER_ADMIN_EMAIL ||
+      existingById.status !== 'Active' ||
+      !existingById.isProtected ||
+      existingById.role !== 'SUPER_ADMIN'
+    ) {
+      await updateDoc(doc(db, COLLECTION_NAME, DEFAULT_SUPER_ADMIN_ID), {
+        full_name: DEFAULT_SUPER_ADMIN_NAME,
+        email: DEFAULT_SUPER_ADMIN_EMAIL,
+        phone: null,
+        role: 'SUPER_ADMIN',
+        status: 'Active',
+        is_protected: true,
+        updated_at: serverTimestamp(),
+      })
+      return getUserById(DEFAULT_SUPER_ADMIN_ID)
+    }
+
+    return existingById
+  }
+
+  const existingByEmail = await getUserByEmail(DEFAULT_SUPER_ADMIN_EMAIL)
+
+  if (existingByEmail) {
+    return existingByEmail
+  }
+
+  const now = serverTimestamp()
+
+  await setDoc(doc(db, COLLECTION_NAME, DEFAULT_SUPER_ADMIN_ID), {
+    id: DEFAULT_SUPER_ADMIN_ID,
+    full_name: DEFAULT_SUPER_ADMIN_NAME,
+    email: DEFAULT_SUPER_ADMIN_EMAIL,
+    phone: null,
+    role: 'SUPER_ADMIN',
+    status: 'Active',
+    is_protected: true,
+    created_at: now,
+    updated_at: now,
+    last_login: now,
+  })
+
+  return getUserById(DEFAULT_SUPER_ADMIN_ID)
 }
 
 export async function createUser(data: CreateUserData): Promise<ManagedUser> {
@@ -312,6 +418,19 @@ export async function updateUser(
     { ...existingUser, ...data },
     `Updated user ${data.fullName ?? existingUser.fullName}`
   )
+}
+
+export async function markLastLogin(id: string): Promise<void> {
+  const existingUser = await getUserById(id)
+
+  if (!existingUser) {
+    throw new UserNotFoundError()
+  }
+
+  await updateDoc(doc(db, COLLECTION_NAME, id), {
+    last_login: serverTimestamp(),
+    updated_at: serverTimestamp(),
+  })
 }
 
 export async function disableUser(id: string): Promise<void> {
@@ -441,5 +560,6 @@ export async function getActiveUsers(): Promise<ManagedUser[]> {
 export { createUser as create }
 export { deleteUser as delete }
 export { getUserById as getById }
+export { getUserByEmail as getByEmail }
 export { getUsers as getAll }
 export { updateUser as update }

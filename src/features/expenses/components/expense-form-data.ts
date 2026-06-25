@@ -3,7 +3,7 @@ import {
   expenseTypeOptions,
   type ExpenseType,
   type PaymentMethod,
-} from '@/data/dealerOperationsMockData'
+} from '@/types/dealer'
 
 export const expenseTypes: ExpenseType[] = [...expenseTypeOptions]
 

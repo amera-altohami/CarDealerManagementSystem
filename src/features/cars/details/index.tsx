@@ -192,7 +192,7 @@ function getTitleHistorySortKey(entry: {
 export function CarDetails({ carId }: CarDetailsProps) {
   const { t, locale } = useI18n()
   const navigate = useNavigate()
-  const currentUser = useAuthStore((state) => state.auth.user)
+  const currentUser = useAuthStore((state) => state.auth.profile)
   const carQuery = useCarQuery(carId)
   const carDeleteCheckQuery = useCarDeleteCheckQuery(carId)
   const deleteCarMutation = useDeleteCarMutation()
@@ -324,7 +324,7 @@ export function CarDetails({ carId }: CarDetailsProps) {
   const handleSaveTitle = async (values: TitleUpdateValues) => {
     const today = new Date().toISOString().slice(0, 10)
     const updatedBy =
-      currentUser?.email || currentUser?.accountNo || t('currentAccount')
+      currentUser?.email || currentUser?.fullName || t('currentAccount')
     await createTitleHistoryMutation.mutateAsync({
       carId: car.id,
       previousTitleType: currentTitle.type,

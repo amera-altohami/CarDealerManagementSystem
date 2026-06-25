@@ -21,10 +21,7 @@ import {
 import { z } from 'zod'
 import { db } from '@/lib/firebase'
 import { getFirestoreErrorMessage } from '@/lib/firebase-errors'
-import type {
-  ExpenseType,
-  PaymentMethod,
-} from '@/data/dealerOperationsMockData'
+import type { ExpenseType, PaymentMethod } from '@/types/dealer'
 
 const COLLECTION_NAME = 'expenses'
 const CAR_COLLECTION_NAME = 'cars'

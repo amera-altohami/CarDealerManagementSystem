@@ -41,6 +41,8 @@ const actionStyles: Record<ActivityLogAction, string> = {
   Delete: 'border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300',
   Login:
     'border-slate-500/30 bg-slate-500/10 text-slate-700 dark:text-slate-300',
+  Logout:
+    'border-neutral-500/30 bg-neutral-500/10 text-neutral-700 dark:text-neutral-300',
 }
 
 const actionLabelKeys: Record<ActivityLogAction, MessageKey> = {
@@ -48,6 +50,7 @@ const actionLabelKeys: Record<ActivityLogAction, MessageKey> = {
   Update: 'logActionUpdate',
   Delete: 'logActionDelete',
   Login: 'logActionLogin',
+  Logout: 'logActionLogout',
 }
 
 const moduleLabelKeys: Record<ActivityLogModule, MessageKey> = {
@@ -64,11 +67,9 @@ const moduleLabelKeys: Record<ActivityLogModule, MessageKey> = {
 }
 
 const roleLabelKeys: Record<ActivityLog['userRole'], MessageKey> = {
-  Admin: 'roleAdmin',
-  Manager: 'roleManager',
-  Accountant: 'roleAccountant',
-  Sales: 'roleSales',
-  Viewer: 'roleViewer',
+  SUPER_ADMIN: 'roleSuperAdmin',
+  ADMIN: 'roleAdmin',
+  USER: 'roleUser',
 }
 
 function ActionBadge({ action }: { action: ActivityLogAction }) {

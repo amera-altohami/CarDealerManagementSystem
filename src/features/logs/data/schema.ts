@@ -6,6 +6,7 @@ export const activityLogActionOptions = [
   'Update',
   'Delete',
   'Login',
+  'Logout',
 ] as const
 
 export const activityLogModuleOptions = [

@@ -27,6 +27,7 @@ const actionLabelKeys: Record<ActivityLogAction, MessageKey> = {
   Update: 'logActionUpdate',
   Delete: 'logActionDelete',
   Login: 'logActionLogin',
+  Logout: 'logActionLogout',
 }
 
 const moduleLabelKeys: Record<ActivityLogModule, MessageKey> = {

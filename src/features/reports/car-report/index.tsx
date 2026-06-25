@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { type ExpenseType } from '@/data/dealerOperationsMockData'
+import { type ExpenseType } from '@/types/dealer'
 import { getCarReport, reportExpenseTypes } from '@/services/reportsService'
 import {
   ArrowLeft,

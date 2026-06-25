@@ -1,4 +1,4 @@
-import type { ExpenseType } from '@/data/dealerOperationsMockData'
+import type { ExpenseType } from '@/types/dealer'
 import { formatCarName, getCars, type Car, type CarStatus } from './carsService'
 import { getExpenses, type Expense } from './expensesService'
 import { getInspections, type Inspection } from './inspectionsService'

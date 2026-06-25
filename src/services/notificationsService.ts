@@ -225,7 +225,7 @@ async function writeNotificationActivityLog(
     await createActivityLog({
       user_id: 'system',
       user_name: 'System',
-      user_role: 'Admin',
+      user_role: 'SUPER_ADMIN',
       action,
       module: 'Notifications',
       entity_type: 'notification',

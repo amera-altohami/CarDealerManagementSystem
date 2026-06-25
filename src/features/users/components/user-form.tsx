@@ -29,7 +29,6 @@ import {
 } from '@/components/ui/select'
 import {
   userManagementFormSchema,
-  userManagementRoleOptions,
   userManagementStatusOptions,
   type UserManagementFormValues,
 } from '../data/schema'
@@ -39,22 +38,21 @@ type UserFormProps = {
   onOpenChange: (open: boolean) => void
   defaultValues?: Partial<UserManagementFormValues>
   onSubmit: (values: UserManagementFormValues) => void
+  roleOptions?: UserManagementFormValues['role'][]
 }
 
 const defaults: UserManagementFormValues = {
   fullName: '',
   email: '',
   phone: '',
-  role: 'Viewer',
+  role: 'USER',
   status: 'Active',
 }
 
 const roleLabelKeys: Record<UserManagementFormValues['role'], MessageKey> = {
-  Admin: 'roleAdmin',
-  Manager: 'roleManager',
-  Accountant: 'roleAccountant',
-  Sales: 'roleSales',
-  Viewer: 'roleViewer',
+  SUPER_ADMIN: 'roleSuperAdmin',
+  ADMIN: 'roleAdmin',
+  USER: 'roleUser',
 }
 
 const statusLabelKeys: Record<UserManagementFormValues['status'], MessageKey> =
@@ -68,9 +66,12 @@ export function UserForm({
   onOpenChange,
   defaultValues,
   onSubmit,
+  roleOptions,
 }: UserFormProps) {
   const { t } = useI18n()
   const isEdit = Boolean(defaultValues)
+  const selectableRoles: UserManagementFormValues['role'][] =
+    roleOptions ?? ['USER']
   const form = useForm<UserManagementFormValues>({
     resolver: zodResolver(
       userManagementFormSchema
@@ -156,7 +157,7 @@ export function UserForm({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {userManagementRoleOptions.map((role) => (
+                        {selectableRoles.map((role) => (
                           <SelectItem key={role} value={role}>
                             {t(roleLabelKeys[role])}
                           </SelectItem>

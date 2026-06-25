@@ -30,6 +30,18 @@ const DELETE_BLOCKED_MESSAGE =
 
 type FirestoreDate = Timestamp | Date | string | null
 
+const LEGACY_ROLE_MAP: Record<string, ManagedUser['role']> = {
+  superadmin: 'SUPER_ADMIN',
+  'super admin': 'SUPER_ADMIN',
+  admin: 'ADMIN',
+  manager: 'ADMIN',
+  accountant: 'USER',
+  sales: 'USER',
+  cashier: 'USER',
+  viewer: 'USER',
+  user: 'USER',
+}
+
 export interface ActivityLogDocument {
   id: string
   user_id: string
@@ -111,6 +123,12 @@ function dateToString(value?: FirestoreDate) {
   return value.toDate().toISOString().slice(0, 10)
 }
 
+function normalizeRole(role: string): ManagedUser['role'] {
+  const normalized = role.trim().replace(/\s+/g, ' ').toLowerCase()
+
+  return LEGACY_ROLE_MAP[normalized] ?? (role as ManagedUser['role'])
+}
+
 function getCurrentDateParts() {
   const now = new Date()
 
@@ -132,7 +150,7 @@ function mapActivityLogSnapshot(
     id: data.id,
     userId: data.user_id,
     userName: data.user_name,
-    userRole: data.user_role,
+    userRole: normalizeRole(data.user_role),
     action: data.action,
     module: data.module,
     entityType: data.entity_type,
@@ -156,7 +174,7 @@ function toCreateDocumentData(
   return {
     user_id: currentData.userId ?? legacyData.user_id ?? 'system',
     user_name: currentData.userName ?? legacyData.user_name ?? 'System',
-    user_role: currentData.userRole ?? legacyData.user_role ?? 'Admin',
+    user_role: currentData.userRole ?? legacyData.user_role ?? 'SUPER_ADMIN',
     action: data.action,
     module: data.module,
     entity_type: currentData.entityType ?? legacyData.entity_type,

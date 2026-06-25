@@ -1,4 +1,4 @@
-import type { ExpenseType } from '@/data/dealerOperationsMockData'
+import type { ExpenseType } from '@/types/dealer'
 import type {
   Partner,
   PartnerContribution,

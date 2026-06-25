@@ -13,6 +13,7 @@ import {
 import { UserPlus } from 'lucide-react'
 import { toast } from 'sonner'
 import { useI18n } from '@/lib/i18n'
+import { useAuthStore } from '@/stores/auth-store'
 import { Button } from '@/components/ui/button'
 import { ConfigDrawer } from '@/components/config-drawer'
 import { ConfirmDialog } from '@/components/confirm-dialog'
@@ -25,9 +26,19 @@ import { UserForm } from './components/user-form'
 import { UsersTable } from './components/users-table'
 import { type ManagedUser, type UserManagementFormValues } from './data/schema'
 
+const roleCreationOptionsByRole: Record<
+  Exclude<ManagedUser['role'], 'USER'>,
+  ManagedUser['role'][]
+> = {
+  SUPER_ADMIN: ['ADMIN', 'USER'],
+  ADMIN: ['USER'],
+}
+
 export function Users() {
   const { t } = useI18n()
   const queryClient = useQueryClient()
+  const currentUser = useAuthStore((state) => state.auth.profile)
+  const currentUserRole = currentUser?.role ?? null
   const usersQuery = useQuery({
     queryKey: ['users'] as const,
     queryFn: getUsers,
@@ -35,6 +46,12 @@ export function Users() {
   const [formOpen, setFormOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<ManagedUser | null>(null)
   const [userToDelete, setUserToDelete] = useState<ManagedUser | null>(null)
+  const canCreateUsers = currentUserRole === 'SUPER_ADMIN' || currentUserRole === 'ADMIN'
+  const canDeleteUsers = currentUserRole === 'SUPER_ADMIN'
+  const roleOptions =
+    currentUserRole === 'SUPER_ADMIN' || currentUserRole === 'ADMIN'
+      ? roleCreationOptionsByRole[currentUserRole]
+      : []
 
   useEffect(() => {
     if (usersQuery.isError) {
@@ -122,12 +139,21 @@ export function Users() {
   })
 
   const handleAddUser = () => {
+    if (!canCreateUsers) {
+      toast.warning('User role does not allow creating accounts.')
+      return
+    }
     setEditingUser(null)
     setFormOpen(true)
   }
 
   const handleEditUser = (user: ManagedUser) => {
     if (user.isProtected) return
+    if (!currentUserRole) return
+    if (currentUserRole === 'ADMIN' && user.role !== 'USER') {
+      toast.warning('Admin users can only manage normal User accounts.')
+      return
+    }
 
     setEditingUser(user)
     setFormOpen(true)
@@ -135,20 +161,44 @@ export function Users() {
 
   const handleSubmit = (values: UserManagementFormValues) => {
     if (editingUser) {
+      if (currentUserRole === 'ADMIN' && values.role !== 'USER') {
+        toast.warning('Admin users can only create normal User accounts.')
+        return
+      }
       updateUserMutation.mutate({ id: editingUser.id, data: values })
     } else {
+      if (!canCreateUsers) {
+        toast.warning('User role does not allow creating accounts.')
+        return
+      }
+      if (currentUserRole === 'ADMIN' && values.role !== 'USER') {
+        toast.warning('Admin users can only create normal User accounts.')
+        return
+      }
       createUserMutation.mutate(values)
     }
   }
 
   const handleToggleStatus = (targetUser: ManagedUser) => {
     if (targetUser.isProtected) return
+    if (!currentUserRole) return
+    if (currentUserRole === 'ADMIN' && targetUser.role !== 'USER') {
+      toast.warning('Admin users can only manage normal User accounts.')
+      return
+    }
 
     toggleUserStatusMutation.mutate(targetUser)
   }
 
   const handleRequestDelete = (user: ManagedUser) => {
-    if (user.isProtected) return
+    if (!canDeleteUsers) {
+      toast.warning('Only Super Admin can delete users.')
+      return
+    }
+    if (user.isProtected) {
+      toast.warning('The default Super Admin account cannot be deleted.')
+      return
+    }
 
     setUserToDelete(user)
   }
@@ -170,7 +220,7 @@ export function Users() {
             </h1>
             <p className='text-muted-foreground'>{t('usersManagementDesc')}</p>
           </div>
-          <Button onClick={handleAddUser}>
+          <Button onClick={handleAddUser} disabled={!canCreateUsers}>
             <UserPlus className='h-4 w-4' />
             {t('addUser')}
           </Button>
@@ -181,6 +231,7 @@ export function Users() {
           onEdit={handleEditUser}
           onDelete={handleRequestDelete}
           onToggleStatus={handleToggleStatus}
+          currentUserRole={currentUserRole}
           isError={usersQuery.isError}
           isLoading={usersQuery.isLoading}
         />
@@ -205,6 +256,7 @@ export function Users() {
               }
             : undefined
         }
+        roleOptions={roleOptions}
         onSubmit={handleSubmit}
       />
 
