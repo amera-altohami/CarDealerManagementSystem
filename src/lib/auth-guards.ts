@@ -1,11 +1,25 @@
 import { redirect } from '@tanstack/react-router'
-import { type ManagedUser } from '@/features/users/data/schema'
-import { isDefaultSuperAdmin } from '@/services/usersService'
 import { getCurrentAuthProfile, waitForAuthReady } from '@/services/authService'
+import { isDefaultSuperAdmin } from '@/services/usersService'
+import { toast } from 'sonner'
+import { type ManagedUser } from '@/features/users/data/schema'
+
+const CHANGE_PASSWORD_PATH = '/change-password'
 
 async function waitForSession() {
   await waitForAuthReady()
   return getCurrentAuthProfile()
+}
+
+function isChangePasswordTarget(redirectTo: string) {
+  try {
+    return (
+      new URL(redirectTo, window.location.origin).pathname ===
+      CHANGE_PASSWORD_PATH
+    )
+  } catch {
+    return redirectTo.startsWith(CHANGE_PASSWORD_PATH)
+  }
 }
 
 export async function requireAuthenticated(redirectTo: string) {
@@ -15,6 +29,14 @@ export async function requireAuthenticated(redirectTo: string) {
     throw redirect({
       to: '/sign-in',
       search: { redirect: redirectTo },
+      replace: true,
+    })
+  }
+
+  if (profile.mustChangePassword && !isChangePasswordTarget(redirectTo)) {
+    toast.warning('Please change your default password before continuing.')
+    throw redirect({
+      to: CHANGE_PASSWORD_PATH,
       replace: true,
     })
   }

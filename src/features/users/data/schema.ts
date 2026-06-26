@@ -44,6 +44,7 @@ export const userManagementSchema = z.object({
   role: z.enum(userManagementRoleOptions),
   status: z.enum(userManagementStatusOptions),
   isProtected: z.boolean().optional(),
+  mustChangePassword: z.boolean().default(false),
   createdAt: z.string(),
   lastLogin: z.string(),
 })

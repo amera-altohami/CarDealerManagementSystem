@@ -17,6 +17,7 @@ import {
   type QueryDocumentSnapshot,
   type Timestamp,
 } from 'firebase/firestore'
+import { useAuthStore } from '@/stores/auth-store'
 import { db } from '@/lib/firebase'
 import type {
   ManagedUser,
@@ -25,10 +26,12 @@ import type {
 import { createActivityLog } from './activityLogsService'
 
 const COLLECTION_NAME = 'managed_users'
+export const DEFAULT_MANAGED_USER_PASSWORD = '0000000'
 export const DEFAULT_SUPER_ADMIN_EMAIL = 'car.d.d.admin@gmail.com'
 const DEFAULT_SUPER_ADMIN_ID = 'admin-default'
 const DEFAULT_SUPER_ADMIN_NAME = 'Admin'
 const PROTECTED_DELETE_MESSAGE = 'This protected user cannot be deleted.'
+const DUPLICATE_EMAIL_MESSAGE = 'A user with this email already exists.'
 const RELATED_DELETE_MESSAGE =
   'This user cannot be deleted because related activity records exist. Disable the user instead of deleting to preserve historical records.'
 const LEGACY_ROLE_MAP: Record<string, ManagedUser['role']> = {
@@ -62,6 +65,7 @@ export interface ManagedUserDocument {
   role: ManagedUser['role']
   status: ManagedUser['status']
   is_protected?: boolean
+  must_change_password?: boolean
   created_at?: FirestoreDate
   updated_at?: FirestoreDate
   last_login?: FirestoreDate
@@ -122,6 +126,13 @@ export class UserNotFoundError extends Error {
   }
 }
 
+export class UserEmailExistsError extends Error {
+  constructor() {
+    super(DUPLICATE_EMAIL_MESSAGE)
+    this.name = 'UserEmailExistsError'
+  }
+}
+
 function normalizeText(value?: string | null) {
   if (value === undefined) return undefined
   if (value === null) return null
@@ -130,10 +141,23 @@ function normalizeText(value?: string | null) {
   return trimmed.length > 0 ? trimmed : null
 }
 
+function normalizeEmail(email: string) {
+  return email.trim().toLowerCase()
+}
+
 function normalizeRole(role: string): ManagedUser['role'] {
   const normalized = role.trim().replace(/\s+/g, ' ').toLowerCase()
 
   return LEGACY_ROLE_MAP[normalized] ?? (role as ManagedUser['role'])
+}
+
+function isEmailAlreadyInUseError(error: unknown) {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    (error as { code?: string }).code === 'auth/email-already-in-use'
+  )
 }
 
 function dateToString(value?: FirestoreDate) {
@@ -159,21 +183,24 @@ function mapUserSnapshot(
     role: normalizeRole(data.role),
     status: data.status,
     isProtected: data.is_protected ?? false,
+    mustChangePassword: data.must_change_password ?? false,
     createdAt: dateToString(data.created_at),
     lastLogin: dateToString(data.last_login) || 'Never',
   }
 }
 
 function toCreateDocumentData(
-  data: CreateUserData
+  data: CreateUserData,
+  mustChangePassword = false
 ): ManagedUserCreateDocumentData {
   return {
     full_name: data.fullName.trim(),
-    email: data.email.trim(),
+    email: normalizeEmail(data.email),
     phone: normalizeText(data.phone),
     role: normalizeRole(data.role),
     status: data.status,
     is_protected: false,
+    must_change_password: mustChangePassword,
     created_at: serverTimestamp(),
     updated_at: serverTimestamp(),
     last_login: null,
@@ -192,7 +219,7 @@ function toUpdateDocumentData(
   }
 
   if (data.email !== undefined) {
-    documentData.email = data.email.trim()
+    documentData.email = normalizeEmail(data.email)
   }
 
   if (data.phone !== undefined) {
@@ -215,15 +242,20 @@ async function writeUserActivityLog(
   user: ManagedUser,
   description: string
 ) {
+  const actor = useAuthStore.getState().auth.profile
+  const actorId = actor?.id ?? ACTIVITY_LOG_ACTOR.userId
+  const actorName = actor?.fullName ?? ACTIVITY_LOG_ACTOR.userName
+  const actorRole = actor?.role ?? ACTIVITY_LOG_ACTOR.role
+
   try {
     await createActivityLog({
-      userId: ACTIVITY_LOG_ACTOR.userId,
-      userName: ACTIVITY_LOG_ACTOR.userName,
-      userRole: ACTIVITY_LOG_ACTOR.role,
+      userId: actorId,
+      userName: actorName,
+      userRole: actorRole,
       action,
       module: 'Users',
       entityType: 'user',
-      entityName: user.fullName,
+      entityName: user.fullName || user.email,
       description,
       changedFields: null,
       ipAddress: '127.0.0.1',
@@ -313,11 +345,19 @@ export async function getUserById(id: string): Promise<ManagedUser | null> {
 export async function getUserByEmail(
   email: string
 ): Promise<ManagedUser | null> {
+  const normalizedEmail = normalizeEmail(email)
   const snapshot = await getDocs(
-    query(collection(db, COLLECTION_NAME), where('email', '==', email.trim()))
+    query(
+      collection(db, COLLECTION_NAME),
+      where('email', '==', normalizedEmail)
+    )
   )
 
   return snapshot.docs[0] ? mapUserSnapshot(snapshot.docs[0]) : null
+}
+
+export async function userEmailExists(email: string): Promise<boolean> {
+  return Boolean(await getUserByEmail(email))
 }
 
 export function isDefaultSuperAdmin(user: Pick<ManagedUser, 'id' | 'role'>) {
@@ -347,6 +387,7 @@ export async function ensureDefaultSuperAdminProfile(
         role: 'SUPER_ADMIN',
         status: 'Active',
         is_protected: true,
+        must_change_password: false,
         updated_at: serverTimestamp(),
       })
       return getUserById(DEFAULT_SUPER_ADMIN_ID)
@@ -371,6 +412,7 @@ export async function ensureDefaultSuperAdminProfile(
     role: 'SUPER_ADMIN',
     status: 'Active',
     is_protected: true,
+    must_change_password: false,
     created_at: now,
     updated_at: now,
     last_login: now,
@@ -379,10 +421,31 @@ export async function ensureDefaultSuperAdminProfile(
   return getUserById(DEFAULT_SUPER_ADMIN_ID)
 }
 
-export async function createUser(data: CreateUserData): Promise<ManagedUser> {
+export async function createManagedUser(
+  data: CreateUserData,
+  options: {
+    id?: string
+    mustChangePassword?: boolean
+  } = {}
+): Promise<ManagedUser> {
+  if (options.id) {
+    await setDoc(doc(db, COLLECTION_NAME, options.id), {
+      id: options.id,
+      ...toCreateDocumentData(data, options.mustChangePassword ?? false),
+    })
+
+    const created = await getUserById(options.id)
+
+    if (!created) {
+      throw new Error('Failed to save user.')
+    }
+
+    return created
+  }
+
   const docRef = await addDoc(
     collection(db, COLLECTION_NAME),
-    toCreateDocumentData(data)
+    toCreateDocumentData(data, options.mustChangePassword ?? false)
   )
 
   await updateDoc(docRef, { id: docRef.id })
@@ -393,10 +456,41 @@ export async function createUser(data: CreateUserData): Promise<ManagedUser> {
     throw new Error('Failed to save user.')
   }
 
+  return created
+}
+
+export async function createUser(data: CreateUserData): Promise<ManagedUser> {
+  const normalizedEmail = normalizeEmail(data.email)
+
+  if (await userEmailExists(normalizedEmail)) {
+    throw new UserEmailExistsError()
+  }
+
+  const { createAuthUserByAdmin } = await import('./authService')
+  let authUserId: string
+
+  try {
+    authUserId = await createAuthUserByAdmin(
+      normalizedEmail,
+      DEFAULT_MANAGED_USER_PASSWORD
+    )
+  } catch (error) {
+    if (isEmailAlreadyInUseError(error)) {
+      throw new UserEmailExistsError()
+    }
+
+    throw error
+  }
+
+  const created = await createManagedUser(
+    { ...data, email: normalizedEmail },
+    { id: authUserId, mustChangePassword: true }
+  )
+
   await writeUserActivityLog(
     'Create',
     created,
-    `Created user ${created.fullName}`
+    'Admin created a new user account'
   )
 
   return created
@@ -418,6 +512,29 @@ export async function updateUser(
     { ...existingUser, ...data },
     `Updated user ${data.fullName ?? existingUser.fullName}`
   )
+}
+
+export async function updateManagedUser(
+  id: string,
+  data: UpdateUserData
+): Promise<void> {
+  return updateUser(id, data)
+}
+
+export async function setMustChangePassword(
+  userId: string,
+  value: boolean
+): Promise<void> {
+  const existingUser = await getUserById(userId)
+
+  if (!existingUser) {
+    throw new UserNotFoundError()
+  }
+
+  await updateDoc(doc(db, COLLECTION_NAME, userId), {
+    must_change_password: value,
+    updated_at: serverTimestamp(),
+  })
 }
 
 export async function markLastLogin(id: string): Promise<void> {
@@ -563,3 +680,4 @@ export { getUserById as getById }
 export { getUserByEmail as getByEmail }
 export { getUsers as getAll }
 export { updateUser as update }
+export { updateManagedUser as updateManaged }

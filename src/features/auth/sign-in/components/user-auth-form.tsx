@@ -3,13 +3,14 @@ import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Link, useNavigate } from '@tanstack/react-router'
-import { Loader2, LogIn } from 'lucide-react'
-import { toast } from 'sonner'
-import { cn } from '@/lib/utils'
 import {
+  getCurrentAuthProfile,
   signInWithFirebaseAuth,
   getAuthSignInErrorMessage,
 } from '@/services/authService'
+import { Loader2, LogIn } from 'lucide-react'
+import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
   Form,
@@ -21,6 +22,10 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { PasswordInput } from '@/components/password-input'
+import {
+  clearLastLoginAttempt,
+  rememberLastLoginAttempt,
+} from '../../login-attempt-storage'
 
 const formSchema = z.object({
   email: z.email({
@@ -73,11 +78,20 @@ export function UserAuthForm({
 
   async function onSubmit(data: z.infer<typeof formSchema>) {
     setIsLoading(true)
+    rememberLastLoginAttempt(data.email, data.password)
 
     try {
       await signInWithFirebaseAuth(data.email, data.password)
-      toast.success(`Welcome back, ${data.email}!`)
+      const profile = getCurrentAuthProfile()
 
+      if (profile?.mustChangePassword) {
+        toast.warning('Please change your default password before continuing.')
+        navigate({ to: '/change-password', replace: true })
+        return
+      }
+
+      toast.success(`Welcome back, ${data.email}!`)
+      clearLastLoginAttempt()
       const targetPath = normalizeRedirectTarget(redirectTo)
       navigate({ to: targetPath, replace: true })
     } catch (error) {
@@ -102,7 +116,11 @@ export function UserAuthForm({
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input placeholder='name@example.com' {...field} />
+                <Input
+                  autoComplete='username'
+                  placeholder='name@example.com'
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -115,7 +133,11 @@ export function UserAuthForm({
             <FormItem className='relative'>
               <FormLabel>Password</FormLabel>
               <FormControl>
-                <PasswordInput placeholder='********' {...field} />
+                <PasswordInput
+                  autoComplete='current-password'
+                  placeholder='********'
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
               <Link
@@ -131,6 +153,16 @@ export function UserAuthForm({
           {isLoading ? <Loader2 className='animate-spin' /> : <LogIn />}
           Sign in
         </Button>
+        <Link
+          to='/change-password'
+          onClick={() => {
+            const values = form.getValues()
+            rememberLastLoginAttempt(values.email, values.password)
+          }}
+          className='text-center text-sm font-medium text-muted-foreground hover:opacity-75'
+        >
+          Change default password
+        </Link>
       </form>
     </Form>
   )

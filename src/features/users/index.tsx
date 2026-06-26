@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   ProtectedUserDeleteError,
+  UserEmailExistsError,
   UserDeleteBlockedError,
   createUser,
   deleteUser,
@@ -12,8 +13,8 @@ import {
 } from '@/services/usersService'
 import { UserPlus } from 'lucide-react'
 import { toast } from 'sonner'
-import { useI18n } from '@/lib/i18n'
 import { useAuthStore } from '@/stores/auth-store'
+import { useI18n } from '@/lib/i18n'
 import { Button } from '@/components/ui/button'
 import { ConfigDrawer } from '@/components/config-drawer'
 import { ConfirmDialog } from '@/components/confirm-dialog'
@@ -46,7 +47,8 @@ export function Users() {
   const [formOpen, setFormOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<ManagedUser | null>(null)
   const [userToDelete, setUserToDelete] = useState<ManagedUser | null>(null)
-  const canCreateUsers = currentUserRole === 'SUPER_ADMIN' || currentUserRole === 'ADMIN'
+  const canCreateUsers =
+    currentUserRole === 'SUPER_ADMIN' || currentUserRole === 'ADMIN'
   const canDeleteUsers = currentUserRole === 'SUPER_ADMIN'
   const roleOptions =
     currentUserRole === 'SUPER_ADMIN' || currentUserRole === 'ADMIN'
@@ -74,8 +76,13 @@ export function Users() {
       setEditingUser(null)
       toast.success('User added successfully.')
     },
-    onError: () => {
-      toast.error('Failed to save user.')
+    onError: (error) => {
+      if (error instanceof UserEmailExistsError) {
+        toast.error('A user with this email already exists.')
+        return
+      }
+
+      toast.error('Failed to create user.')
     },
   })
 
