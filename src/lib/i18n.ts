@@ -3,14 +3,14 @@ import type {
   InspectionStatus,
   PaymentMethod,
 } from '@/types/dealer'
-import { type CompanyType } from '@/features/companies/model'
 import { getLocaleFromDir, type Locale } from '@/lib/locale'
 import { useDirection } from '@/context/direction-provider'
+import { type CompanyType } from '@/features/companies/model'
 
 const legacyMessages = {
   en: {
-    appName: 'Shadcn Admin',
-    appSubtitle: 'Vite + ShadcnUI',
+    appName: 'CarLot-E',
+    appSubtitle: '',
     themeSettings: 'Theme Settings',
     themeSettingsDesc:
       'Adjust the appearance and layout to suit your preferences.',
@@ -255,8 +255,8 @@ const legacyMessages = {
     other: 'Other',
   },
   ar: {
-    appName: 'إدارة شادكن',
-    appSubtitle: 'Vite + ShadcnUI',
+    appName: 'CarLot-E',
+    appSubtitle: '',
     themeSettings: 'إعدادات المظهر',
     themeSettingsDesc: 'عدّل المظهر والتخطيط بما يناسب تفضيلاتك.',
     reset: 'إعادة ضبط',
@@ -502,8 +502,8 @@ const legacyMessages = {
 
 const messages = {
   en: {
-    appName: `Shadcn Admin`,
-    appSubtitle: `Vite + ShadcnUI`,
+    appName: `CarLot-E`,
+    appSubtitle: ``,
     themeSettings: `Theme Settings`,
     themeSettingsDesc: `Adjust the appearance and layout to suit your preferences.`,
     reset: `Reset`,
@@ -941,8 +941,8 @@ const messages = {
     rebuildTitleNotes: `Converted after a passed inspection.`,
   },
   ar: {
-    appName: `إدارة شادكن`,
-    appSubtitle: `Vite + ShadcnUI`,
+    appName: `CarLot-E`,
+    appSubtitle: ``,
     themeSettings: `إعدادات المظهر`,
     themeSettingsDesc: `عدّل المظهر والتخطيط بما يناسب تفضيلاتك.`,
     reset: `إعادة ضبط`,

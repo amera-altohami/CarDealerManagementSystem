@@ -1,7 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import { Menu, X } from 'lucide-react'
-import { cn } from '@/lib/utils'
 import { useI18n } from '@/lib/i18n'
+import { cn } from '@/lib/utils'
 import {
   SidebarMenu,
   SidebarMenuButton,
@@ -13,6 +13,8 @@ import { Button } from '../ui/button'
 export function AppTitle() {
   const { setOpenMobile } = useSidebar()
   const { t } = useI18n()
+  const appSubtitle = t('appSubtitle')
+
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -28,7 +30,9 @@ export function AppTitle() {
               className='grid flex-1 text-start text-sm leading-tight'
             >
               <span className='truncate font-bold'>{t('appName')}</span>
-              <span className='truncate text-xs'>{t('appSubtitle')}</span>
+              {appSubtitle ? (
+                <span className='truncate text-xs'>{appSubtitle}</span>
+              ) : null}
             </Link>
             <ToggleSidebar />
           </div>
