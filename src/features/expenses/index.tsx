@@ -273,7 +273,64 @@ export function ExpensesManagement() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className='overflow-hidden rounded-md border'>
+            <div className='space-y-3 md:hidden'>
+              {filteredExpenses.length ? (
+                filteredExpenses.map((expense) => (
+                  <Card key={expense.id} className='border-border/60'>
+                    <CardContent className='space-y-3 p-4'>
+                      <div className='flex items-start justify-between gap-3'>
+                        <div className='min-w-0'>
+                          <p className='truncate font-medium'>
+                            {expense.carName}
+                          </p>
+                          <p className='text-sm text-muted-foreground'>
+                            {expense.date} - {expense.paidBy}
+                          </p>
+                        </div>
+                        <Badge variant='outline'>
+                          {getExpenseTypeLabel(expense.expenseType, locale)}
+                        </Badge>
+                      </div>
+                      <div className='flex flex-wrap gap-2 text-sm'>
+                        <Badge variant='secondary'>
+                          {getPaymentMethodLabel(expense.paymentMethod, locale)}
+                        </Badge>
+                        <span className='font-semibold'>
+                          {money.format(expense.amount)}
+                        </span>
+                      </div>
+                      <p className='text-sm text-muted-foreground'>
+                        {expense.invoiceName ?? t('uploadInvoice')}
+                      </p>
+                      <div className='flex flex-wrap gap-2'>
+                        <Button asChild variant='outline' size='sm'>
+                          <Link
+                            to='/expenses/$expenseId'
+                            params={{ expenseId: expense.id }}
+                          >
+                            {t('details')}
+                          </Link>
+                        </Button>
+                        <Button asChild variant='ghost' size='sm'>
+                          <Link
+                            to='/expenses/$expenseId/edit'
+                            params={{ expenseId: expense.id }}
+                          >
+                            {t('edit')}
+                          </Link>
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              ) : (
+                <div className='rounded-md border p-4 text-center text-sm'>
+                  {t('noExpensesFound')}
+                </div>
+              )}
+            </div>
+
+            <div className='hidden overflow-hidden rounded-md border md:block'>
               <Table>
                 <TableHeader>
                   <TableRow>

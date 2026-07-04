@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import { ConfigDrawer } from '@/components/config-drawer'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
@@ -18,7 +18,6 @@ import {
   useCompanyUsageQuery,
   useDeleteCompanyMutation,
 } from '../hooks/use-companies'
-import { useNavigate } from '@tanstack/react-router'
 
 type CompanyDetailsProps = {
   companyId: string

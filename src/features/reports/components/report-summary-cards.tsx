@@ -13,7 +13,7 @@ export function ReportSummaryCards({ items }: ReportSummaryCardsProps) {
 
         return (
           <Card key={item.label} className='border-border/60'>
-            <CardContent className='flex items-center justify-between gap-4 p-5'>
+            <CardContent className='flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between'>
               <div className='min-w-0'>
                 <p className='text-sm text-muted-foreground'>{item.label}</p>
                 <p className='mt-2 truncate text-2xl font-semibold'>
@@ -21,7 +21,7 @@ export function ReportSummaryCards({ items }: ReportSummaryCardsProps) {
                 </p>
               </div>
               {Icon ? (
-                <div className='rounded-md bg-muted p-3 text-muted-foreground'>
+                <div className='self-start rounded-md bg-muted p-3 text-muted-foreground sm:self-auto'>
                   <Icon className={item.tone ?? ''} />
                 </div>
               ) : null}

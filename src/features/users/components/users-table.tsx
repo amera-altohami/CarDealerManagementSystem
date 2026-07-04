@@ -126,7 +126,119 @@ export function UsersTable({
         </div>
       </CardHeader>
       <CardContent>
-        <div className='overflow-hidden rounded-md border'>
+        <div className='space-y-3 md:hidden'>
+          {isLoading || isError ? (
+            <div className='rounded-md border p-4 text-center text-sm'>
+              {isLoading ? 'Loading...' : 'Failed to load users.'}
+            </div>
+          ) : filteredRows.length ? (
+            filteredRows.map((user) => (
+              <Card key={user.id} className='border-border/60'>
+                <CardContent className='space-y-3 p-4'>
+                  <div className='flex items-start justify-between gap-3'>
+                    <div className='min-w-0'>
+                      <div className='flex flex-wrap items-center gap-2'>
+                        <p className='truncate font-medium'>{user.fullName}</p>
+                        {user.isProtected ? (
+                          <Badge variant='secondary' className='gap-1'>
+                            <ShieldCheck className='h-3 w-3' />
+                            {t('protectedUser')}
+                          </Badge>
+                        ) : null}
+                      </div>
+                      <p className='text-sm text-muted-foreground'>
+                        {user.email}
+                      </p>
+                      <p className='text-sm text-muted-foreground'>
+                        {user.phone || '-'}
+                      </p>
+                    </div>
+                    <Badge
+                      variant='outline'
+                      className={cn('capitalize', statusStyles[user.status])}
+                    >
+                      {t(statusLabelKeys[user.status])}
+                    </Badge>
+                  </div>
+                  <div className='grid gap-1 text-sm text-muted-foreground'>
+                    <p>
+                      <span className='font-medium text-foreground'>
+                        {t('createdAt')}:
+                      </span>{' '}
+                      {user.createdAt}
+                    </p>
+                    <p>
+                      <span className='font-medium text-foreground'>
+                        {t('lastLogin')}:
+                      </span>{' '}
+                      {user.lastLogin === 'Never' ? t('never') : user.lastLogin}
+                    </p>
+                  </div>
+                  <div className='flex justify-end'>
+                    <DropdownMenu modal={false}>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant='ghost'
+                          className='h-8 w-8 p-0 data-[state=open]:bg-muted'
+                        >
+                          <EllipsisVertical className='h-4 w-4' />
+                          <span className='sr-only'>{t('openMenu')}</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align='end' className='w-44'>
+                        <DropdownMenuItem
+                          disabled={
+                            user.isProtected ||
+                            !currentUserRole ||
+                            (currentUserRole === 'ADMIN' &&
+                              user.role !== 'USER')
+                          }
+                          onClick={() => onEdit(user)}
+                        >
+                          {t('edit')}
+                          <Pencil className='ms-auto h-4 w-4' />
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          disabled={
+                            user.isProtected ||
+                            !currentUserRole ||
+                            (currentUserRole === 'ADMIN' &&
+                              user.role !== 'USER')
+                          }
+                          onClick={() => onToggleStatus(user)}
+                        >
+                          {user.status === 'Active' ? t('disable') : t('enable')}
+                          {user.status === 'Active' ? (
+                            <UserX className='ms-auto h-4 w-4' />
+                          ) : (
+                            <UserCheck className='ms-auto h-4 w-4' />
+                          )}
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className='text-red-500!'
+                          disabled={
+                            user.isProtected || currentUserRole !== 'SUPER_ADMIN'
+                          }
+                          onClick={() => onDelete(user)}
+                        >
+                          {t('delete')}
+                          <Trash2 className='ms-auto h-4 w-4' />
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          ) : (
+            <div className='rounded-md border p-4 text-center text-sm'>
+              {t('noUsersFound')}
+            </div>
+          )}
+        </div>
+
+        <div className='hidden overflow-hidden rounded-md border md:block'>
           <Table>
             <TableHeader>
               <TableRow>

@@ -1,10 +1,23 @@
 /// <reference types="vitest/config" />
+import fs from 'fs'
 import path from 'path'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { tanstackRouter } from '@tanstack/router-plugin/vite'
 import { playwright } from '@vitest/browser-playwright'
+
+const chromeCandidates = [
+  process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,
+  process.env.CHROME_PATH,
+  'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+  'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+  'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+]
+
+const chromiumExecutablePath = chromeCandidates.find(
+  (candidate): candidate is string => Boolean(candidate && fs.existsSync(candidate)),
+)
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -26,7 +39,13 @@ export default defineConfig({
     unstubEnvs: true,
     browser: {
       enabled: true,
-      provider: playwright(),
+      provider: playwright({
+        launchOptions: chromiumExecutablePath
+          ? {
+              executablePath: chromiumExecutablePath,
+            }
+          : undefined,
+      }),
       instances: [{ browser: 'chromium' }],
     },
     coverage: {

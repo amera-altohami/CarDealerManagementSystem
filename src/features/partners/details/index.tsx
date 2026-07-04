@@ -334,7 +334,7 @@ export function PartnerDetails({ partnerId }: PartnerDetailsProps) {
         </div>
 
         <Tabs defaultValue='overview' className='space-y-4'>
-          <TabsList className='w-full flex-wrap justify-start'>
+          <TabsList className='w-full'>
             <TabsTrigger value='overview'>{t('overview')}</TabsTrigger>
             <TabsTrigger value='contributions'>
               {t('contributions')}
@@ -384,9 +384,11 @@ export function PartnerDetails({ partnerId }: PartnerDetailsProps) {
 
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className='flex items-center justify-between gap-4 border-b pb-2 last:border-0 last:pb-0'>
+    <div className='flex flex-col gap-1 border-b pb-2 last:border-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between sm:gap-4'>
       <span className='text-muted-foreground'>{label}</span>
-      <span className='text-end font-medium'>{value}</span>
+      <span className='break-words text-start font-medium sm:text-end'>
+        {value}
+      </span>
     </div>
   )
 }

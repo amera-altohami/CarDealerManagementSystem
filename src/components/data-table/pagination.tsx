@@ -31,24 +31,23 @@ export function DataTablePagination<TData>({
   return (
     <div
       className={cn(
-        'flex items-center justify-between overflow-clip px-2',
-        '@max-2xl/content:flex-col-reverse @max-2xl/content:gap-4',
+        'flex flex-col gap-4 overflow-clip px-2 sm:flex-row sm:items-center sm:justify-between',
         className
       )}
       style={{ overflowClipMargin: 1 }}
     >
-      <div className='flex w-full items-center justify-between'>
-        <div className='flex w-25 items-center justify-center text-sm font-medium @2xl/content:hidden'>
+      <div className='flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
+        <div className='flex w-full items-center justify-center text-sm font-medium @2xl/content:hidden sm:w-25'>
           Page {currentPage} of {totalPages}
         </div>
-        <div className='flex items-center gap-2 @max-2xl/content:flex-row-reverse'>
+        <div className='flex w-full flex-wrap items-center justify-center gap-2 sm:w-auto sm:flex-row-reverse sm:justify-start'>
           <Select
             value={`${table.getState().pagination.pageSize}`}
             onValueChange={(value) => {
               table.setPageSize(Number(value))
             }}
           >
-            <SelectTrigger className='h-8 w-17.5'>
+            <SelectTrigger className='h-8 w-20'>
               <SelectValue placeholder={table.getState().pagination.pageSize} />
             </SelectTrigger>
             <SelectContent side='top'>
@@ -63,11 +62,11 @@ export function DataTablePagination<TData>({
         </div>
       </div>
 
-      <div className='flex items-center sm:space-x-6 lg:space-x-8'>
+      <div className='flex w-full flex-wrap items-center justify-center gap-2 sm:w-auto sm:space-x-6 lg:space-x-8'>
         <div className='flex w-25 items-center justify-center text-sm font-medium @max-3xl/content:hidden'>
           Page {currentPage} of {totalPages}
         </div>
-        <div className='flex items-center space-x-2'>
+        <div className='flex flex-wrap items-center justify-center gap-2 sm:flex-nowrap'>
           <Button
             variant='outline'
             className='size-8 p-0 @max-md/content:hidden'

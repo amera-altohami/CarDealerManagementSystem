@@ -209,7 +209,66 @@ export function PartsManagement() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className='overflow-hidden rounded-md border'>
+            <div className='space-y-3 md:hidden'>
+              {parts.length ? (
+                parts.map((part) => (
+                  <Card key={part.id} className='border-border/60'>
+                    <CardContent className='space-y-3 p-4'>
+                      <div className='flex items-start justify-between gap-3'>
+                        <div className='min-w-0'>
+                          <p className='truncate font-medium'>{part.partName}</p>
+                          <p className='text-sm text-muted-foreground'>
+                            {part.relatedCarName ?? t('standaloneInventory')}
+                          </p>
+                        </div>
+                        <Badge
+                          variant='outline'
+                          className={
+                            part.installed
+                              ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
+                              : 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300'
+                          }
+                        >
+                          {part.installed ? t('installed') : t('notInstalled')}
+                        </Badge>
+                      </div>
+                      <div className='flex flex-wrap gap-2 text-sm'>
+                        <span className='font-semibold'>
+                          {money.format(part.price)}
+                        </span>
+                        <span className='text-muted-foreground'>
+                          {part.supplierName}
+                        </span>
+                      </div>
+                      <p className='text-sm text-muted-foreground'>
+                        {part.purchaseDate} - {part.invoiceName ?? t('uploadInvoice')}
+                      </p>
+                      <div className='flex flex-wrap gap-2'>
+                        <Button asChild variant='outline' size='sm'>
+                          <Link to='/parts/$partId' params={{ partId: part.id }}>
+                            {t('details')}
+                          </Link>
+                        </Button>
+                        <Button asChild variant='ghost' size='sm'>
+                          <Link
+                            to='/parts/$partId/edit'
+                            params={{ partId: part.id }}
+                          >
+                            {t('edit')}
+                          </Link>
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              ) : (
+                <div className='rounded-md border p-4 text-center text-sm'>
+                  {t('noPartsFound')}
+                </div>
+              )}
+            </div>
+
+            <div className='hidden overflow-hidden rounded-md border md:block'>
               <Table>
                 <TableHeader>
                   <TableRow>

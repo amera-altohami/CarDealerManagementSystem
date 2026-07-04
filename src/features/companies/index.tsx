@@ -104,7 +104,73 @@ export function CompaniesManagement() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className='overflow-hidden rounded-md border'>
+            <div className='space-y-3 md:hidden'>
+              {companiesQuery.isLoading ? (
+                <>
+                  <SummarySkeleton />
+                  <SummarySkeleton />
+                  <SummarySkeleton />
+                </>
+              ) : companiesQuery.isError ? (
+                <div className='rounded-md border p-4 text-center text-sm text-destructive'>
+                  {getFirestoreErrorMessage(companiesQuery.error)}
+                </div>
+              ) : filteredCompanies.length ? (
+                filteredCompanies.map((company) => (
+                  <Card
+                    key={company.id}
+                    className='border-border/60'
+                    onDoubleClick={() =>
+                      navigate({
+                        to: '/companies/$companyId',
+                        params: { companyId: company.id },
+                      })
+                    }
+                  >
+                    <CardContent className='space-y-3 p-4'>
+                      <div className='flex items-start justify-between gap-3'>
+                        <div className='min-w-0'>
+                          <p className='truncate font-medium'>{company.name}</p>
+                          <p className='text-sm text-muted-foreground'>
+                            {company.phoneNumber}
+                          </p>
+                        </div>
+                        <Badge variant='outline'>
+                          {getCompanyTypeLabel(company.type, locale)}
+                        </Badge>
+                      </div>
+                      <p className='text-sm text-muted-foreground'>
+                        {company.address}
+                      </p>
+                      <div className='flex flex-wrap gap-2'>
+                        <Button asChild variant='outline' size='sm'>
+                          <Link
+                            to='/companies/$companyId'
+                            params={{ companyId: company.id }}
+                          >
+                            {t('details')}
+                          </Link>
+                        </Button>
+                        <Button asChild variant='ghost' size='sm'>
+                          <Link
+                            to='/companies/$companyId/edit'
+                            params={{ companyId: company.id }}
+                          >
+                            {t('edit')}
+                          </Link>
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              ) : (
+                <div className='rounded-md border p-4 text-center text-sm'>
+                  {t('noCompaniesFound')}
+                </div>
+              )}
+            </div>
+
+            <div className='hidden overflow-hidden rounded-md border md:block'>
               <Table>
                 <TableHeader>
                   <TableRow>

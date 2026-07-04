@@ -21,7 +21,6 @@ import {
   Sheet,
   SheetContent,
   SheetDescription,
-  SheetFooter,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
@@ -45,41 +44,37 @@ export function ConfigDrawer() {
   return (
     <Sheet>
       <SheetTrigger asChild>
-          <Button
-            size='icon'
-            variant='ghost'
-          aria-label={t('themeSettings')}
-            className='rounded-full'
-          >
+        <Button
+          size='icon'
+          variant='ghost'
+          aria-label={locale === 'ar' ? 'افتح إعدادات المظهر' : 'Open theme settings'}
+          className='rounded-full'
+        >
           <Settings aria-hidden='true' />
         </Button>
       </SheetTrigger>
-      <SheetContent className='flex flex-col'>
+      <SheetContent className='flex h-[100dvh] flex-col overflow-hidden'>
         <SheetHeader className='pb-0 text-start'>
           <SheetTitle>{t('themeSettings')}</SheetTitle>
           <SheetDescription>
             {t('themeSettingsDesc')}
           </SheetDescription>
+          <div className='flex justify-end pt-3'>
+            <Button
+              variant='destructive'
+              onClick={handleReset}
+              aria-label='Reset all settings to default values'
+            >
+              {t('reset')}
+            </Button>
+          </div>
         </SheetHeader>
-        <div className='space-y-6 overflow-y-auto px-4'>
+        <div className='flex-1 space-y-6 overflow-y-auto px-4'>
           <ThemeConfig />
           <SidebarConfig />
           <LayoutConfig />
           <DirConfig />
         </div>
-        <SheetFooter className='gap-2'>
-          <Button
-            variant='destructive'
-            onClick={handleReset}
-            aria-label={
-              locale === 'ar'
-                ? 'إعادة ضبط جميع الإعدادات إلى القيم الافتراضية'
-                : 'Reset all settings to default values'
-            }
-          >
-            {t('reset')}
-          </Button>
-        </SheetFooter>
       </SheetContent>
     </Sheet>
   )
@@ -126,7 +121,6 @@ function SectionTitle({
 function RadioGroupItem({
   item,
   isTheme = false,
-  locale,
 }: {
   item: {
     value: string
@@ -134,12 +128,37 @@ function RadioGroupItem({
     icon: (props: SVGProps<SVGSVGElement>) => React.ReactElement
   }
   isTheme?: boolean
-  locale: 'ar' | 'en'
 }) {
-  const selectLabel =
-    locale === 'ar' ? `اختر ${item.label}` : `Select ${item.label.toLowerCase()}`
-  const previewLabel =
-    locale === 'ar' ? `معاينة خيار ${item.label}` : `${item.label} option preview`
+  const selectLabelMap: Record<string, string> = {
+    system: 'Select system',
+    light: 'Select light',
+    dark: 'Select dark',
+    inset: 'Select inset',
+    floating: 'Select floating',
+    sidebar: 'Select sidebar',
+    default: 'Select default',
+    icon: 'Select compact',
+    offcanvas: 'Select full layout',
+    ltr: 'Select left to right',
+    rtl: 'Select right to left',
+  }
+
+  const previewLabelMap: Record<string, string> = {
+    system: 'System option preview',
+    light: 'Light option preview',
+    dark: 'Dark option preview',
+    inset: 'Inset option preview',
+    floating: 'Floating option preview',
+    sidebar: 'Sidebar option preview',
+    default: 'Default option preview',
+    icon: 'Compact option preview',
+    offcanvas: 'Full layout option preview',
+    ltr: 'Left to right option preview',
+    rtl: 'Right to left option preview',
+  }
+
+  const selectLabel = selectLabelMap[item.value] ?? `Select ${item.value}`
+  const previewLabel = previewLabelMap[item.value] ?? `${item.value} option preview`
 
   return (
     <Item
@@ -191,19 +210,15 @@ function ThemeConfig() {
   return (
     <div>
       <SectionTitle
-      title={t('theme')}
+        title={t('theme')}
         showReset={theme !== defaultTheme}
         onReset={() => setTheme(defaultTheme)}
-        resetAriaLabel={
-          locale === 'ar'
-            ? 'إعادة ضبط المظهر إلى الافتراضي'
-            : 'Reset theme preference to default'
-        }
+        resetAriaLabel='Reset theme preference to default'
       />
       <Radio
         value={theme}
         onValueChange={setTheme}
-        className='grid w-full max-w-md grid-cols-3 gap-4'
+        className='grid w-full max-w-md grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4'
         aria-label={locale === 'ar' ? 'اختر تفضيل المظهر' : 'Select theme preference'}
         aria-describedby='theme-description'
       >
@@ -228,7 +243,6 @@ function ThemeConfig() {
             key={item.value}
             item={item}
             isTheme
-            locale={locale as 'ar' | 'en'}
           />
         ))}
       </Radio>
@@ -250,16 +264,12 @@ function SidebarConfig() {
         title={t('sidebar')}
         showReset={defaultVariant !== variant}
         onReset={() => setVariant(defaultVariant)}
-        resetAriaLabel={
-          locale === 'ar'
-            ? 'إعادة ضبط نمط الشريط الجانبي إلى الافتراضي'
-            : 'Reset sidebar style to default'
-        }
+        resetAriaLabel='Reset sidebar style to default'
       />
       <Radio
         value={variant}
         onValueChange={setVariant}
-        className='grid w-full max-w-md grid-cols-3 gap-4'
+        className='grid w-full max-w-md grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4'
         aria-label={locale === 'ar' ? 'اختر نمط الشريط الجانبي' : 'Select sidebar style'}
         aria-describedby='sidebar-description'
       >
@@ -283,7 +293,6 @@ function SidebarConfig() {
           <RadioGroupItem
             key={item.value}
             item={item}
-            locale={locale as 'ar' | 'en'}
           />
         ))}
       </Radio>
@@ -312,11 +321,7 @@ function LayoutConfig() {
           setOpen(true)
           setCollapsible(defaultCollapsible)
         }}
-        resetAriaLabel={
-          locale === 'ar'
-            ? 'إعادة ضبط خيارات التخطيط إلى الافتراضي'
-            : 'Reset layout options to default'
-        }
+        resetAriaLabel='Reset layout options to default'
       />
       <Radio
         value={radioState}
@@ -328,7 +333,7 @@ function LayoutConfig() {
           setOpen(false)
           setCollapsible(v as Collapsible)
         }}
-        className='grid w-full max-w-md grid-cols-3 gap-4'
+        className='grid w-full max-w-md grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4'
         aria-label={locale === 'ar' ? 'اختر نمط التخطيط' : 'Select layout style'}
         aria-describedby='layout-description'
       >
@@ -352,7 +357,6 @@ function LayoutConfig() {
           <RadioGroupItem
             key={item.value}
             item={item}
-            locale={locale as 'ar' | 'en'}
           />
         ))}
       </Radio>
@@ -374,16 +378,12 @@ function DirConfig() {
         title={t('direction')}
         showReset={defaultDir !== dir}
         onReset={() => setDir(defaultDir)}
-        resetAriaLabel={
-          locale === 'ar'
-            ? 'إعادة ضبط اتجاه النص إلى الافتراضي'
-            : 'Reset text direction to default'
-        }
+        resetAriaLabel='Reset text direction to default'
       />
       <Radio
         value={dir}
         onValueChange={setDir}
-        className='grid w-full max-w-md grid-cols-3 gap-4'
+        className='grid w-full max-w-md grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4'
         aria-label={locale === 'ar' ? 'اختر اتجاه الموقع' : 'Select site direction'}
         aria-describedby='direction-description'
       >
@@ -406,7 +406,6 @@ function DirConfig() {
           <RadioGroupItem
             key={item.value}
             item={item}
-            locale={locale as 'ar' | 'en'}
           />
         ))}
       </Radio>

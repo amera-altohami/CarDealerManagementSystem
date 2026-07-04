@@ -57,7 +57,6 @@ import { TitleBadge } from '../components/title-badge'
 import { TitleHistoryTable } from '../components/title-history-table'
 import { TitleManagementCard } from '../components/title-management-card'
 import { type CurrentTitle, type TitleHistoryEntry, type TitleUpdateValues } from '../types/title'
-import { useCarQuery } from '../hooks/use-cars'
 import {
   useCreateTitleHistoryMutation,
   useTitleHistoryQuery,
@@ -71,6 +70,7 @@ import {
 } from '@/features/partners/hooks/use-partners'
 import {
   useCarDeleteCheckQuery,
+  useCarQuery,
   useDeleteCarMutation,
 } from '../hooks/use-cars'
 
@@ -361,11 +361,11 @@ export function CarDetails({ carId }: CarDetailsProps) {
 
       <Main className='flex flex-1 flex-col gap-4 sm:gap-6'>
         <Card className='overflow-hidden border-border/60'>
-          <CardContent className='grid gap-6 p-6 lg:grid-cols-[320px_1fr]'>
+          <CardContent className='grid gap-6 p-4 sm:p-6 lg:grid-cols-[320px_1fr]'>
             <img
               src={car.photo}
               alt={`${car.brand} ${car.model}`}
-              className='h-64 w-full rounded-xl object-cover ring-1 ring-border'
+              className='h-56 w-full rounded-xl object-cover ring-1 ring-border sm:h-64'
             />
 
             <div className='space-y-5'>
@@ -422,21 +422,24 @@ export function CarDetails({ carId }: CarDetailsProps) {
                 />
               </div>
 
-              <div className='flex flex-wrap gap-3'>
-              <Button asChild>
-                <Link to='/cars/$carId/edit' params={{ carId: car.id }}>
-                  {t('edit')}
-                </Link>
-              </Button>
-              <Button
-                variant='destructive'
-                disabled={carDeleteCheckQuery.isLoading || deleteCarMutation.isPending}
-                onClick={() => setDeleteDialogOpen(true)}
-              >
-                {t('delete')}
-              </Button>
-              <Button asChild variant='outline'>
-                {car.carfaxType === 'pdf' ? (
+              <div className='flex flex-col gap-3 sm:flex-row'>
+                <Button asChild className='w-full sm:w-auto'>
+                  <Link to='/cars/$carId/edit' params={{ carId: car.id }}>
+                    {t('edit')}
+                  </Link>
+                </Button>
+                <Button
+                  variant='destructive'
+                  className='w-full sm:w-auto'
+                  disabled={
+                    carDeleteCheckQuery.isLoading || deleteCarMutation.isPending
+                  }
+                  onClick={() => setDeleteDialogOpen(true)}
+                >
+                  {t('delete')}
+                </Button>
+                <Button asChild variant='outline' className='w-full sm:w-auto'>
+                  {car.carfaxType === 'pdf' ? (
                     car.carfaxPdfUrl ? (
                       <a
                         href={car.carfaxPdfUrl}
@@ -465,7 +468,7 @@ export function CarDetails({ carId }: CarDetailsProps) {
         </Card>
 
         <Tabs defaultValue='overview' className='space-y-4'>
-          <TabsList className='w-full flex-wrap justify-start'>
+          <TabsList className='w-full'>
             <TabsTrigger value='overview'>{t('overview')}</TabsTrigger>
             <TabsTrigger value='title'>{t('titleManagement')}</TabsTrigger>
             <TabsTrigger value='expenses'>{t('expenses')}</TabsTrigger>
@@ -785,9 +788,11 @@ function SummaryCard({
 
 function InfoRow({ label, value }: { label: string; value: ReactNode }) {
   return (
-    <div className='flex items-center justify-between gap-4 border-b pb-2 last:border-0 last:pb-0'>
+    <div className='flex flex-col gap-1 border-b pb-2 last:border-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between sm:gap-4'>
       <span className='text-muted-foreground'>{label}</span>
-      <span className='max-w-[60%] text-end font-medium'>{value}</span>
+      <span className='max-w-full break-words text-start font-medium sm:max-w-[60%] sm:text-end'>
+        {value}
+      </span>
     </div>
   )
 }

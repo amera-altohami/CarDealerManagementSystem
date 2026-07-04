@@ -29,7 +29,7 @@ export function LatestTransactions({ transactions }: LatestTransactionsProps) {
         <CardTitle>{t('latestTransactions')}</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className='overflow-hidden rounded-md border'>
+        <div className='hidden overflow-hidden rounded-md border md:block'>
           <Table>
             <TableHeader>
               <TableRow>
@@ -58,6 +58,31 @@ export function LatestTransactions({ transactions }: LatestTransactionsProps) {
               ))}
             </TableBody>
           </Table>
+        </div>
+
+        <div className='space-y-3 md:hidden'>
+          {transactions.map((transaction) => (
+            <div
+              key={transaction.id}
+              className='rounded-lg border border-border/60 bg-background/60 p-4'
+            >
+              <div className='flex items-start justify-between gap-3'>
+                <div className='min-w-0 space-y-1'>
+                  <p className='truncate font-medium'>{transaction.car}</p>
+                  <p className='text-sm text-muted-foreground'>
+                    {transaction.type}
+                  </p>
+                </div>
+                <StatusBadge status={transaction.status} />
+              </div>
+              <div className='mt-3 flex items-center justify-between gap-3 text-sm'>
+                <span className='text-muted-foreground'>{transaction.date}</span>
+                <span className='font-semibold'>
+                  {money.format(transaction.amount)}
+                </span>
+              </div>
+            </div>
+          ))}
         </div>
       </CardContent>
     </Card>

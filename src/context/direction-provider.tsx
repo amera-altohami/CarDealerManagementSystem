@@ -19,6 +19,14 @@ type DirectionContextType = {
 
 const DirectionContext = createContext<DirectionContextType | null>(null)
 
+const fallbackDirectionContext: DirectionContextType = {
+  defaultDir: DEFAULT_DIRECTION,
+  dir: DEFAULT_DIRECTION,
+  locale: getLocaleFromDir(DEFAULT_DIRECTION),
+  setDir: () => {},
+  resetDir: () => {},
+}
+
 export function DirectionProvider({ children }: { children: React.ReactNode }) {
   const [dir, _setDir] = useState<Direction>(
     () => (getCookie(DIRECTION_COOKIE_NAME) as Direction) || DEFAULT_DIRECTION
@@ -58,8 +66,5 @@ export function DirectionProvider({ children }: { children: React.ReactNode }) {
 // eslint-disable-next-line react-refresh/only-export-components
 export function useDirection() {
   const context = useContext(DirectionContext)
-  if (!context) {
-    throw new Error('useDirection must be used within a DirectionProvider')
-  }
-  return context
+  return context ?? fallbackDirectionContext
 }

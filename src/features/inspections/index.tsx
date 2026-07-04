@@ -110,7 +110,50 @@ export function InspectionManagement() {
             <CardTitle>{t('appointmentsTable')}</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className='overflow-hidden rounded-md border'>
+            <div className='space-y-3 md:hidden'>
+              {inspections.length ? (
+                inspections.map((inspection) => (
+                  <Card key={inspection.id} className='border-border/60'>
+                    <CardContent className='space-y-3 p-4'>
+                      <div className='flex items-start justify-between gap-3'>
+                        <div className='min-w-0'>
+                          <p className='truncate font-medium'>
+                            {inspection.carName}
+                          </p>
+                          <p className='text-sm text-muted-foreground'>
+                            {inspection.date} {inspection.time}
+                          </p>
+                        </div>
+                        <Badge
+                          variant='outline'
+                          className={
+                            inspection.status === 'Passed'
+                              ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
+                              : inspection.status === 'Failed'
+                                ? 'border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300'
+                                : 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300'
+                          }
+                        >
+                          {getInspectionStatusLabel(inspection.status, locale)}
+                        </Badge>
+                      </div>
+                      <p className='text-sm text-muted-foreground'>
+                        {inspection.placeName}
+                      </p>
+                      <p className='text-sm text-muted-foreground'>
+                        {t('documents')}: {inspection.files.length + inspection.receipts.length + inspection.beforeImages.length + inspection.afterImages.length}
+                      </p>
+                    </CardContent>
+                  </Card>
+                ))
+              ) : (
+                <div className='rounded-md border p-4 text-center text-sm'>
+                  {t('noInspectionsYet')}
+                </div>
+              )}
+            </div>
+
+            <div className='hidden overflow-hidden rounded-md border md:block'>
               <Table>
                 <TableHeader>
                   <TableRow>

@@ -57,7 +57,16 @@ export function getSidebarData(locale: Locale): SidebarData {
       {
         title: locale === 'ar' ? 'أخرى' : 'Other',
         items: [
-          { title: t('account'), url: '/settings', icon: UserCog },
+          {
+            title: t('settings'),
+            icon: UserCog,
+            items: [
+              { title: t('account'), url: '/settings/account' },
+              { title: t('appearance'), url: '/settings/appearance' },
+              { title: t('display'), url: '/settings/display' },
+              { title: t('notifications'), url: '/settings/notifications' },
+            ],
+          },
           { title: t('helpCenter'), url: '/help-center', icon: HelpCircle },
         ],
       },

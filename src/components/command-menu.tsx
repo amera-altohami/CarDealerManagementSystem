@@ -49,6 +49,9 @@ export function CommandMenu() {
                     <CommandItem
                       key={`${navItem.url}-${i}`}
                       value={navItem.title}
+                      onClick={() => {
+                        runCommand(() => navigate({ to: navItem.url }))
+                      }}
                       onSelect={() => {
                         runCommand(() => navigate({ to: navItem.url }))
                       }}
@@ -63,7 +66,10 @@ export function CommandMenu() {
                 return navItem.items?.map((subItem, i) => (
                   <CommandItem
                     key={`${navItem.title}-${subItem.url}-${i}`}
-                    value={`${navItem.title}-${subItem.url}`}
+                    value={`${navItem.title} ${subItem.title}`}
+                    onClick={() => {
+                      runCommand(() => navigate({ to: subItem.url }))
+                    }}
                     onSelect={() => {
                       runCommand(() => navigate({ to: subItem.url }))
                     }}
@@ -79,14 +85,23 @@ export function CommandMenu() {
           ))}
           <CommandSeparator />
           <CommandGroup heading={t('theme')}>
-            <CommandItem onSelect={() => runCommand(() => setTheme('light'))}>
+            <CommandItem
+              onClick={() => runCommand(() => setTheme('light'))}
+              onSelect={() => runCommand(() => setTheme('light'))}
+            >
               <Sun /> <span>{locale === 'ar' ? 'فاتح' : 'Light'}</span>
             </CommandItem>
-            <CommandItem onSelect={() => runCommand(() => setTheme('dark'))}>
+            <CommandItem
+              onClick={() => runCommand(() => setTheme('dark'))}
+              onSelect={() => runCommand(() => setTheme('dark'))}
+            >
               <Moon className='scale-90' />
               <span>{locale === 'ar' ? 'داكن' : 'Dark'}</span>
             </CommandItem>
-            <CommandItem onSelect={() => runCommand(() => setTheme('system'))}>
+            <CommandItem
+              onClick={() => runCommand(() => setTheme('system'))}
+              onSelect={() => runCommand(() => setTheme('system'))}
+            >
               <Laptop />
               <span>{locale === 'ar' ? 'النظام' : 'System'}</span>
             </CommandItem>

@@ -15,11 +15,12 @@ import { toast } from 'sonner'
 export function ResetPassword() {
   const navigate = useNavigate()
   const { oobCode } = useSearch({ from: '/(auth)/reset-password' })
-  const [isValid, setIsValid] = useState<boolean | null>(null)
+  const [isValid, setIsValid] = useState<boolean | null>(
+    oobCode ? null : false
+  )
 
   useEffect(() => {
     if (!oobCode) {
-      setIsValid(false)
       return
     }
 
