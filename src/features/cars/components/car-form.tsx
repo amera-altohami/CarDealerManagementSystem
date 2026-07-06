@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useForm, useWatch, type Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Link } from '@tanstack/react-router'
@@ -24,11 +24,13 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { SearchableCombobox } from '@/components/searchable-combobox'
-import { useCompaniesQuery } from '@/features/companies/hooks/use-companies'
 import { carFormSchema, type CarFormValues } from '../data/schema'
 import { buildCarFormData } from '../lib/car-form-data'
 import { getTitleTypeLabel, titleTypeOptions } from '../types/title'
+import {
+  isPurchasePlace,
+  purchasePlaceOptions,
+} from '@/types/dealer'
 
 type CarFormProps = {
   defaultValues?: Partial<CarFormValues>
@@ -67,12 +69,7 @@ export function CarForm({
 }: CarFormProps) {
   const { t, locale } = useI18n()
   const supportedLocale = locale === 'ar' ? 'ar' : 'en'
-  const companiesQuery = useCompaniesQuery()
-  const companyOptions = (companiesQuery.data ?? []).map((company) => ({
-    label: company.name,
-    value: company.id,
-    description: company.type,
-  }))
+  const defaultPurchasePlace = defaultValues?.purchasePlace
   const form = useForm<CarFormValues>({
     resolver: zodResolver(carFormSchema) as Resolver<CarFormValues>,
     defaultValues: { ...defaults, ...defaultValues },
@@ -83,6 +80,28 @@ export function CarForm({
     control: form.control,
     name: 'carfaxPdfName',
   })
+  const purchasePlaceChoices = useMemo(
+    () => {
+      const options: Array<{ label: string; value: string }> =
+        purchasePlaceOptions.map((place) => ({
+          label: place,
+          value: place,
+        }))
+
+      if (
+        defaultPurchasePlace &&
+        !isPurchasePlace(defaultPurchasePlace)
+      ) {
+        options.unshift({
+          label: defaultPurchasePlace,
+          value: defaultPurchasePlace,
+        })
+      }
+
+      return options
+    },
+    [defaultPurchasePlace]
+  )
 
   useEffect(() => {
     form.reset({ ...defaults, ...defaultValues })
@@ -303,13 +322,21 @@ export function CarForm({
                 <FormItem>
                   <FormLabel>{t('purchasePlace')}</FormLabel>
                   <FormControl>
-                    <SearchableCombobox
-                      value={field.value}
+                    <Select
                       onValueChange={field.onChange}
-                      options={companyOptions}
-                      placeholder={t('selectPurchasePlace')}
-                      searchPlaceholder={t('searchCompanies')}
-                    />
+                      defaultValue={field.value}
+                    >
+                      <SelectTrigger className='w-full'>
+                        <SelectValue placeholder={t('selectPurchasePlace')} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {purchasePlaceChoices.map((place) => (
+                          <SelectItem key={place.value} value={place.value}>
+                            {place.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </FormControl>
                   <FormMessage />
                 </FormItem>

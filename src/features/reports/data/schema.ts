@@ -58,6 +58,7 @@ export type ReportCar = {
     parts: number
     labor: number
     fees: number
+    bills: number
     other: number
   }
   totalCost: number

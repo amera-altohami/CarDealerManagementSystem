@@ -65,6 +65,7 @@ export function ExpenseEdit({ expenseId }: ExpenseEditProps) {
           defaultValues={{
             carId: expense.carId ?? '',
             expenseType: expense.expenseType,
+            billCategory: expense.billCategory ?? '',
             amount: expense.amount,
             paidBy: expense.paidBy,
             paymentMethod: expense.paymentMethod,

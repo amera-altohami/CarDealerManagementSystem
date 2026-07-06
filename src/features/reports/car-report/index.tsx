@@ -45,6 +45,7 @@ const expenseTypeCostKeys: Record<
   Labor: 'labor',
   Inspection: 'inspection',
   Fees: 'fees',
+  Bills: 'bills',
   Other: 'other',
 }
 

@@ -5,7 +5,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { useI18n } from '@/lib/i18n'
+import { getExpenseTypeLabel, useI18n } from '@/lib/i18n'
 
 type CostSummary = {
   purchase: number
@@ -15,6 +15,7 @@ type CostSummary = {
   labor: number
   inspection?: number
   fees: number
+  bills?: number
   other: number
 }
 
@@ -37,8 +38,11 @@ export function CostSummaryCard({
   sellingPrice,
   className,
 }: CostSummaryCardProps) {
-  const { t } = useI18n()
-  const totalCost = Object.values(breakdown).reduce((sum, value) => sum + value, 0)
+  const { t, locale } = useI18n()
+  const totalCost = Object.values(breakdown).reduce(
+    (sum, value) => sum + (value ?? 0),
+    0
+  )
   const netProfit = sellingPrice - totalCost
 
   const rows = [
@@ -49,6 +53,7 @@ export function CostSummaryCard({
     [t('labor'), breakdown.labor],
     [t('inspection'), breakdown.inspection ?? 0],
     [t('fees'), breakdown.fees],
+    [getExpenseTypeLabel('Bills', locale), breakdown.bills ?? 0],
     [t('other'), breakdown.other],
   ] as const
 

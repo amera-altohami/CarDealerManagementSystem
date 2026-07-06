@@ -827,6 +827,7 @@ const messages = {
     selectType: `Select type`,
     selectStatus: `Select status`,
     selectMethod: `Select method`,
+    selectBillCategory: `Select bill category`,
     selectPlace: `Select place`,
     searchCenters: `Search places...`,
     selectUser: `Select user`,
@@ -850,6 +851,8 @@ const messages = {
     addExpense: `Add Expense`,
     thisMonthExpenses: `This Month Expenses`,
     highestExpenseType: `Highest Expense Type`,
+    billCategory: `Bill Category`,
+    bills: `Bills`,
     expensesCount: `Expenses Count`,
     expensesList: `Expenses List`,
     searchExpenses: `Search expenses...`,
@@ -1405,6 +1408,7 @@ export function getExpenseTypeLabel(type: ExpenseType, locale: Locale) {
       Labor: 'Labor',
       Inspection: 'Inspection',
       Fees: 'Fees',
+      Bills: 'Bills',
       Other: 'Other',
     },
     ar: {
@@ -1415,6 +1419,7 @@ export function getExpenseTypeLabel(type: ExpenseType, locale: Locale) {
       Labor: 'عمالة',
       Inspection: 'فحص',
       Fees: 'رسوم',
+      Bills: 'فواتير',
       Other: 'أخرى',
     },
   } as const
@@ -1427,16 +1432,43 @@ export function getPaymentMethodLabel(method: PaymentMethod, locale: Locale) {
     en: {
       Zelle: 'Zelle',
       Cash: 'Cash',
+      Cashapp: 'Cashapp',
+      Check: 'Check',
+      'Cashier Check': 'Cashier Check',
       Card: 'Card',
     },
     ar: {
       Zelle: 'زيل',
       Cash: 'نقدًا',
+      Cashapp: 'كاش آب',
+      Check: 'شيك',
+      'Cashier Check': 'شيك مصرفي',
       Card: 'بطاقة',
     },
   } as const
 
   return labels[locale][method]
+}
+
+export function getBillCategoryLabel(category: string, locale: Locale) {
+  const labels = {
+    en: {
+      Rent: 'Rent',
+      Water: 'Water',
+      Gas: 'Gas',
+      Electricity: 'Electricity',
+      Internet: 'Internet',
+    },
+    ar: {
+      Rent: 'إيجار',
+      Water: 'ماء',
+      Gas: 'غاز',
+      Electricity: 'كهرباء',
+      Internet: 'إنترنت',
+    },
+  } as const
+
+  return labels[locale][category as keyof typeof labels.en] ?? category
 }
 
 export function getCompanyTypeLabel(type: CompanyType, locale: Locale) {

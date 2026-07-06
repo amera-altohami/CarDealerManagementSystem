@@ -9,7 +9,11 @@ import {
 import { ArrowLeft, ReceiptText, WalletCards } from 'lucide-react'
 import { toast } from 'sonner'
 import { getFirestoreErrorMessage } from '@/lib/firebase-errors'
-import { getExpenseTypeLabel, useI18n } from '@/lib/i18n'
+import {
+  getExpenseTypeLabel,
+  getPaymentMethodLabel,
+  useI18n,
+} from '@/lib/i18n'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ConfigDrawer } from '@/components/config-drawer'
@@ -53,6 +57,7 @@ const expenseBadgeStyles: Record<ExpenseType, string> = {
   Inspection:
     'border-orange-500/30 bg-orange-500/10 text-orange-700 dark:text-orange-300',
   Fees: 'border-slate-500/30 bg-slate-500/10 text-slate-700 dark:text-slate-300',
+  Bills: 'border-cyan-500/30 bg-cyan-500/10 text-cyan-700 dark:text-cyan-300',
   Other: 'border-zinc-500/30 bg-zinc-500/10 text-zinc-700 dark:text-zinc-300',
 }
 
@@ -208,7 +213,7 @@ export function ExpensesReport() {
             {
               key: 'method',
               header: t('paymentMethod'),
-              render: (row) => row.paymentMethod,
+              render: (row) => getPaymentMethodLabel(row.paymentMethod, locale),
             },
             {
               key: 'amount',

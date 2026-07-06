@@ -21,21 +21,15 @@ import {
 import { z } from 'zod'
 import { db } from '@/lib/firebase'
 import { getFirestoreErrorMessage } from '@/lib/firebase-errors'
-import type { ExpenseType, PaymentMethod } from '@/types/dealer'
+import {
+  expenseTypeOptions,
+  paymentMethodOptions,
+  type ExpenseType,
+  type PaymentMethod,
+} from '@/types/dealer'
 
 const COLLECTION_NAME = 'expenses'
 const CAR_COLLECTION_NAME = 'cars'
-const expenseTypeValues = [
-  'Purchase',
-  'Shipping',
-  'Repair',
-  'Parts',
-  'Labor',
-  'Inspection',
-  'Fees',
-  'Other',
-] as const
-const expensePaymentMethods = ['Zelle', 'Cash', 'Card'] as const
 const DELETE_BLOCKED_MESSAGE =
   'This expense cannot be deleted because related records exist.'
 const DELETE_NOT_FOUND_MESSAGE = 'Expense was not found.'
@@ -50,6 +44,7 @@ export interface ExpenseDocument {
   amount: number
   paid_by: string
   payment_method: PaymentMethod
+  bill_category?: string | null
   date: string
   notes?: string | null
   invoice_name?: string | null
@@ -64,6 +59,7 @@ export interface Expense extends ExpenseDocument {
   expenseType: ExpenseType
   paidBy: string
   paymentMethod: PaymentMethod
+  billCategory: string | null
   invoiceName?: string | null
   invoiceUrl?: string | null
   createdAt?: FirestoreDate
@@ -76,6 +72,7 @@ export type CreateExpenseData = {
   amount: number
   paidBy: string
   paymentMethod: PaymentMethod
+  billCategory?: string | null
   date: string
   notes?: string | null
   invoiceName?: string | null
@@ -103,6 +100,7 @@ type ExpenseWriteDocumentData = {
   amount: number
   paid_by: string
   payment_method: PaymentMethod
+  bill_category: string | null
   date: string
   notes: string | null
   invoice_name: string | null
@@ -118,12 +116,13 @@ type ExpenseUpdateDocumentData = Partial<ExpenseWriteDocumentData> & {
   updated_at: FieldValue
 }
 
-const expenseInputSchema = z.object({
+const expenseInputBaseSchema = z.object({
   carId: z.string().trim().optional().nullable(),
-  expenseType: z.enum(expenseTypeValues),
+  expenseType: z.enum(expenseTypeOptions),
   amount: z.number().finite().min(0, 'Please enter a valid amount.'),
   paidBy: z.string().trim().min(2, 'Please select who paid this expense.'),
-  paymentMethod: z.enum(expensePaymentMethods),
+  paymentMethod: z.enum(paymentMethodOptions),
+  billCategory: z.string().trim().optional().nullable(),
   date: z
     .string()
     .trim()
@@ -136,7 +135,17 @@ const expenseInputSchema = z.object({
   invoiceUrl: z.string().trim().optional().nullable(),
 })
 
-const expenseUpdateSchema = expenseInputSchema.partial().superRefine(
+const expenseInputSchema = expenseInputBaseSchema.superRefine((data, ctx) => {
+  if (data.expenseType === 'Bills' && !data.billCategory?.trim()) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Please select a bill category.',
+      path: ['billCategory'],
+    })
+  }
+})
+
+const expenseUpdateSchema = expenseInputBaseSchema.partial().superRefine(
   (data, ctx) => {
     if (
       data.date !== undefined &&
@@ -147,6 +156,14 @@ const expenseUpdateSchema = expenseInputSchema.partial().superRefine(
         code: z.ZodIssueCode.custom,
         message: 'Please select a valid date.',
         path: ['date'],
+      })
+    }
+
+    if (data.expenseType === 'Bills' && !data.billCategory?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Please select a bill category.',
+        path: ['billCategory'],
       })
     }
   }
@@ -225,6 +242,7 @@ function mapExpenseSnapshot(
     expenseType: data.expense_type,
     paidBy: data.paid_by,
     paymentMethod: data.payment_method,
+    billCategory: data.bill_category ?? null,
     invoiceName: data.invoice_name ?? null,
     invoiceUrl: data.invoice_url ?? null,
     createdAt: data.created_at,
@@ -308,6 +326,10 @@ function toCreateDocumentData(
     amount: Number(data.amount),
     paid_by: data.paidBy.trim(),
     payment_method: data.paymentMethod,
+    bill_category:
+      data.expenseType === 'Bills'
+        ? normalizeText(data.billCategory) ?? null
+        : null,
     date: data.date,
     notes: normalizeText(data.notes) ?? null,
     invoice_name: normalizeText(data.invoiceName) ?? null,
@@ -346,6 +368,13 @@ function toUpdateDocumentData(
 
   if (data.paymentMethod !== undefined) {
     documentData.payment_method = data.paymentMethod
+  }
+
+  if (data.billCategory !== undefined || data.expenseType === 'Bills') {
+    documentData.bill_category =
+      data.expenseType === 'Bills'
+        ? normalizeText(data.billCategory) ?? null
+        : null
   }
 
   if (data.date !== undefined) {

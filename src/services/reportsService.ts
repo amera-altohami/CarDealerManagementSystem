@@ -96,6 +96,7 @@ export const reportExpenseTypes: ExpenseType[] = [
   'Labor',
   'Inspection',
   'Fees',
+  'Bills',
   'Other',
 ]
 
@@ -107,6 +108,7 @@ const expenseTypeCostKeys: Record<ExpenseType, CostBreakdownKey> = {
   Labor: 'labor',
   Inspection: 'inspection',
   Fees: 'fees',
+  Bills: 'bills',
   Other: 'other',
 }
 
@@ -148,6 +150,7 @@ function getCostBreakdown(car: Car, expenses: Expense[]) {
     parts: 0,
     labor: 0,
     fees: 0,
+    bills: 0,
     other: 0,
   }
 

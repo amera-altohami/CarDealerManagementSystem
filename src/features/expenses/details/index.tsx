@@ -1,7 +1,12 @@
 import { useState } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { formatCarName } from '@/services/carsService'
-import { getExpenseTypeLabel, getPaymentMethodLabel, useI18n } from '@/lib/i18n'
+import {
+  getBillCategoryLabel,
+  getExpenseTypeLabel,
+  getPaymentMethodLabel,
+  useI18n,
+} from '@/lib/i18n'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -96,6 +101,16 @@ export function ExpenseDetails({ expenseId }: ExpenseDetailsProps) {
               label={t('invoice')}
               value={expense.invoiceName ?? '-'}
             />
+            {expense.expenseType === 'Bills' ? (
+              <InfoBlock
+                label={locale === 'ar' ? 'تصنيف الفاتورة' : 'Bill Category'}
+                value={
+                  expense.billCategory
+                    ? getBillCategoryLabel(expense.billCategory, locale)
+                    : '-'
+                }
+              />
+            ) : null}
             <InfoBlock label={t('notes')} value={expense.notes || '-'} />
             <div className='flex items-end justify-end gap-3 md:col-span-2'>
               <Button asChild variant='outline'>

@@ -5,7 +5,12 @@ import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { formatCarName } from '@/services/carsService'
 import { getAll as getPartners } from '@/services/partnersService'
-import { getExpenseTypeLabel, getPaymentMethodLabel, useI18n } from '@/lib/i18n'
+import {
+  getBillCategoryLabel,
+  getExpenseTypeLabel,
+  getPaymentMethodLabel,
+  useI18n,
+} from '@/lib/i18n'
 import { showSubmittedData } from '@/lib/show-submitted-data'
 import { Button } from '@/components/ui/button'
 import {
@@ -29,6 +34,7 @@ import { SearchableCombobox } from '@/components/searchable-combobox'
 import { useCarsQuery } from '@/features/cars/hooks/use-cars'
 import {
   expenseFormSchema,
+  billCategories,
   expenseTypes,
   paymentMethods,
   type ExpenseFormValues,
@@ -47,6 +53,7 @@ const defaults: ExpenseFormValues = {
   amount: 0,
   paidBy: '',
   paymentMethod: 'Zelle',
+  billCategory: '',
   date: '',
   notes: '',
   invoiceName: '',
@@ -70,6 +77,7 @@ export function ExpenseForm({
     defaultValues: { ...defaults, ...defaultValues },
     mode: 'onChange',
   })
+  const expenseType = useWatch({ control: form.control, name: 'expenseType' })
   const invoiceName = useWatch({ control: form.control, name: 'invoiceName' })
 
   const carOptions = useMemo(
@@ -121,6 +129,15 @@ export function ExpenseForm({
     return options
   }, [defaultPaidBy, partnersQuery.data, t])
 
+  const billCategoryOptions = useMemo(
+    () =>
+      billCategories.map((category) => ({
+        label: getBillCategoryLabel(category, locale),
+        value: category,
+      })),
+    [locale]
+  )
+
   useEffect(() => {
     form.reset({ ...defaults, ...defaultValues })
   }, [defaultValues, form])
@@ -164,7 +181,16 @@ export function ExpenseForm({
               <FormItem>
                 <FormLabel>{t('expenseType')}</FormLabel>
                 <Select
-                  onValueChange={field.onChange}
+                  onValueChange={(value) => {
+                    field.onChange(value)
+
+                    if (value !== 'Bills') {
+                      form.setValue('billCategory', '', {
+                        shouldDirty: true,
+                        shouldValidate: true,
+                      })
+                    }
+                  }}
                   defaultValue={field.value}
                 >
                   <FormControl>
@@ -184,6 +210,43 @@ export function ExpenseForm({
               </FormItem>
             )}
           />
+          {expenseType === 'Bills' ? (
+            <FormField
+              control={form.control}
+              name='billCategory'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    {locale === 'ar' ? 'تصنيف الفاتورة' : 'Bill Category'}
+                  </FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger className='w-full'>
+                      <SelectValue
+                        placeholder={
+                          locale === 'ar'
+                            ? 'اختر تصنيف الفاتورة'
+                            : 'Select bill category'
+                        }
+                      />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {billCategoryOptions.map((category) => (
+                        <SelectItem key={category.value} value={category.value}>
+                          {category.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          ) : null}
           <FormField
             control={form.control}
             name='amount'

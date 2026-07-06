@@ -113,6 +113,7 @@ function calculateCarExpenseSummary(expenses: Expense[]) {
       labor: 0,
       inspection: 0,
       fees: 0,
+      bills: 0,
       other: 0,
       totalCost: 0,
     }
@@ -288,6 +289,7 @@ export function CarDetails({ carId }: CarDetailsProps) {
     labor: expenseSummary.labor,
     inspection: expenseSummary.inspection,
     fees: expenseSummary.fees,
+    bills: expenseSummary.bills,
     other: expenseSummary.other,
   }
   const totalProfit = car.sellingPrice - expenseSummary.totalCost
@@ -1122,6 +1124,7 @@ function ExpenseBadge({ expenseType }: { expenseType: Expense['expenseType'] }) 
     Inspection:
       'border-orange-500/30 bg-orange-500/10 text-orange-700 dark:text-orange-300',
     Fees: 'border-slate-500/30 bg-slate-500/10 text-slate-700 dark:text-slate-300',
+    Bills: 'border-cyan-500/30 bg-cyan-500/10 text-cyan-700 dark:text-cyan-300',
     Other: 'border-zinc-500/30 bg-zinc-500/10 text-zinc-700 dark:text-zinc-300',
   }[expenseType]
 
@@ -1137,6 +1140,11 @@ function PaymentBadge({ method }: { method: Expense['paymentMethod'] }) {
   const className = {
     Zelle: 'border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300',
     Cash: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
+    Cashapp:
+      'border-lime-500/30 bg-lime-500/10 text-lime-700 dark:text-lime-300',
+    Check: 'border-slate-500/30 bg-slate-500/10 text-slate-700 dark:text-slate-300',
+    'Cashier Check':
+      'border-teal-500/30 bg-teal-500/10 text-teal-700 dark:text-teal-300',
     Card: 'border-violet-500/30 bg-violet-500/10 text-violet-700 dark:text-violet-300',
   }[method]
 
