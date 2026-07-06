@@ -26,7 +26,7 @@ import type {
 import { createActivityLog } from './activityLogsService'
 
 const COLLECTION_NAME = 'managed_users'
-export const DEFAULT_MANAGED_USER_PASSWORD = '0000000'
+export const DEFAULT_MANAGED_USER_PASSWORD = 'CarLotE@2026!Adm1n'
 export const DEFAULT_SUPER_ADMIN_EMAIL = 'car.d.d.admin@gmail.com'
 const DEFAULT_SUPER_ADMIN_ID = 'admin-default'
 const DEFAULT_SUPER_ADMIN_NAME = 'Admin'

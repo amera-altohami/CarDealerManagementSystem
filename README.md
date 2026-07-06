@@ -110,6 +110,23 @@ For questions or sponsorship inquiries, feel free to reach out at [satnaingdev@g
 
 - [Clerk](https://go.clerk.com/GttUAaK) - authentication and user management for the modern web
 
+## Full Reset
+
+To clear Firestore data and Firebase Auth users, then recreate the default protected admin account:
+
+```bash
+  npm run reset:full
+```
+
+This wipes the app data in Firestore, deletes all Firebase Authentication users, and recreates `managed_users/admin-default` plus the default Auth admin account. The script needs Firebase Admin credentials, either through `GOOGLE_APPLICATION_CREDENTIALS` or the `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, and `FIREBASE_PRIVATE_KEY` env vars.
+
+PowerShell example:
+
+```powershell
+$env:GOOGLE_APPLICATION_CREDENTIALS="C:\path\to\serviceAccountKey.json"
+npm run reset:full
+```
+
 ## Author
 
 Crafted with 🤍 by [@satnaing](https://github.com/satnaing)

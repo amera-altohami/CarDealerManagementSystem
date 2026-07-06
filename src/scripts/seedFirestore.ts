@@ -352,7 +352,7 @@ async function seedFirestore() {
       role: 'SUPER_ADMIN',
       status: 'Active',
       is_protected: true,
-      // Firebase Auth password for this protected account should be set to 15221522.
+      // Firebase Auth password for this protected account should be set to CarLotE@2026!Adm1n.
       // The password itself lives in Firebase Authentication, not in Firestore seed data.
       created_at: now,
       last_login: null,
