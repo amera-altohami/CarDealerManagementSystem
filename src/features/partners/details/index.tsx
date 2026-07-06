@@ -39,12 +39,14 @@ import {
   type ProfitShare,
 } from '../data/schema'
 import {
-  useContributionsByPartnerQuery,
   usePartnerCarsQuery,
   usePartnerQuery,
   usePartnersQuery,
-  useProfitSharesByPartnerQuery,
 } from '../hooks/use-partners'
+import {
+  buildEqualSplitRows,
+  calculateEqualSplitPartnerTotals,
+} from '../lib/equal-split'
 
 type PartnerDetailsProps = {
   partnerId: string
@@ -68,96 +70,65 @@ const statusLabelKeys: Record<Partner['status'], MessageKey> = {
   Inactive: 'inactiveStatus',
 }
 
-function getCarInvestmentBase(car?: Car) {
-  return car?.purchasePrice ?? 0
-}
-
-function calculatePartnerTotals(
-  partnerId: string,
-  contributions: PartnerContribution[],
-  profitShares: ProfitShare[],
-  cars: Car[]
-) {
-  const carMap = new Map(cars.map((car) => [car.id, car]))
-  const partnerContributions = contributions.filter(
-    (contribution) => contribution.partnerId === partnerId
-  )
-  const partnerProfitShares = profitShares.filter(
-    (profitShare) => profitShare.partnerId === partnerId
-  )
-  const totalContribution = partnerContributions.reduce(
-    (sum, contribution) => sum + contribution.contributionAmount,
-    0
-  )
-  const totalInvestmentBase = partnerContributions.reduce(
-    (sum, contribution) =>
-      sum + getCarInvestmentBase(carMap.get(contribution.carId)),
-    0
-  )
-  const investmentPercentage =
-    totalInvestmentBase > 0
-      ? Number(((totalContribution / totalInvestmentBase) * 100).toFixed(2))
-      : 0
-  const totalProfit = partnerProfitShares.reduce(
-    (sum, profitShare) =>
-      profitShare.partnerProfitShare > 0
-        ? sum + profitShare.partnerProfitShare
-        : sum,
-    0
-  )
-  const totalLoss = partnerProfitShares.reduce(
-    (sum, profitShare) =>
-      profitShare.partnerProfitShare < 0
-        ? sum + Math.abs(profitShare.partnerProfitShare)
-        : sum,
-    0
-  )
-
-  return {
-    investmentPercentage,
-    totalContribution,
-    totalProfit,
-    totalLoss,
-    finalBalance: totalContribution + totalProfit - totalLoss,
-  }
-}
-
 export function PartnerDetails({ partnerId }: PartnerDetailsProps) {
   const { t } = useI18n()
   const partnerQuery = usePartnerQuery(partnerId)
   const partnersQuery = usePartnersQuery()
-  const contributionsQuery = useContributionsByPartnerQuery(partnerId)
-  const profitSharesQuery = useProfitSharesByPartnerQuery(partnerId)
   const carsQuery = usePartnerCarsQuery()
   const partner = partnerQuery.data
-  const contributions = contributionsQuery.data ?? []
-  const profitShares = profitSharesQuery.data ?? []
+  const partners = partnersQuery.data ?? []
   const cars = carsQuery.data ?? []
-
-  useEffect(() => {
-    if (partnerQuery.isError) toast.error('Failed to load partners.')
-  }, [partnerQuery.isError])
-
-  useEffect(() => {
-    if (contributionsQuery.isError) {
-      toast.error('Failed to load contributions.')
-    }
-  }, [contributionsQuery.isError])
-
-  useEffect(() => {
-    if (profitSharesQuery.isError) {
-      toast.error('Failed to load profit shares.')
-    }
-  }, [profitSharesQuery.isError])
-
+  const derivedRows = useMemo(
+    () => buildEqualSplitRows(partners, cars),
+    [cars, partners]
+  )
+  const partnerContributions = useMemo<PartnerContribution[]>(
+    () =>
+      derivedRows
+        .filter((row) => row.partnerId === partnerId)
+        .map((row, index) => ({
+          id: `${row.carId}-${row.partnerId}-${index}`,
+          partnerId: row.partnerId,
+          carId: row.carId,
+          carName: row.carName,
+          contributionAmount: row.contributionAmount,
+          investmentPercentage: row.investmentPercentage,
+          contributionDate: new Date().toISOString().slice(0, 10),
+          paymentMethod: 'Cash',
+          notes: '',
+        })),
+    [derivedRows, partnerId]
+  )
+  const partnerProfitShares = useMemo<ProfitShare[]>(
+    () =>
+      derivedRows
+        .filter((row) => row.partnerId === partnerId)
+        .map((row, index) => ({
+          id: `${row.carId}-${row.partnerId}-profit-${index}`,
+          partnerId: row.partnerId,
+          carId: row.carId,
+          carName: row.carName,
+          carCost: row.carCost,
+          sellingPrice: row.sellingPrice,
+          netProfit: row.netProfit,
+          partnerPercentage: row.investmentPercentage,
+          partnerProfitShare: row.partnerProfitShare,
+          status: row.status,
+        })),
+    [derivedRows, partnerId]
+  )
   const partnerWithTotals = useMemo(() => {
     if (!partner) return null
 
     return {
       ...partner,
-      ...calculatePartnerTotals(partner.id, contributions, profitShares, cars),
+      ...calculateEqualSplitPartnerTotals(partners, cars),
     }
-  }, [cars, contributions, partner, profitShares])
+  }, [cars, partner, partners])
+
+  useEffect(() => {
+    if (partnerQuery.isError) toast.error('Failed to load partners.')
+  }, [partnerQuery.isError])
 
   if (partnerQuery.isLoading) {
     return (
@@ -214,10 +185,7 @@ export function PartnerDetails({ partnerId }: PartnerDetailsProps) {
   }
 
   const relatedCarIds = Array.from(
-    new Set([
-      ...contributions.map((contribution) => contribution.carId),
-      ...profitShares.map((profitShare) => profitShare.carId),
-    ])
+    new Set(partnerProfitShares.map((item) => item.carId))
   )
 
   return (
@@ -311,7 +279,7 @@ export function PartnerDetails({ partnerId }: PartnerDetailsProps) {
             />
             <MetricCard
               icon={<TrendingUp className='h-4 w-4' />}
-              label={t('profit')}
+              label={t('profit') }
               value={money.format(partnerWithTotals.totalProfit)}
               className='border-emerald-500/20 bg-emerald-500/5'
             />
@@ -336,44 +304,33 @@ export function PartnerDetails({ partnerId }: PartnerDetailsProps) {
         <Tabs defaultValue='overview' className='space-y-4'>
           <TabsList className='w-full'>
             <TabsTrigger value='overview'>{t('overview')}</TabsTrigger>
-            <TabsTrigger value='contributions'>
-              {t('contributions')}
-            </TabsTrigger>
             <TabsTrigger value='profit-loss'>{t('profitAndLoss')}</TabsTrigger>
             <TabsTrigger value='related-cars'>{t('relatedCars')}</TabsTrigger>
           </TabsList>
 
           <TabsContent value='overview' className='grid gap-4 lg:grid-cols-2'>
             <ContributionsTable
-              contributions={contributions.slice(0, 3)}
-              isLoading={contributionsQuery.isLoading}
-              partners={partnersQuery.data ?? []}
+              contributions={partnerContributions.slice(0, 3)}
+              isLoading={partnersQuery.isLoading || carsQuery.isLoading}
+              partners={partners}
               title={t('recentContributions')}
             />
             <ProfitShareTable
-              profitShares={profitShares.slice(0, 3)}
+              profitShares={partnerProfitShares.slice(0, 3)}
               title={t('profitAndLoss')}
             />
           </TabsContent>
 
-          <TabsContent value='contributions' className='space-y-4'>
-            <ContributionsTable
-              contributions={contributions}
-              isLoading={contributionsQuery.isLoading}
-              partners={partnersQuery.data ?? []}
-            />
-          </TabsContent>
-
           <TabsContent value='profit-loss' className='space-y-4'>
-            <ProfitShareTable profitShares={profitShares} />
+            <ProfitShareTable profitShares={partnerProfitShares} />
           </TabsContent>
 
           <TabsContent value='related-cars' className='space-y-4'>
             <RelatedCarsTable
               cars={cars}
               relatedCarIds={relatedCarIds}
-              contributions={contributions}
-              profitShares={profitShares}
+              contributions={partnerContributions}
+              profitShares={partnerProfitShares}
             />
           </TabsContent>
         </Tabs>

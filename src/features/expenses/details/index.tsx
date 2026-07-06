@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
-import { formatCarName } from '@/services/carsService'
 import {
   getBillCategoryLabel,
   getExpenseTypeLabel,
@@ -17,7 +16,6 @@ import { Main } from '@/components/layout/main'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
-import { useCarsQuery } from '@/features/cars/hooks/use-cars'
 import { useDeleteExpenseMutation, useExpenseQuery } from '../hooks/use-expenses'
 
 type ExpenseDetailsProps = {
@@ -35,16 +33,8 @@ export function ExpenseDetails({ expenseId }: ExpenseDetailsProps) {
   const navigate = useNavigate()
   const expenseQuery = useExpenseQuery(expenseId)
   const deleteExpenseMutation = useDeleteExpenseMutation()
-  const carsQuery = useCarsQuery()
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const expense = expenseQuery.data
-  const expenseCarName = carsQuery.data?.find(
-    (car) => car.id === expense?.carId
-  )
-    ? formatCarName(carsQuery.data.find((car) => car.id === expense?.carId)!)
-    : expense?.carId
-      ? expense?.carName || expense?.carId
-      : t('standaloneExpense')
 
   if (expenseQuery.isLoading) {
     return (
@@ -81,14 +71,13 @@ export function ExpenseDetails({ expenseId }: ExpenseDetailsProps) {
         <Card className='border-border/60'>
           <CardHeader className='space-y-2'>
             <div className='flex flex-wrap items-center justify-between gap-3'>
-              <CardTitle className='text-2xl'>{expenseCarName}</CardTitle>
+              <CardTitle className='text-2xl'>{t('expenseDetails')}</CardTitle>
               <Badge variant='outline'>
                 {getExpenseTypeLabel(expense.expenseType, locale)}
               </Badge>
             </div>
             <p className='text-muted-foreground'>
-              {expense.date} •{' '}
-              {getPaymentMethodLabel(expense.paymentMethod, locale)} •{' '}
+              {expense.date} • {getPaymentMethodLabel(expense.paymentMethod, locale)} •{' '}
               {t('paidBy')} {expense.paidBy}
             </p>
           </CardHeader>
@@ -96,6 +85,10 @@ export function ExpenseDetails({ expenseId }: ExpenseDetailsProps) {
             <InfoBlock
               label={t('amount')}
               value={money.format(expense.amount)}
+            />
+            <InfoBlock
+              label={t('expenseType')}
+              value={getExpenseTypeLabel(expense.expenseType, locale)}
             />
             <InfoBlock
               label={t('invoice')}
@@ -146,7 +139,7 @@ export function ExpenseDetails({ expenseId }: ExpenseDetailsProps) {
         desc={
           <span>
             {t('deleteExpenseConfirmStart')}{' '}
-            <strong>{expenseCarName}</strong>
+            <strong>{t('expenseDetails')}</strong>
             {t('deleteExpenseConfirmEnd')}
           </span>
         }

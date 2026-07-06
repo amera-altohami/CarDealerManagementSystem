@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Link } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import {
   EllipsisVertical,
   Eye,
@@ -82,6 +82,7 @@ export function PartnersTable({
   onToggleStatus,
 }: PartnersTableProps) {
   const { t } = useI18n()
+  const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState<StatusFilter>('all')
   const [percentage, setPercentage] = useState<PercentageFilter>('all')
@@ -175,7 +176,7 @@ export function PartnersTable({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? (
+                {isLoading ? (
                 <TableRow>
                   <TableCell colSpan={9} className='h-24 text-center'>
                     Loading...
@@ -183,7 +184,16 @@ export function PartnersTable({
                 </TableRow>
               ) : filteredRows.length ? (
                 filteredRows.map((partner) => (
-                  <TableRow key={partner.id}>
+                  <TableRow
+                    key={partner.id}
+                    className='cursor-pointer'
+                    onDoubleClick={() =>
+                      navigate({
+                        to: '/partners/$partnerId',
+                        params: { partnerId: partner.id },
+                      })
+                    }
+                  >
                     <TableCell>
                       <div className='flex items-center gap-3'>
                         <Avatar className='h-9 w-9 rounded-md'>

@@ -16,7 +16,6 @@ export const billCategories: BillCategory[] = [...billCategoryOptions]
 
 export const expenseFormSchema = z
   .object({
-    carId: z.string().trim().optional().default(''),
     expenseType: z.enum(expenseTypeOptions),
     amount: z.coerce.number().min(0, 'Please enter a valid amount.'),
     paidBy: z.string().min(2, 'Please select who paid this expense.'),

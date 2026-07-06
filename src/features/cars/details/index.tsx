@@ -1,29 +1,11 @@
 import { useState, type ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
-import {
-  AlertTriangle,
-  FileText,
-  HandCoins,
-  Link2,
-  Package,
-  ReceiptText,
-  ShieldCheck,
-  Sparkles,
-  TrendingDown,
-  TrendingUp,
-  Wrench,
-} from 'lucide-react'
+import { HandCoins, Link2, Package, ShieldCheck, TrendingDown, TrendingUp, Wrench } from 'lucide-react'
 import { type Car } from '@/services/carsService'
-import { getExpensesByCarId, type Expense } from '@/services/expensesService'
 import { getPartsByCarId, type Part } from '@/services/partsService'
 import { useAuthStore } from '@/stores/auth-store'
-import {
-  getExpenseTypeLabel,
-  getPaymentMethodLabel,
-  useI18n,
-  type MessageKey,
-} from '@/lib/i18n'
+import { useI18n, type MessageKey } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { getFirestoreErrorMessage } from '@/lib/firebase-errors'
 import { ConfirmDialog } from '@/components/confirm-dialog'
@@ -40,7 +22,6 @@ import {
 } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ConfigDrawer } from '@/components/config-drawer'
-import { CostSummaryCard } from '@/components/cost-summary-card'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
 import { ProfileDropdown } from '@/components/profile-dropdown'
@@ -95,29 +76,6 @@ const profitShareStatusLabelKeys: Record<ProfitShare['status'], MessageKey> = {
   Pending: 'pendingStatus',
   Paid: 'paidStatus',
   Loss: 'lossStatus',
-}
-
-function calculateCarExpenseSummary(expenses: Expense[]) {
-  return expenses.reduce(
-    (summary, expense) => {
-      summary[expense.expenseType.toLowerCase() as keyof typeof summary] +=
-        expense.amount
-      summary.totalCost += expense.amount
-      return summary
-    },
-    {
-      purchase: 0,
-      shipping: 0,
-      repair: 0,
-      parts: 0,
-      labor: 0,
-      inspection: 0,
-      fees: 0,
-      bills: 0,
-      other: 0,
-      totalCost: 0,
-    }
-  )
 }
 
 function getInspectionSortKey(inspection: Inspection) {
@@ -200,11 +158,6 @@ export function CarDetails({ carId }: CarDetailsProps) {
   const inspectionsQuery = useInspectionsQuery({ carId })
   const titleHistoryQuery = useTitleHistoryQuery({ carId })
   const createTitleHistoryMutation = useCreateTitleHistoryMutation()
-  const expensesQuery = useQuery({
-    queryKey: ['car-details', 'expenses', carId] as const,
-    queryFn: () => getExpensesByCarId(carId),
-    enabled: Boolean(carId),
-  })
   const partsQuery = useQuery({
     queryKey: ['car-details', 'parts', carId] as const,
     queryFn: () => getPartsByCarId(carId),
@@ -268,9 +221,9 @@ export function CarDetails({ carId }: CarDetailsProps) {
   const latestSalvageHistory = [...(titleHistoryQuery.data ?? [])]
     .filter((entry) => entry.newTitleType === 'Salvage')
     .sort((first, second) => getTitleHistorySortKey(second) - getTitleHistorySortKey(first))[0]
-  const expenses = expensesQuery.data ?? []
   const parts = partsQuery.data ?? []
   const inspections = inspectionsQuery.data ?? []
+  const partsTotalCost = parts.reduce((sum, part) => sum + part.price, 0)
   const latestInspection = [...inspections].sort(
     (first, second) => getInspectionSortKey(second) - getInspectionSortKey(first)
   )[0]
@@ -280,33 +233,7 @@ export function CarDetails({ carId }: CarDetailsProps) {
     latestInspection.status === 'Passed' &&
     getInspectionSortKey(latestInspection) >
       getTitleHistorySortKey(latestSalvageHistory ?? { changeDate: '1970-01-01' })
-  const expenseSummary = calculateCarExpenseSummary(expenses)
-  const expenseBreakdown = {
-    purchase: expenseSummary.purchase,
-    shipping: expenseSummary.shipping,
-    repair: expenseSummary.repair,
-    parts: expenseSummary.parts,
-    labor: expenseSummary.labor,
-    inspection: expenseSummary.inspection,
-    fees: expenseSummary.fees,
-    bills: expenseSummary.bills,
-    other: expenseSummary.other,
-  }
-  const totalProfit = car.sellingPrice - expenseSummary.totalCost
   const salvageInspectionRequired = currentTitle.type === 'Salvage'
-  const currentMonthKey = new Date().toISOString().slice(0, 7)
-  const thisMonthExpenses = expenses.filter((expense) =>
-    expense.date.startsWith(currentMonthKey)
-  )
-  const highestExpenseType = Object.entries(expenseSummary)
-    .filter(([key]) => key !== 'totalCost')
-    .sort(([, a], [, b]) => b - a)[0]?.[0]
-  const highestExpenseTypeLabel = highestExpenseType
-    ? getExpenseTypeLabel(
-        `${highestExpenseType.charAt(0).toUpperCase()}${highestExpenseType.slice(1)}` as Expense['expenseType'],
-        locale === 'ar' ? 'ar' : 'en'
-      )
-    : '-'
   const carPartnerContributions = contributionsQuery.data ?? []
   const carProfitShares = profitSharesQuery.data ?? []
   const partnerNameById = new Map(
@@ -391,18 +318,18 @@ export function CarDetails({ carId }: CarDetailsProps) {
                   value={money.format(car.purchasePrice)}
                 />
                 <InfoCard
-                  icon={<ReceiptText className='h-4 w-4' />}
+                  icon={<Package className='h-4 w-4' />}
                   label={t('sellingPrice')}
                   value={money.format(car.sellingPrice)}
                 />
                 <InfoCard
-                  icon={<Sparkles className='h-4 w-4' />}
-                  label={t('totalCost')}
-                  value={money.format(expenseSummary.totalCost)}
+                  icon={<HandCoins className='h-4 w-4' />}
+                  label={t('partsCost')}
+                  value={money.format(partsTotalCost)}
                 />
                 <InfoCard
                   icon={
-                    totalProfit >= 0 ? (
+                    car.sellingPrice - car.purchasePrice >= 0 ? (
                       <TrendingUp className='h-4 w-4' />
                     ) : (
                       <TrendingDown className='h-4 w-4' />
@@ -413,12 +340,12 @@ export function CarDetails({ carId }: CarDetailsProps) {
                     <span
                       className={cn(
                         'font-semibold',
-                        totalProfit >= 0
+                        car.sellingPrice - car.purchasePrice >= 0
                           ? 'text-emerald-600 dark:text-emerald-300'
                           : 'text-red-600 dark:text-red-300'
                       )}
                     >
-                      {money.format(totalProfit)}
+                      {money.format(car.sellingPrice - car.purchasePrice)}
                     </span>
                   }
                 />
@@ -473,7 +400,6 @@ export function CarDetails({ carId }: CarDetailsProps) {
           <TabsList className='w-full'>
             <TabsTrigger value='overview'>{t('overview')}</TabsTrigger>
             <TabsTrigger value='title'>{t('titleManagement')}</TabsTrigger>
-            <TabsTrigger value='expenses'>{t('expenses')}</TabsTrigger>
             <TabsTrigger value='parts'>{t('parts')}</TabsTrigger>
             <TabsTrigger value='inspection'>{t('inspection')}</TabsTrigger>
             <TabsTrigger value='partners'>{t('partners')}</TabsTrigger>
@@ -512,20 +438,11 @@ export function CarDetails({ carId }: CarDetailsProps) {
             </Card>
 
             <div className='space-y-4'>
-              <CostSummaryCard
-                breakdown={expenseBreakdown}
-                purchasePrice={car.purchasePrice}
-                sellingPrice={car.sellingPrice}
-              />
               <Card className='border-border/60'>
                 <CardHeader>
                   <CardTitle>{t('quickMetrics')}</CardTitle>
                 </CardHeader>
                 <CardContent className='grid gap-3 sm:grid-cols-2'>
-                  <SummaryCard
-                    label={t('expenseCount')}
-                    value={String(expenses.length)}
-                  />
                   <SummaryCard
                     label={t('partsCount')}
                     value={String(parts.length)}
@@ -554,42 +471,6 @@ export function CarDetails({ carId }: CarDetailsProps) {
             <TitleHistoryTable history={titleHistory} />
           </TabsContent>
 
-          <TabsContent value='expenses' className='space-y-4'>
-            <div className='grid gap-4 sm:grid-cols-2 xl:grid-cols-4'>
-              <SummaryCard
-                title={t('totalExpenses')}
-                value={money.format(expenseSummary.totalCost)}
-                icon={<ReceiptText className='h-4 w-4' />}
-              />
-              <SummaryCard
-                title={t('thisMonthExpenses')}
-                value={money.format(
-                  thisMonthExpenses.reduce(
-                    (sum, expense) => sum + expense.amount,
-                    0
-                  )
-                )}
-                icon={<Sparkles className='h-4 w-4' />}
-              />
-              <SummaryCard
-                title={t('highestExpenseType')}
-                value={highestExpenseTypeLabel}
-                icon={<AlertTriangle className='h-4 w-4' />}
-              />
-              <SummaryCard
-                title={t('expensesCount')}
-                value={String(expenses.length)}
-                icon={<FileText className='h-4 w-4' />}
-              />
-            </div>
-            <ExpenseTable expenses={expenses} />
-            <CostSummaryCard
-              breakdown={expenseBreakdown}
-              purchasePrice={car.purchasePrice}
-              sellingPrice={car.sellingPrice}
-            />
-          </TabsContent>
-
           <TabsContent value='parts' className='space-y-4'>
             <div className='grid gap-4 sm:grid-cols-2 xl:grid-cols-4'>
               <SummaryCard
@@ -609,9 +490,7 @@ export function CarDetails({ carId }: CarDetailsProps) {
               />
               <SummaryCard
                 title={t('partsCost')}
-                value={money.format(
-                  parts.reduce((sum, part) => sum + part.price, 0)
-                )}
+                value={money.format(partsTotalCost)}
                 icon={<HandCoins className='h-4 w-4' />}
               />
             </div>
@@ -672,12 +551,7 @@ export function CarDetails({ carId }: CarDetailsProps) {
           </TabsContent>
 
           <TabsContent value='documents' className='space-y-4'>
-            <DocumentsCard
-              car={car}
-              expenses={expenses}
-              parts={parts}
-              inspections={inspections}
-            />
+            <DocumentsCard car={car} parts={parts} inspections={inspections} />
           </TabsContent>
         </Tabs>
       </Main>
@@ -796,60 +670,6 @@ function InfoRow({ label, value }: { label: string; value: ReactNode }) {
         {value}
       </span>
     </div>
-  )
-}
-
-function ExpenseTable({ expenses }: { expenses: Expense[] }) {
-  const { t } = useI18n()
-
-  return (
-    <Card className='border-border/60'>
-      <CardHeader>
-        <CardTitle>{t('expenses')}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className='overflow-hidden rounded-md border'>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t('expenseType')}</TableHead>
-                <TableHead>{t('amount')}</TableHead>
-                <TableHead>{t('paidBy')}</TableHead>
-                <TableHead>{t('paymentMethod')}</TableHead>
-                <TableHead>{t('date')}</TableHead>
-                <TableHead>{t('invoice')}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {expenses.length ? (
-                expenses.map((expense) => (
-                  <TableRow key={expense.id}>
-                    <TableCell>
-                      <ExpenseBadge expenseType={expense.expenseType} />
-                    </TableCell>
-                    <TableCell>{money.format(expense.amount)}</TableCell>
-                    <TableCell>{expense.paidBy}</TableCell>
-                    <TableCell>
-                      <PaymentBadge method={expense.paymentMethod} />
-                    </TableCell>
-                    <TableCell>{expense.date}</TableCell>
-                    <TableCell className='text-muted-foreground'>
-                      {expense.invoiceName ?? '-'}
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={6} className='h-24 text-center'>
-                    {t('noExpensesFound')}
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </CardContent>
-    </Card>
   )
 }
 
@@ -1061,12 +881,10 @@ function InspectionTimeline({
 
 function DocumentsCard({
   car,
-  expenses,
   parts,
   inspections,
 }: {
   car: Car
-  expenses: Expense[]
   parts: Part[]
   inspections: Inspection[]
 }) {
@@ -1075,9 +893,6 @@ function DocumentsCard({
     .documents ?? []
   const documentNames = [
     ...carDocuments.map((document) => document.name),
-    ...(expenses
-      .map((expense) => expense.invoiceName)
-      .filter(Boolean) as string[]),
     ...(parts.map((part) => part.invoiceName).filter(Boolean) as string[]),
     ...inspections.flatMap((inspection) => [
       ...inspection.files,
@@ -1109,48 +924,3 @@ function DocumentsCard({
   )
 }
 
-function ExpenseBadge({ expenseType }: { expenseType: Expense['expenseType'] }) {
-  const { locale } = useI18n()
-  const className = {
-    Purchase: 'border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300',
-    Shipping:
-      'border-indigo-500/30 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300',
-    Repair:
-      'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300',
-    Parts:
-      'border-violet-500/30 bg-violet-500/10 text-violet-700 dark:text-violet-300',
-    Labor:
-      'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
-    Inspection:
-      'border-orange-500/30 bg-orange-500/10 text-orange-700 dark:text-orange-300',
-    Fees: 'border-slate-500/30 bg-slate-500/10 text-slate-700 dark:text-slate-300',
-    Bills: 'border-cyan-500/30 bg-cyan-500/10 text-cyan-700 dark:text-cyan-300',
-    Other: 'border-zinc-500/30 bg-zinc-500/10 text-zinc-700 dark:text-zinc-300',
-  }[expenseType]
-
-  return (
-    <Badge variant='outline' className={className}>
-      {getExpenseTypeLabel(expenseType, locale === 'ar' ? 'ar' : 'en')}
-    </Badge>
-  )
-}
-
-function PaymentBadge({ method }: { method: Expense['paymentMethod'] }) {
-  const { locale } = useI18n()
-  const className = {
-    Zelle: 'border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300',
-    Cash: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
-    Cashapp:
-      'border-lime-500/30 bg-lime-500/10 text-lime-700 dark:text-lime-300',
-    Check: 'border-slate-500/30 bg-slate-500/10 text-slate-700 dark:text-slate-300',
-    'Cashier Check':
-      'border-teal-500/30 bg-teal-500/10 text-teal-700 dark:text-teal-300',
-    Card: 'border-violet-500/30 bg-violet-500/10 text-violet-700 dark:text-violet-300',
-  }[method]
-
-  return (
-    <Badge variant='outline' className={className}>
-      {getPaymentMethodLabel(method, locale === 'ar' ? 'ar' : 'en')}
-    </Badge>
-  )
-}

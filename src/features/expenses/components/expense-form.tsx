@@ -3,7 +3,6 @@ import { useForm, useWatch, type Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { formatCarName } from '@/services/carsService'
 import { getAll as getPartners } from '@/services/partnersService'
 import {
   getBillCategoryLabel,
@@ -31,7 +30,6 @@ import {
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { SearchableCombobox } from '@/components/searchable-combobox'
-import { useCarsQuery } from '@/features/cars/hooks/use-cars'
 import {
   expenseFormSchema,
   billCategories,
@@ -48,7 +46,6 @@ type ExpenseFormProps = {
 }
 
 const defaults: ExpenseFormValues = {
-  carId: '',
   expenseType: 'Repair',
   amount: 0,
   paidBy: '',
@@ -66,7 +63,6 @@ export function ExpenseForm({
   cancelHref = '/expenses',
 }: ExpenseFormProps) {
   const { t, locale } = useI18n()
-  const carsQuery = useCarsQuery()
   const partnersQuery = useQuery({
     queryKey: ['expense-paid-by-partners'],
     queryFn: getPartners,
@@ -79,23 +75,6 @@ export function ExpenseForm({
   })
   const expenseType = useWatch({ control: form.control, name: 'expenseType' })
   const invoiceName = useWatch({ control: form.control, name: 'invoiceName' })
-
-  const carOptions = useMemo(
-    () =>
-      [
-        {
-          label: t('standaloneExpense'),
-          value: '',
-          description: t('noCarLinked'),
-        },
-        ...(carsQuery.data ?? []).map((car) => ({
-          label: formatCarName(car),
-          value: car.id,
-          description: car.vin,
-        })),
-      ],
-    [carsQuery.data, t]
-  )
 
   const paidByOptions = useMemo(() => {
     const options = (partnersQuery.data ?? []).map((partner) => ({
@@ -155,25 +134,6 @@ export function ExpenseForm({
         })}
       >
         <div className='grid gap-4 md:grid-cols-2'>
-          <FormField
-            control={form.control}
-            name='carId'
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t('car')}</FormLabel>
-                <FormControl>
-                  <SearchableCombobox
-                    value={field.value}
-                    onValueChange={field.onChange}
-                    options={carOptions}
-                    placeholder={t('selectCar')}
-                    searchPlaceholder={t('searchCars')}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
           <FormField
             control={form.control}
             name='expenseType'

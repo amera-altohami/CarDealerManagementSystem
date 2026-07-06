@@ -6,10 +6,13 @@ import {
   type ExpenseType,
   type PaymentMethod,
 } from '@/types/dealer'
-import { formatCarName } from '@/services/carsService'
 import { Plus } from 'lucide-react'
 import { toast } from 'sonner'
-import { getExpenseTypeLabel, getPaymentMethodLabel, useI18n } from '@/lib/i18n'
+import {
+  getExpenseTypeLabel,
+  getPaymentMethodLabel,
+  useI18n,
+} from '@/lib/i18n'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -35,7 +38,6 @@ import { Main } from '@/components/layout/main'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
-import { useCarsQuery } from '../cars/hooks/use-cars'
 import { useExpensesQuery } from './hooks/use-expenses'
 
 const expenseTypes: Array<'all' | ExpenseType> = ['all', ...expenseTypeOptions]
@@ -53,14 +55,12 @@ const money = new Intl.NumberFormat('en-US', {
 export function ExpensesManagement() {
   const { t, locale } = useI18n()
   const [search, setSearch] = useState('')
-  const [carId, setCarId] = useState('all')
   const [expenseType, setExpenseType] = useState<'all' | ExpenseType>('all')
   const [paymentMethod, setPaymentMethod] = useState<'all' | PaymentMethod>(
     'all'
   )
   const [date, setDate] = useState('')
   const expensesQuery = useExpensesQuery()
-  const carsQuery = useCarsQuery()
 
   useEffect(() => {
     if (expensesQuery.isError) {
@@ -68,80 +68,28 @@ export function ExpensesManagement() {
     }
   }, [expensesQuery.isError])
 
-  const carNameById = useMemo(
-    () =>
-      new Map(
-        (carsQuery.data ?? []).map((car) => [car.id, formatCarName(car)])
-      ),
-    [carsQuery.data]
-  )
-
-  const standaloneLabel = t('standaloneExpense')
-
-  const expenses = useMemo(
-    () =>
-      (expensesQuery.data ?? []).map((expense) => ({
-        ...expense,
-        carName: expense.carId
-          ? carNameById.get(expense.carId) ?? expense.carName
-          : standaloneLabel,
-      })),
-    [carNameById, expensesQuery.data, standaloneLabel]
-  )
-
-  const carOptions = useMemo(
-    () => [
-      {
-        id: 'standalone',
-        label: standaloneLabel,
-      },
-      ...(carsQuery.data ?? []).map((car) => ({
-        id: car.id,
-        label: formatCarName(car),
-      })),
-    ],
-    [carsQuery.data, standaloneLabel]
-  )
+  const expenses = expensesQuery.data ?? []
 
   const filteredExpenses = useMemo(() => {
     const query = search.trim().toLowerCase()
     return expenses.filter((expense) => {
       const matchesSearch =
         !query ||
-        [
-          expense.carName,
-          expense.expenseType,
-          expense.paidBy,
-          expense.notes,
-          expense.invoiceName ?? '',
-        ]
+        [expense.expenseType, expense.paidBy, expense.notes, expense.invoiceName ?? '']
           .join(' ')
           .toLowerCase()
           .includes(query)
-      const matchesCar =
-        carId === 'all' ||
-        (carId === 'standalone'
-          ? !expense.carId
-          : expense.carId === carId)
       const matchesType =
         expenseType === 'all' || expense.expenseType === expenseType
       const matchesPayment =
         paymentMethod === 'all' || expense.paymentMethod === paymentMethod
       const matchesDate = !date || expense.date === date
-      return (
-        matchesSearch &&
-        matchesCar &&
-        matchesType &&
-        matchesPayment &&
-        matchesDate
-      )
-    })
-  }, [carId, date, expenseType, expenses, paymentMethod, search])
 
-  const totalExpenses = expenses.reduce(
-    (sum, expense) => sum + expense.amount,
-    0
-  )
+      return matchesSearch && matchesType && matchesPayment && matchesDate
+    })
+  }, [date, expenseType, expenses, paymentMethod, search])
+
+  const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0)
   const thisMonthKey = new Date().toISOString().slice(0, 7)
   const thisMonthExpenses = expenses
     .filter((expense) => expense.date.startsWith(thisMonthKey))
@@ -186,10 +134,7 @@ export function ExpensesManagement() {
         </div>
 
         <div className='grid gap-4 sm:grid-cols-2 xl:grid-cols-4'>
-          <SummaryCard
-            label={t('totalExpenses')}
-            value={money.format(totalExpenses)}
-          />
+          <SummaryCard label={t('totalExpenses')} value={money.format(totalExpenses)} />
           <SummaryCard
             label={t('thisMonthExpenses')}
             value={money.format(thisMonthExpenses)}
@@ -198,34 +143,18 @@ export function ExpensesManagement() {
             label={t('highestExpenseType')}
             value={highestExpenseTypeLabel}
           />
-          <SummaryCard
-            label={t('expensesCount')}
-            value={String(expenses.length)}
-          />
+          <SummaryCard label={t('expensesCount')} value={String(expenses.length)} />
         </div>
 
         <Card className='border-border/60'>
           <CardHeader className='space-y-4'>
             <CardTitle>{t('expensesList')}</CardTitle>
-            <div className='grid gap-3 md:grid-cols-[1fr_180px_180px_180px_160px]'>
+            <div className='grid gap-3 md:grid-cols-[1fr_180px_180px_160px]'>
               <Input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder={t('searchExpenses')}
               />
-              <Select value={carId} onValueChange={setCarId}>
-                <SelectTrigger className='w-full'>
-                  <SelectValue placeholder={t('filterByCar')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value='all'>{t('allCars')}</SelectItem>
-                  {carOptions.map((car) => (
-                    <SelectItem key={car.id} value={car.id}>
-                      {car.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
               <Select
                 value={expenseType}
                 onValueChange={(value) =>
@@ -280,7 +209,7 @@ export function ExpensesManagement() {
                       <div className='flex items-start justify-between gap-3'>
                         <div className='min-w-0'>
                           <p className='truncate font-medium'>
-                            {expense.carName}
+                            {getExpenseTypeLabel(expense.expenseType, locale)}
                           </p>
                           <p className='text-sm text-muted-foreground'>
                             {expense.date} - {expense.paidBy}
@@ -333,7 +262,6 @@ export function ExpensesManagement() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{t('car')}</TableHead>
                     <TableHead>{t('expenseType')}</TableHead>
                     <TableHead>{t('amount')}</TableHead>
                     <TableHead>{t('paidBy')}</TableHead>
@@ -346,22 +274,19 @@ export function ExpensesManagement() {
                 <TableBody>
                   {expensesQuery.isLoading ? (
                     <TableRow>
-                      <TableCell colSpan={8} className='h-24 text-center'>
+                      <TableCell colSpan={7} className='h-24 text-center'>
                         Loading...
                       </TableCell>
                     </TableRow>
                   ) : expensesQuery.isError ? (
                     <TableRow>
-                      <TableCell colSpan={8} className='h-24 text-center'>
+                      <TableCell colSpan={7} className='h-24 text-center'>
                         Failed to load expenses.
                       </TableCell>
                     </TableRow>
                   ) : filteredExpenses.length ? (
                     filteredExpenses.map((expense) => (
                       <TableRow key={expense.id}>
-                        <TableCell className='font-medium'>
-                          {expense.carName}
-                        </TableCell>
                         <TableCell>
                           <ExpenseBadge expenseType={expense.expenseType} />
                         </TableCell>
@@ -396,7 +321,7 @@ export function ExpensesManagement() {
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={8} className='h-24 text-center'>
+                      <TableCell colSpan={7} className='h-24 text-center'>
                         {t('noExpensesFound')}
                       </TableCell>
                     </TableRow>
