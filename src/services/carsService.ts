@@ -36,6 +36,7 @@ export type CarStatus =
 
 export type CarTitleType = TitleType
 export type CarfaxType = 'link' | 'pdf'
+export type CarfaxSelection = CarfaxType | 'none'
 
 export function getNormalizedCarTitleTypeForStatus(
   status: CarStatus,
@@ -59,7 +60,8 @@ export interface CarDocument {
   model: string
   year: number
   vin: string
-  lot_number: string
+  mileage: string
+  lot_number?: string
   status: CarStatus
   title_type: CarTitleType
   current_title_type: CarTitleType
@@ -69,7 +71,7 @@ export interface CarDocument {
   purchase_price: number
   selling_price: number
   purchase_place_id: string
-  carfax_type: CarfaxType
+  carfax_type?: CarfaxType | null
   carfax_link?: string | null
   carfax_pdf_name?: string | null
   carfax_pdf_url?: string | null
@@ -80,7 +82,7 @@ export interface CarDocument {
 }
 
 export interface Car extends CarDocument {
-  lotNumber: string
+  mileage: string
   titleType: CarTitleType
   currentTitleType: CarTitleType
   titleLastUpdatedAt: string
@@ -90,7 +92,7 @@ export interface Car extends CarDocument {
   sellingPrice: number
   purchasePlace: string
   purchasePlaceId: string
-  carfaxType: CarfaxType
+  carfaxType: CarfaxSelection
   carfaxLink: string
   carfaxPdfName: string
   carfaxPdfUrl: string
@@ -120,14 +122,14 @@ export type CreateCarData = {
   model: string
   year: number
   vin: string
-  lotNumber: string
+  mileage: string
   status: CarStatus
   titleType: CarTitleType
   purchaseDate: string
   purchasePrice: number
   sellingPrice: number
   purchasePlace: string
-  carfaxType: CarfaxType
+  carfaxType: CarfaxSelection
   carfaxLink?: string
   carfaxPdfName?: string
   carfaxPdfUrl?: string
@@ -188,12 +190,14 @@ function mapCarSnapshot(
   const carfaxLink = normalizeOptionalText(data.carfax_link)
   const carfaxPdfName = normalizeOptionalText(data.carfax_pdf_name)
   const carfaxPdfUrl = normalizeOptionalText(data.carfax_pdf_url)
+  const mileage =
+    normalizeOptionalText(data.mileage) || normalizeOptionalText(data.lot_number)
   const photo = normalizeOptionalText(data.photo_url) || DEFAULT_CAR_PHOTO
   const currentTitleType = data.current_title_type ?? data.title_type ?? 'Clean'
 
   return {
     ...data,
-    lotNumber: data.lot_number,
+    mileage,
     titleType: data.title_type ?? currentTitleType,
     currentTitleType,
     titleLastUpdatedAt: data.title_last_updated_at,
@@ -203,7 +207,7 @@ function mapCarSnapshot(
     sellingPrice: data.selling_price,
     purchasePlace: data.purchase_place_id,
     purchasePlaceId: data.purchase_place_id,
-    carfaxType: data.carfax_type,
+    carfaxType: data.carfax_type ?? 'none',
     carfaxLink,
     carfaxPdfName,
     carfaxPdfUrl,
@@ -221,7 +225,7 @@ function toCreateDocumentData(data: CreateCarData): CarCreateDocumentData {
     model: data.model.trim(),
     year: data.year,
     vin: data.vin.trim(),
-    lot_number: data.lotNumber.trim(),
+    mileage: data.mileage.trim(),
     status: data.status,
     title_type: data.titleType,
     current_title_type: data.titleType,
@@ -231,7 +235,10 @@ function toCreateDocumentData(data: CreateCarData): CarCreateDocumentData {
     purchase_price: data.purchasePrice,
     selling_price: data.sellingPrice,
     purchase_place_id: data.purchasePlace,
-    carfax_type: data.carfaxType,
+    carfax_type:
+      data.carfaxType === 'link' || data.carfaxType === 'pdf'
+        ? data.carfaxType
+        : null,
     carfax_link:
       data.carfaxType === 'link' ? normalizeText(data.carfaxLink) : null,
     carfax_pdf_name:
@@ -266,8 +273,8 @@ function toUpdateDocumentData(data: UpdateCarData): CarUpdateDocumentData {
     documentData.vin = data.vin.trim()
   }
 
-  if (data.lotNumber !== undefined) {
-    documentData.lot_number = data.lotNumber.trim()
+  if (data.mileage !== undefined) {
+    documentData.mileage = data.mileage.trim()
   }
 
   if (data.status !== undefined) {
@@ -298,7 +305,10 @@ function toUpdateDocumentData(data: UpdateCarData): CarUpdateDocumentData {
   }
 
   if (data.carfaxType !== undefined) {
-    documentData.carfax_type = data.carfaxType
+    documentData.carfax_type =
+      data.carfaxType === 'link' || data.carfaxType === 'pdf'
+        ? data.carfaxType
+        : null
     documentData.carfax_link =
       data.carfaxType === 'link' ? normalizeText(data.carfaxLink) : null
     documentData.carfax_pdf_name =
@@ -404,7 +414,7 @@ export async function searchCars(searchTerm: string): Promise<Car[]> {
   }
 
   return cars.filter((car) =>
-    [car.brand, car.model, car.vin, car.lotNumber]
+    [car.brand, car.model, car.vin, car.mileage]
       .join(' ')
       .toLowerCase()
       .includes(search)

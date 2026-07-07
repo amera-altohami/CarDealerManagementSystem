@@ -45,14 +45,14 @@ const defaults: CarFormValues = {
   model: '',
   year: new Date().getFullYear(),
   vin: '',
-  lotNumber: '',
+  mileage: '',
   purchaseDate: '',
   purchasePrice: 0,
   sellingPrice: 0,
   purchasePlace: '',
   titleType: 'Clean',
   status: 'purchased',
-  carfaxType: 'link',
+  carfaxType: 'none',
   carfaxLink: '',
   carfaxPdfName: '',
   carfaxPdfFile: null,
@@ -193,12 +193,12 @@ export function CarForm({
             />
             <FormField
               control={form.control}
-              name='lotNumber'
+              name='mileage'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('lotNumber')}</FormLabel>
+                  <FormLabel>{t('mileage')}</FormLabel>
                   <FormControl>
-                    <Input placeholder='LOT-2401' {...field} />
+                    <Input placeholder='45000' {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -426,7 +426,20 @@ export function CarForm({
                     <Select
                       onValueChange={(value) => {
                         field.onChange(value)
-                        if (value === 'link') {
+                        if (value === 'none') {
+                          form.setValue('carfaxLink', '', {
+                            shouldDirty: true,
+                            shouldValidate: true,
+                          })
+                          form.setValue('carfaxPdfName', '', {
+                            shouldDirty: true,
+                            shouldValidate: true,
+                          })
+                          form.setValue('carfaxPdfFile', null, {
+                            shouldDirty: true,
+                            shouldValidate: true,
+                          })
+                        } else if (value === 'link') {
                           form.setValue('carfaxPdfName', '', {
                             shouldDirty: true,
                             shouldValidate: true,
@@ -448,6 +461,7 @@ export function CarForm({
                         <SelectValue placeholder={t('carfax')} />
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value='none'>{t('carfaxLater')}</SelectItem>
                         <SelectItem value='link'>{t('carfaxLink')}</SelectItem>
                         <SelectItem value='pdf'>{t('carfaxPdf')}</SelectItem>
                       </SelectContent>
@@ -456,7 +470,9 @@ export function CarForm({
                   <FormDescription>
                     {field.value === 'pdf'
                       ? t('uploadPdfFromDevice')
-                      : t('pasteCarfaxLink')}
+                      : field.value === 'link'
+                        ? t('pasteCarfaxLink')
+                        : t('carfaxLater')}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

@@ -307,7 +307,7 @@ export function CarDetails({ carId }: CarDetailsProps) {
                   <TitleBadge titleType={currentTitle.type} />
                 </div>
                 <p className='text-muted-foreground'>
-                  {t('lotNumber')} {car.lotNumber} - {t('vin')} {car.vin}
+                  {t('mileage')} {car.mileage} - {t('vin')} {car.vin}
                 </p>
               </div>
 
@@ -367,30 +367,32 @@ export function CarDetails({ carId }: CarDetailsProps) {
                 >
                   {t('delete')}
                 </Button>
-                <Button asChild variant='outline' className='w-full sm:w-auto'>
-                  {car.carfaxType === 'pdf' ? (
-                    car.carfaxPdfUrl ? (
-                      <a
-                        href={car.carfaxPdfUrl}
-                        target='_blank'
-                        rel='noreferrer'
-                      >
-                        <Link2 className='me-2 h-4 w-4' />
-                        {car.carfaxPdfName || t('carfax')}
-                      </a>
+                {car.carfaxType !== 'none' ? (
+                  <Button asChild variant='outline' className='w-full sm:w-auto'>
+                    {car.carfaxType === 'pdf' ? (
+                      car.carfaxPdfUrl ? (
+                        <a
+                          href={car.carfaxPdfUrl}
+                          target='_blank'
+                          rel='noreferrer'
+                        >
+                          <Link2 className='me-2 h-4 w-4' />
+                          {car.carfaxPdfName || t('carfax')}
+                        </a>
+                      ) : (
+                        <span className='inline-flex items-center gap-2'>
+                          <Link2 className='me-2 h-4 w-4' />
+                          {car.carfaxPdfName || t('carfax')}
+                        </span>
+                      )
                     ) : (
-                      <span className='inline-flex items-center gap-2'>
+                      <a href={car.carfaxLink} target='_blank' rel='noreferrer'>
                         <Link2 className='me-2 h-4 w-4' />
-                        {car.carfaxPdfName || t('carfax')}
-                      </span>
-                    )
-                  ) : (
-                    <a href={car.carfaxLink} target='_blank' rel='noreferrer'>
-                      <Link2 className='me-2 h-4 w-4' />
-                      {t('carfax')}
-                    </a>
-                  )}
-                </Button>
+                        {t('carfax')}
+                      </a>
+                    )}
+                  </Button>
+                ) : null}
               </div>
             </div>
           </CardContent>
@@ -419,7 +421,7 @@ export function CarDetails({ carId }: CarDetailsProps) {
                 <InfoRow label={t('model')} value={car.model} />
                 <InfoRow label={t('year')} value={String(car.year)} />
                 <InfoRow label={t('vin')} value={car.vin} />
-                <InfoRow label={t('lotNumber')} value={car.lotNumber} />
+                <InfoRow label={t('mileage')} value={car.mileage} />
                 <InfoRow label={t('purchaseDate')} value={car.purchaseDate} />
                 <InfoRow label={t('purchasePlace')} value={purchasePlaceName} />
                 <InfoRow
@@ -427,7 +429,9 @@ export function CarDetails({ carId }: CarDetailsProps) {
                   value={
                     car.carfaxType === 'pdf'
                       ? car.carfaxPdfName || t('pdfUploaded')
-                      : car.carfaxLink || t('link')
+                      : car.carfaxType === 'link'
+                        ? car.carfaxLink || t('link')
+                        : t('carfaxLater')
                   }
                 />
                 <InfoRow

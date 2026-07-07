@@ -31,7 +31,7 @@ export const carFormSchema = z
     vin: z
       .string('Please enter a VIN.')
       .min(5, 'VIN must be at least 5 characters.'),
-    lotNumber: z.string().min(2, 'Lot number must be at least 2 characters.'),
+    mileage: z.string().min(1, 'Please enter mileage.'),
     purchaseDate: z.string().min(1, 'Please select a purchase date.'),
     purchasePrice: z.coerce
       .number()
@@ -44,7 +44,7 @@ export const carFormSchema = z
       .min(2, 'Purchase place must be at least 2 characters.'),
     titleType: titleTypeSchema,
     status: statusSchema,
-    carfaxType: z.enum(['link', 'pdf']),
+    carfaxType: z.enum(['none', 'link', 'pdf']),
     carfaxLink: z.string().optional().default(''),
     carfaxPdfName: z.string().optional().default(''),
     carfaxPdfFile: z.instanceof(File).optional().nullable().default(null),
@@ -53,9 +53,10 @@ export const carFormSchema = z
   })
   .refine(
     (values) =>
-      values.carfaxType === 'link'
+      values.carfaxType === 'none' ||
+      (values.carfaxType === 'link'
         ? values.carfaxLink.trim().length > 0
-        : Boolean(values.carfaxPdfFile || values.carfaxPdfName),
+        : Boolean(values.carfaxPdfFile || values.carfaxPdfName)),
     {
       message:
         'Please provide a Carfax link or upload a PDF file depending on the selected type.',

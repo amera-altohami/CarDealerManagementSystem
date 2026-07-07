@@ -191,7 +191,7 @@ function getReportCar(
     model: car.model,
     year: car.year,
     vin: car.vin,
-    lotNumber: car.lotNumber,
+    mileage: car.mileage,
     titleType: car.currentTitleType || car.titleType,
     status: car.status,
     purchaseDate: car.purchaseDate,

@@ -66,7 +66,7 @@ export function CarEdit({ carId }: CarEditProps) {
             model: car.model,
             year: car.year,
             vin: car.vin,
-            lotNumber: car.lotNumber,
+            mileage: car.mileage,
             purchaseDate: car.purchaseDate,
             purchasePrice: car.purchasePrice,
             sellingPrice: car.sellingPrice,

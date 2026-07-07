@@ -175,8 +175,8 @@ export function CarReport() {
                 <InfoItem label={t('year')} value={String(selectedCar.year)} />
                 <InfoItem label={t('vin')} value={selectedCar.vin} />
                 <InfoItem
-                  label={t('lotNumber')}
-                  value={selectedCar.lotNumber}
+                  label={t('mileage')}
+                  value={selectedCar.mileage}
                 />
                 <InfoItem
                   label={t('purchasePlace')}

@@ -71,7 +71,7 @@ export function CarsTable({
     return data.filter((car) => {
       const matchesSearch =
         !query ||
-        [car.brand, car.model, car.vin, car.lotNumber]
+        [car.brand, car.model, car.vin, car.mileage]
           .join(' ')
           .toLowerCase()
           .includes(query)
@@ -166,7 +166,7 @@ export function CarsTable({
                   <TableHead>{t('model')}</TableHead>
                   <TableHead>{t('year')}</TableHead>
                   <TableHead>{t('vin')}</TableHead>
-                  <TableHead>{t('lotNumber')}</TableHead>
+                  <TableHead>{t('mileage')}</TableHead>
                   <TableHead>{t('purchasePrice')}</TableHead>
                   <TableHead>{t('sellingPrice')}</TableHead>
                   <TableHead>{t('status')}</TableHead>
@@ -209,7 +209,7 @@ export function CarsTable({
                       <TableCell className='font-mono text-xs'>
                         {car.vin}
                       </TableCell>
-                      <TableCell>{car.lotNumber}</TableCell>
+                      <TableCell>{car.mileage}</TableCell>
                       <TableCell>{money.format(car.purchasePrice)}</TableCell>
                       <TableCell>{money.format(car.sellingPrice)}</TableCell>
                       <TableCell>

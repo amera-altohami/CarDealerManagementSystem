@@ -45,7 +45,7 @@ export type ReportCar = {
   model: string
   year: number
   vin: string
-  lotNumber: string
+  mileage: string
   titleType: string
   status: CarStatus
   purchaseDate: string
