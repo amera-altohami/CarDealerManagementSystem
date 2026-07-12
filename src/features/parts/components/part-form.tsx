@@ -349,13 +349,45 @@ export function PartForm({
                             {locale === 'ar' ? 'اسم القطعة' : 'Part name'}
                           </FormLabel>
                           <FormControl>
-                            <Input
+                            <SearchableCombobox
+                              value={field.value}
+                              onValueChange={field.onChange}
+                              options={partNameOptions}
                               placeholder={
                                 locale === 'ar'
-                                  ? 'مثال: Brake Pads'
-                                  : 'Example: Brake Pads'
+                                  ? 'اختر القطعة'
+                                  : 'Select a part'
                               }
-                              {...field}
+                              searchPlaceholder={
+                                locale === 'ar'
+                                  ? 'ابحث في القطع...'
+                                  : 'Search parts...'
+                              }
+                              emptyText={
+                                locale === 'ar'
+                                  ? 'لا توجد قطع مطابقة.'
+                                  : 'No matching parts found.'
+                              }
+                              allowCreate
+                              onCreate={async (searchValue) => {
+                                const created = await createPartCatalogItem({
+                                  name: searchValue,
+                                  category: 'Other',
+                                })
+                                if (created) {
+                                  field.onChange(created.name)
+                                }
+                              }}
+                              createLabel={
+                                locale === 'ar'
+                                  ? 'إضافة هذه القطعة'
+                                  : 'Add this part'
+                              }
+                              createHeading={
+                                locale === 'ar'
+                                  ? 'إنشاء قطعة'
+                                  : 'Create part'
+                              }
                             />
                           </FormControl>
                           <FormMessage />
