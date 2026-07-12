@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { HandCoins, Link2, Package, ShieldCheck, TrendingDown, TrendingUp, Wrench } from 'lucide-react'
@@ -279,6 +279,7 @@ export function CarDetails({ carId }: CarDetailsProps) {
       notes: t('rebuildTitleNotes'),
     })
   }
+  const partsByInvoice = useMemo(() => groupPartsByInvoice(parts), [parts])
 
   return (
     <>
@@ -504,7 +505,7 @@ export function CarDetails({ carId }: CarDetailsProps) {
                 icon={<HandCoins className='h-4 w-4' />}
               />
             </div>
-            <PartsTable parts={parts} />
+            <PartsReceiptGroups groups={partsByInvoice} />
           </TabsContent>
 
           <TabsContent value='inspection' className='space-y-4'>
@@ -683,66 +684,127 @@ function InfoRow({ label, value }: { label: string; value: ReactNode }) {
   )
 }
 
-function PartsTable({ parts }: { parts: Part[] }) {
-  const { t } = useI18n()
+type PartsReceiptGroup = {
+  id: string
+  invoiceName: string | null
+  parts: Part[]
+  totalCost: number
+}
+
+function groupPartsByInvoice(parts: Part[]): PartsReceiptGroup[] {
+  const groups = new Map<string, PartsReceiptGroup>()
+
+  for (const part of parts) {
+    const invoiceName = part.invoiceName?.trim() || null
+    const id = invoiceName ?? '__no_invoice__'
+    const existing = groups.get(id)
+
+    if (existing) {
+      existing.parts.push(part)
+      existing.totalCost += part.price
+      continue
+    }
+
+    groups.set(id, {
+      id,
+      invoiceName,
+      parts: [part],
+      totalCost: part.price,
+    })
+  }
+
+  return [...groups.values()]
+}
+
+function PartsReceiptGroups({ groups }: { groups: PartsReceiptGroup[] }) {
+  const { t, locale } = useI18n()
+  const missingInvoiceLabel = locale === 'ar' ? 'بدون فاتورة' : 'No invoice'
+
+  if (!groups.length) {
+    return (
+      <Card className='border-border/60'>
+        <CardHeader>
+          <CardTitle>{t('parts')}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className='rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground'>
+            {t('noPartsFound')}
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
-    <Card className='border-border/60'>
-      <CardHeader>
-        <CardTitle>{t('parts')}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className='overflow-hidden rounded-md border'>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t('partName')}</TableHead>
-                <TableHead>{t('supplier')}</TableHead>
-                <TableHead>{t('price')}</TableHead>
-                <TableHead>{t('purchaseDate')}</TableHead>
-                <TableHead>{t('status')}</TableHead>
-                <TableHead>{t('invoice')}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {parts.length ? (
-                parts.map((part) => (
-                  <TableRow key={part.id}>
-                    <TableCell className='font-medium'>
-                      {part.partName}
-                    </TableCell>
-                    <TableCell>{part.supplierName}</TableCell>
-                    <TableCell>{money.format(part.price)}</TableCell>
-                    <TableCell>{part.purchaseDate}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant='outline'
-                        className={
-                          part.installed
-                            ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
-                            : 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300'
-                        }
-                      >
-                        {part.installed ? t('installed') : t('notInstalled')}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className='text-muted-foreground'>
-                      {part.invoiceName ?? '-'}
-                    </TableCell>
+    <div className='space-y-4'>
+      {groups.map((group) => (
+        <Card key={group.id} className='border-border/60'>
+          <CardHeader className='space-y-2'>
+            <div className='flex flex-wrap items-center justify-between gap-3'>
+              <CardTitle className='text-base sm:text-lg'>
+                {group.invoiceName ?? missingInvoiceLabel}
+              </CardTitle>
+              <div className='flex flex-wrap items-center gap-2'>
+                <Badge variant='secondary'>
+                  {group.parts.length}
+                </Badge>
+                <Badge variant='outline'>
+                  {money.format(group.totalCost)}
+                </Badge>
+              </div>
+            </div>
+            <p className='text-sm text-muted-foreground'>
+              {group.invoiceName
+                ? group.invoiceName
+                : t('standaloneInventory')}
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className='overflow-hidden rounded-md border'>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t('partName')}</TableHead>
+                    <TableHead>{t('supplier')}</TableHead>
+                    <TableHead>{t('price')}</TableHead>
+                    <TableHead>{t('purchaseDate')}</TableHead>
+                    <TableHead>{t('status')}</TableHead>
+                    <TableHead>{t('invoice')}</TableHead>
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={6} className='h-24 text-center'>
-                    {t('noPartsFound')}
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </CardContent>
-    </Card>
+                </TableHeader>
+                <TableBody>
+                  {group.parts.map((part) => (
+                    <TableRow key={part.id}>
+                      <TableCell className='font-medium'>
+                        {part.partName}
+                      </TableCell>
+                      <TableCell>{part.supplierName}</TableCell>
+                      <TableCell>{money.format(part.price)}</TableCell>
+                      <TableCell>{part.purchaseDate}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant='outline'
+                          className={
+                            part.installed
+                              ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
+                              : 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300'
+                          }
+                        >
+                          {part.installed ? t('installed') : t('notInstalled')}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className='text-muted-foreground'>
+                        {part.invoiceName ?? '-'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
   )
 }
 

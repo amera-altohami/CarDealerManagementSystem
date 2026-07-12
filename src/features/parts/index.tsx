@@ -31,12 +31,13 @@ const money = new Intl.NumberFormat('en-US', {
 })
 
 export function PartsManagement() {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [carId, setCarId] = useState('all')
   const [supplierId, setSupplierId] = useState('all')
   const [status, setStatus] = useState<'all' | 'installed' | 'pending'>('all')
+  const [invoiceFilter, setInvoiceFilter] = useState('')
   const lastTapRef = useRef<{ partId: string; time: number }>({
     partId: '',
     time: 0,
@@ -68,6 +69,19 @@ export function PartsManagement() {
   const summary = summaryQuery.data
   const cars = carsQuery.data ?? []
   const companies = companiesQuery.data ?? []
+  const visibleParts = useMemo(() => {
+    const normalizedInvoiceFilter = invoiceFilter.trim().toLowerCase()
+
+    if (!normalizedInvoiceFilter) {
+      return parts
+    }
+
+    return parts.filter((part) =>
+      (part.invoiceName ?? '')
+        .toLowerCase()
+        .includes(normalizedInvoiceFilter)
+    )
+  }, [invoiceFilter, parts])
 
   const carOptions = useMemo(() => {
     return [
@@ -164,11 +178,16 @@ export function PartsManagement() {
         <Card className='border-border/60'>
           <CardHeader className='space-y-4'>
             <CardTitle>{t('partsList')}</CardTitle>
-            <div className='grid gap-3 md:grid-cols-[1fr_260px_220px_220px]'>
+            <div className='grid gap-3 md:grid-cols-[1fr_220px_220px_220px_220px]'>
               <Input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder={t('searchParts')}
+              />
+              <Input
+                value={invoiceFilter}
+                onChange={(event) => setInvoiceFilter(event.target.value)}
+                placeholder={locale === 'ar' ? 'فلتر الفاتورة' : 'Filter by invoice'}
               />
               <SearchableCombobox
                 value={carId}
@@ -211,8 +230,8 @@ export function PartsManagement() {
           </CardHeader>
           <CardContent>
             <div className='space-y-3 md:hidden'>
-              {parts.length ? (
-                parts.map((part) => (
+              {visibleParts.length ? (
+                visibleParts.map((part) => (
                   <Card key={part.id} className='border-border/60'>
                     <CardContent className='space-y-3 p-4'>
                       <div className='flex items-start justify-between gap-3'>
@@ -241,6 +260,9 @@ export function PartsManagement() {
                           {part.supplierName}
                         </span>
                       </div>
+                      <Badge variant='secondary' className='w-fit'>
+                        {part.invoiceName ?? (locale === 'ar' ? 'بدون فاتورة' : 'No invoice')}
+                      </Badge>
                       <p className='text-sm text-muted-foreground'>
                         {part.purchaseDate} - {part.invoiceName ?? t('uploadInvoice')}
                       </p>
@@ -290,8 +312,8 @@ export function PartsManagement() {
                         Loading...
                       </TableCell>
                     </TableRow>
-                  ) : parts.length ? (
-                    parts.map((part) => (
+                  ) : visibleParts.length ? (
+                    visibleParts.map((part) => (
                       <TableRow
                         key={part.id}
                         className='cursor-pointer'
@@ -320,7 +342,9 @@ export function PartsManagement() {
                           </Badge>
                         </TableCell>
                         <TableCell className='text-muted-foreground'>
-                          {part.invoiceName ?? t('uploadInvoice')}
+                          <Badge variant='secondary'>
+                            {part.invoiceName ?? (locale === 'ar' ? 'بدون فاتورة' : 'No invoice')}
+                          </Badge>
                         </TableCell>
                         <TableCell className='text-end'>
                           <Button asChild variant='ghost' size='sm'>

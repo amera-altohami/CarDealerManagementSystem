@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ListPlus } from 'lucide-react'
+import { ListPlus, Plus, Trash2 } from 'lucide-react'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useForm, useWatch, type Resolver } from 'react-hook-form'
+import { useFieldArray, useForm, useWatch, type Resolver } from 'react-hook-form'
 import { Link } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
 import {
   Form,
   FormControl,
@@ -29,6 +30,7 @@ type PartFormProps = {
   onSubmit?: (values: PartFormValues) => void
   submitLabel?: string
   cancelHref?: string
+  allowMultipleParts?: boolean
 }
 
 const defaults: PartFormValues = {
@@ -40,6 +42,7 @@ const defaults: PartFormValues = {
   relatedCarId: '',
   invoiceName: '',
   notes: '',
+  additionalParts: [],
 }
 
 export function PartForm({
@@ -47,6 +50,7 @@ export function PartForm({
   onSubmit,
   submitLabel = 'Save Part',
   cancelHref = '/parts',
+  allowMultipleParts = false,
 }: PartFormProps) {
   const { t, locale } = useI18n()
   const carsQuery = useCarsQuery()
@@ -57,6 +61,14 @@ export function PartForm({
     resolver: zodResolver(partFormSchema) as Resolver<PartFormValues>,
     defaultValues: { ...defaults, ...defaultValues },
     mode: 'onChange',
+  })
+  const {
+    fields: additionalPartFields,
+    append: appendAdditionalPart,
+    remove: removeAdditionalPart,
+  } = useFieldArray({
+    control: form.control,
+    name: 'additionalParts',
   })
 
   useEffect(() => {
@@ -114,6 +126,17 @@ export function PartForm({
   }, [catalog, defaultValues?.partName, locale])
 
   const invoiceName = useWatch({ control: form.control, name: 'invoiceName' })
+  const mainPartPrice = useWatch({ control: form.control, name: 'price' })
+  const additionalParts = useWatch({
+    control: form.control,
+    name: 'additionalParts',
+  })
+  const totalPartsCount =
+    1 + (additionalParts?.filter((item) => item?.partName?.trim()).length ?? 0)
+  const totalPartsPrice =
+    Number(mainPartPrice || 0) +
+    (additionalParts?.reduce((sum, item) => sum + Number(item?.price || 0), 0) ??
+      0)
 
   return (
     <Form {...form}>
@@ -281,6 +304,148 @@ export function PartForm({
             )}
           />
         </div>
+
+        {allowMultipleParts ? (
+          <div className='space-y-4 rounded-lg border border-dashed p-4'>
+            <div className='flex flex-wrap items-start justify-between gap-3'>
+              <div className='space-y-1'>
+                <h3 className='font-semibold'>
+                  {locale === 'ar'
+                    ? 'قطع إضافية في نفس الوصل'
+                    : 'More parts from the same receipt'}
+                </h3>
+                <p className='text-sm text-muted-foreground'>
+                  {locale === 'ar'
+                    ? 'أضف أكثر من قطعة، مع بقاء المورد والسيارة والتاريخ والفاتورة مشتركة.'
+                    : 'Add more parts while keeping supplier, car, date, invoice, and notes shared.'}
+                </p>
+              </div>
+              <Button
+                type='button'
+                variant='outline'
+                size='sm'
+                onClick={() =>
+                  appendAdditionalPart({ partName: '', price: 0 })
+                }
+              >
+                <Plus className='me-1 h-4 w-4' />
+                {locale === 'ar' ? 'إضافة قطعة أخرى' : 'Add another part'}
+              </Button>
+            </div>
+
+            {additionalPartFields.length ? (
+              <div className='space-y-3'>
+                {additionalPartFields.map((field, index) => (
+                  <div
+                    key={field.id}
+                    className='grid gap-3 md:grid-cols-[1fr_180px_auto]'
+                  >
+                    <FormField
+                      control={form.control}
+                      name={`additionalParts.${index}.partName`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            {locale === 'ar' ? 'اسم القطعة' : 'Part name'}
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder={
+                                locale === 'ar'
+                                  ? 'مثال: Brake Pads'
+                                  : 'Example: Brake Pads'
+                              }
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name={`additionalParts.${index}.price`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            {locale === 'ar' ? 'السعر' : 'Price'}
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              type='number'
+                              min='0'
+                              placeholder='0'
+                              value={field.value}
+                              onChange={(event) =>
+                                field.onChange(
+                                  event.target.value === ''
+                                    ? ''
+                                    : Number(event.target.value)
+                                )
+                              }
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <div className='flex items-end'>
+                      <Button
+                        type='button'
+                        variant='ghost'
+                        size='icon'
+                        className='shrink-0'
+                        onClick={() => removeAdditionalPart(index)}
+                        aria-label={
+                          locale === 'ar'
+                            ? 'حذف القطعة'
+                            : 'Remove part'
+                        }
+                      >
+                        <Trash2 className='h-4 w-4 text-destructive' />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className='rounded-md border bg-muted/20 p-3 text-sm text-muted-foreground'>
+                {locale === 'ar'
+                  ? 'لا توجد قطع إضافية بعد. اضغط "إضافة قطعة أخرى".'
+                  : 'No additional parts yet. Use "Add another part".'}
+              </div>
+            )}
+          </div>
+        ) : null}
+
+        {allowMultipleParts ? (
+          <Card className='border-border/60 bg-muted/20'>
+            <CardContent className='space-y-3 p-4'>
+              <div className='flex flex-wrap items-center justify-between gap-3'>
+                <div>
+                  <p className='text-sm text-muted-foreground'>
+                    {locale === 'ar' ? 'ملخص قبل الحفظ' : 'Summary before save'}
+                  </p>
+                  <p className='text-lg font-semibold'>
+                    {locale === 'ar'
+                      ? `${totalPartsCount} قطع`
+                      : `${totalPartsCount} parts`}
+                  </p>
+                </div>
+                <div className='rounded-md border bg-background px-3 py-2 text-sm font-medium'>
+                  {locale === 'ar'
+                    ? `الإجمالي: ${totalPartsPrice.toLocaleString()}`
+                    : `Total: ${totalPartsPrice.toLocaleString()}`}
+                </div>
+              </div>
+              <p className='text-sm text-muted-foreground'>
+                {locale === 'ar'
+                  ? 'كل القطع الجديدة بتنحفظ مع نفس المورد والسيارة والتاريخ والفاتورة.'
+                  : 'All saved parts will share the same supplier, car, date, and invoice.'}
+              </p>
+            </CardContent>
+          </Card>
+        ) : null}
 
         <FormField
           control={form.control}

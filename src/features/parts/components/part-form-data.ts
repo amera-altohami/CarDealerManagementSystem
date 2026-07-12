@@ -1,5 +1,10 @@
 import { z } from 'zod'
 
+const partItemSchema = z.object({
+  partName: z.string().min(2, 'Please enter a part name.'),
+  price: z.coerce.number().min(0, 'Please enter a valid price.'),
+})
+
 export const partFormSchema = z.object({
   partName: z.string().min(2, 'Please enter a part name.'),
   price: z.coerce.number().min(0, 'Please enter a valid price.'),
@@ -9,6 +14,8 @@ export const partFormSchema = z.object({
   relatedCarId: z.string().optional().default(''),
   invoiceName: z.string().optional().default(''),
   notes: z.string().optional().default(''),
+  additionalParts: z.array(partItemSchema).default([]),
 })
 
 export type PartFormValues = z.infer<typeof partFormSchema>
+export type PartItemValues = z.infer<typeof partItemSchema>
