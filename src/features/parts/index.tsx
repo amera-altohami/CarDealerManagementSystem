@@ -7,6 +7,7 @@ import { Main } from '@/components/layout/main'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
+import { SearchableCombobox } from '@/components/searchable-combobox'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -69,11 +70,15 @@ export function PartsManagement() {
   const companies = companiesQuery.data ?? []
 
   const carOptions = useMemo(() => {
-    return cars.map((car) => ({
-      id: car.id,
-      label: `${car.brand} ${car.model} ${car.year}`,
-    }))
-  }, [cars])
+    return [
+      { value: 'all', label: t('allCars') },
+      ...cars.map((car) => ({
+        value: car.id,
+        label: `${car.brand} ${car.model} ${car.year}`,
+        description: car.vin,
+      })),
+    ]
+  }, [cars, t])
 
   const supplierOptions = useMemo(() => {
     return companies.map((company) => ({
@@ -159,25 +164,21 @@ export function PartsManagement() {
         <Card className='border-border/60'>
           <CardHeader className='space-y-4'>
             <CardTitle>{t('partsList')}</CardTitle>
-            <div className='grid gap-3 md:grid-cols-[1fr_220px_220px_220px]'>
+            <div className='grid gap-3 md:grid-cols-[1fr_260px_220px_220px]'>
               <Input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder={t('searchParts')}
               />
-              <Select value={carId} onValueChange={setCarId}>
-                <SelectTrigger className='w-full'>
-                  <SelectValue placeholder={t('filterByCar')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value='all'>{t('allCars')}</SelectItem>
-                  {carOptions.map((car) => (
-                    <SelectItem key={car.id} value={car.id}>
-                      {car.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SearchableCombobox
+                value={carId}
+                onValueChange={setCarId}
+                options={carOptions}
+                placeholder={t('filterByCar')}
+                searchPlaceholder={t('searchCars')}
+                emptyText={t('noCarsFound')}
+                className='w-full'
+              />
               <Select value={supplierId} onValueChange={setSupplierId}>
                 <SelectTrigger className='w-full'>
                   <SelectValue placeholder={t('filterBySupplier')} />

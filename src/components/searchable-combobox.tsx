@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { CheckIcon, ChevronsUpDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -30,8 +31,9 @@ type SearchableComboboxProps = {
   emptyText?: string
   className?: string
   allowCreate?: boolean
-  onCreate?: (searchValue: string) => void
+  onCreate?: (searchValue: string) => void | Promise<void>
   createLabel?: string
+  createHeading?: string
 }
 
 export function SearchableCombobox({
@@ -45,13 +47,29 @@ export function SearchableCombobox({
   allowCreate = false,
   onCreate,
   createLabel = 'Add new item',
+  createHeading = 'Create',
 }: SearchableComboboxProps) {
+  const [open, setOpen] = useState(false)
+  const [searchValue, setSearchValue] = useState('')
   const selected = options.find((option) => option.value === value)
+  const normalizedSearch = searchValue.trim().toLowerCase()
+  const hasExactMatch = options.some(
+    (option) => option.label.trim().toLowerCase() === normalizedSearch
+  )
 
   return (
-    <Popover>
+    <Popover
+      open={open}
+      onOpenChange={(nextOpen) => {
+        setOpen(nextOpen)
+        if (!nextOpen) {
+          setSearchValue('')
+        }
+      }}
+    >
       <PopoverTrigger asChild>
         <Button
+          type='button'
           variant='outline'
           role='combobox'
           className={cn('w-full justify-between', className)}
@@ -64,14 +82,22 @@ export function SearchableCombobox({
       </PopoverTrigger>
       <PopoverContent className='w-[--radix-popover-trigger-width] p-0' align='start'>
         <Command>
-          <CommandInput placeholder={searchPlaceholder} />
+          <CommandInput
+            placeholder={searchPlaceholder}
+            value={searchValue}
+            onValueChange={setSearchValue}
+          />
           <CommandList>
             <CommandEmpty>{emptyText}</CommandEmpty>
             <CommandGroup>
               {options.map((option) => (
                 <CommandItem
                   key={option.value}
-                  onSelect={() => onValueChange(option.value)}
+                  onSelect={() => {
+                    onValueChange(option.value)
+                    setOpen(false)
+                    setSearchValue('')
+                  }}
                 >
                   <CheckIcon
                     className={cn(
@@ -90,10 +116,14 @@ export function SearchableCombobox({
                 </CommandItem>
               ))}
             </CommandGroup>
-            {allowCreate && onCreate ? (
-              <CommandGroup heading='Create'>
+            {allowCreate && onCreate && normalizedSearch && !hasExactMatch ? (
+              <CommandGroup heading={createHeading}>
                 <CommandItem
-                  onSelect={(searchValue) => onCreate(searchValue)}
+                  onSelect={() => {
+                    void onCreate(searchValue)
+                    setOpen(false)
+                    setSearchValue('')
+                  }}
                 >
                   {createLabel}
                 </CommandItem>

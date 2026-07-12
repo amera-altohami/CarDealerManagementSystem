@@ -224,6 +224,7 @@ export function CarDetails({ carId }: CarDetailsProps) {
   const parts = partsQuery.data ?? []
   const inspections = inspectionsQuery.data ?? []
   const partsTotalCost = parts.reduce((sum, part) => sum + part.price, 0)
+  const totalCost = car.purchasePrice + partsTotalCost
   const latestInspection = [...inspections].sort(
     (first, second) => getInspectionSortKey(second) - getInspectionSortKey(first)
   )[0]
@@ -318,6 +319,11 @@ export function CarDetails({ carId }: CarDetailsProps) {
                   value={money.format(car.purchasePrice)}
                 />
                 <InfoCard
+                  icon={<HandCoins className='h-4 w-4' />}
+                  label={t('totalCost')}
+                  value={money.format(totalCost)}
+                />
+                <InfoCard
                   icon={<Package className='h-4 w-4' />}
                   label={t('sellingPrice')}
                   value={money.format(car.sellingPrice)}
@@ -329,7 +335,7 @@ export function CarDetails({ carId }: CarDetailsProps) {
                 />
                 <InfoCard
                   icon={
-                    car.sellingPrice - car.purchasePrice >= 0 ? (
+                    car.sellingPrice - totalCost >= 0 ? (
                       <TrendingUp className='h-4 w-4' />
                     ) : (
                       <TrendingDown className='h-4 w-4' />
@@ -340,12 +346,12 @@ export function CarDetails({ carId }: CarDetailsProps) {
                     <span
                       className={cn(
                         'font-semibold',
-                        car.sellingPrice - car.purchasePrice >= 0
+                        car.sellingPrice - totalCost >= 0
                           ? 'text-emerald-600 dark:text-emerald-300'
                           : 'text-red-600 dark:text-red-300'
                       )}
                     >
-                      {money.format(car.sellingPrice - car.purchasePrice)}
+                      {money.format(car.sellingPrice - totalCost)}
                     </span>
                   }
                 />

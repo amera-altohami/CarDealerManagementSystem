@@ -1,4 +1,5 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { ListPlus } from 'lucide-react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm, useWatch, type Resolver } from 'react-hook-form'
 import { Link } from '@tanstack/react-router'
@@ -20,6 +21,8 @@ import { getCompanyTypeLabel, useI18n } from '@/lib/i18n'
 import { useCarsQuery } from '@/features/cars/hooks/use-cars'
 import { useCompaniesQuery } from '@/features/companies/hooks/use-companies'
 import { partFormSchema, type PartFormValues } from './part-form-data'
+import { PartCatalogDialog } from './part-catalog-dialog'
+import { usePartCatalog } from '../hooks/use-part-catalog'
 
 type PartFormProps = {
   defaultValues?: Partial<PartFormValues>
@@ -48,6 +51,8 @@ export function PartForm({
   const { t, locale } = useI18n()
   const carsQuery = useCarsQuery()
   const companiesQuery = useCompaniesQuery()
+  const { catalog, createPartCatalogItem } = usePartCatalog()
+  const [catalogDialogOpen, setCatalogDialogOpen] = useState(false)
   const form = useForm<PartFormValues>({
     resolver: zodResolver(partFormSchema) as Resolver<PartFormValues>,
     defaultValues: { ...defaults, ...defaultValues },
@@ -84,6 +89,30 @@ export function PartForm({
     [companiesQuery.data, locale]
   )
 
+  const partNameOptions = useMemo(() => {
+    const options = catalog.map((item) => ({
+      label: item.name,
+      value: item.name,
+      description: item.category,
+    }))
+    const currentPartName = defaultValues?.partName?.trim()
+
+    if (
+      currentPartName &&
+      !options.some(
+        (option) => option.value.toLowerCase() === currentPartName.toLowerCase()
+      )
+    ) {
+      options.unshift({
+        label: currentPartName,
+        value: currentPartName,
+        description: locale === 'ar' ? 'القيمة الحالية' : 'Current value',
+      })
+    }
+
+    return options
+  }, [catalog, defaultValues?.partName, locale])
+
   const invoiceName = useWatch({ control: form.control, name: 'invoiceName' })
 
   return (
@@ -105,9 +134,52 @@ export function PartForm({
             name='partName'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('partName')}</FormLabel>
+                <div className='flex items-center justify-between gap-3'>
+                  <FormLabel>{t('partName')}</FormLabel>
+                  <Button
+                    type='button'
+                    variant='ghost'
+                    size='sm'
+                    className='h-8 px-2 text-xs'
+                    onClick={() => setCatalogDialogOpen(true)}
+                  >
+                    <ListPlus className='me-1 h-4 w-4' />
+                    {locale === 'ar' ? 'إدارة القائمة' : 'Manage List'}
+                  </Button>
+                </div>
                 <FormControl>
-                  <Input placeholder='Front Bumper' {...field} />
+                  <SearchableCombobox
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    options={partNameOptions}
+                    placeholder={
+                      locale === 'ar' ? 'اختر القطعة' : 'Select a part'
+                    }
+                    searchPlaceholder={
+                      locale === 'ar' ? 'ابحث في القطع...' : 'Search parts...'
+                    }
+                    emptyText={
+                      locale === 'ar'
+                        ? 'لا توجد قطع مطابقة.'
+                        : 'No matching parts found.'
+                    }
+                    allowCreate
+                    onCreate={async (searchValue) => {
+                      const created = await createPartCatalogItem({
+                        name: searchValue,
+                        category: 'Other',
+                      })
+                      if (created) {
+                        field.onChange(created.name)
+                      }
+                    }}
+                    createLabel={
+                      locale === 'ar' ? 'إضافة هذه القطعة' : 'Add this part'
+                    }
+                    createHeading={
+                      locale === 'ar' ? 'إنشاء قطعة' : 'Create part'
+                    }
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -260,6 +332,10 @@ export function PartForm({
           </Button>
         </div>
       </form>
+      <PartCatalogDialog
+        open={catalogDialogOpen}
+        onOpenChange={setCatalogDialogOpen}
+      />
     </Form>
   )
 }

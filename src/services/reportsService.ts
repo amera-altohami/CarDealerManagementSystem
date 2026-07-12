@@ -19,12 +19,14 @@ import { getExpenses, type Expense } from './expensesService'
 import { getPartnerContributions } from './partnerContributionsService'
 import { getPartners } from './partnersService'
 import { getProfitShares } from './profitSharesService'
+import { getParts } from './partsService'
 
 type CostBreakdownKey = keyof ReportCar['costBreakdown']
 
 type ReportContext = {
   cars: Car[]
   expenses: Expense[]
+  partsByCarId: Map<string, number>
   partners: Partner[]
   contributions: PartnerContribution[]
   profitShares: ProfitShare[]
@@ -113,19 +115,30 @@ const expenseTypeCostKeys: Record<ExpenseType, CostBreakdownKey> = {
 }
 
 async function getReportContext(): Promise<ReportContext> {
-  const [cars, expenses, partners, contributions, profitShares, companies] =
+  const [cars, expenses, parts, partners, contributions, profitShares, companies] =
     await Promise.all([
       getCars(),
       getExpenses(),
+      getParts(),
       getPartners(),
       getPartnerContributions(),
       getProfitShares(),
       getAllCompanies(),
     ])
 
+  const partsByCarId = parts.reduce((map, part) => {
+    if (!part.relatedCarId) {
+      return map
+    }
+
+    map.set(part.relatedCarId, (map.get(part.relatedCarId) ?? 0) + part.price)
+    return map
+  }, new Map<string, number>())
+
   return {
     cars,
     expenses,
+    partsByCarId,
     partners,
     contributions,
     profitShares,
@@ -141,13 +154,17 @@ function getExpenseRowsForCar(expenses: Expense[], carId: string) {
   return expenses.filter((expense) => expense.carId === carId)
 }
 
-function getCostBreakdown(car: Car, expenses: Expense[]) {
+function getCostBreakdown(
+  car: Car,
+  expenses: Expense[],
+  partsCost: number
+) {
   const costBreakdown: ReportCar['costBreakdown'] = {
     purchase: car.purchasePrice,
     shipping: 0,
     inspection: 0,
     repair: 0,
-    parts: 0,
+    parts: partsCost,
     labor: 0,
     fees: 0,
     bills: 0,
@@ -170,6 +187,7 @@ function getCostBreakdown(car: Car, expenses: Expense[]) {
 function getReportCar(
   car: Car,
   expenses: Expense[],
+  partsCost: number,
   companyNameMap: Map<string, string>
 ): ReportCar {
   const carExpenses = getExpenseRowsForCar(expenses, car.id)
@@ -177,7 +195,7 @@ function getReportCar(
     (sum, expense) => sum + expense.amount,
     0
   )
-  const totalCost = car.purchasePrice + totalExpenses
+  const totalCost = car.purchasePrice + totalExpenses + partsCost
   const purchasePlace =
     companyNameMap.get(car.purchasePlaceId) ||
     car.purchasePlace ||
@@ -196,7 +214,7 @@ function getReportCar(
     status: car.status,
     purchaseDate: car.purchaseDate,
     purchasePlace,
-    costBreakdown: getCostBreakdown(car, carExpenses),
+    costBreakdown: getCostBreakdown(car, carExpenses, partsCost),
     totalCost,
     sellingPrice: car.sellingPrice,
     netProfit: car.sellingPrice - totalCost,
@@ -205,7 +223,12 @@ function getReportCar(
 
 function getReportCars(context: ReportContext) {
   return context.cars.map((car) =>
-    getReportCar(car, context.expenses, context.companyNameMap)
+    getReportCar(
+      car,
+      context.expenses,
+      context.partsByCarId.get(car.id) ?? 0,
+      context.companyNameMap
+    )
   )
 }
 

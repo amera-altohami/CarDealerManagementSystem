@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState, type TouchEvent } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
 import {
   carStatusOptions,
@@ -6,6 +7,8 @@ import {
   type Car,
   type CarStatus,
 } from '@/services/carsService'
+import { getParts } from '@/services/partsService'
+import type { Part } from '@/services/partsService'
 import { EllipsisVertical, Pencil, Trash2, Eye } from 'lucide-react'
 import { useI18n } from '@/lib/i18n'
 import { Button } from '@/components/ui/button'
@@ -60,6 +63,10 @@ export function CarsTable({
   const [status, setStatus] = useState<CarStatus | 'all'>('all')
   const [carToDelete, setCarToDelete] = useState<Car | null>(null)
   const deleteCarMutation = useDeleteCarMutation()
+  const partsQuery = useQuery({
+    queryKey: ['cars-table', 'parts'] as const,
+    queryFn: () => getParts(),
+  })
   const lastTapRef = useRef<{ carId: string; time: number }>({
     carId: '',
     time: 0,
@@ -80,6 +87,17 @@ export function CarsTable({
       return matchesSearch && matchesStatus
     })
   }, [data, search, status])
+
+  const totalCostByCarId = useMemo(() => {
+    return (partsQuery.data ?? []).reduce((map: Map<string, number>, part: Part) => {
+      if (!part.relatedCarId) {
+        return map
+      }
+
+      map.set(part.relatedCarId, (map.get(part.relatedCarId) ?? 0) + part.price)
+      return map
+    }, new Map<string, number>())
+  }, [partsQuery.data])
 
   const openCarDetails = (carId: string) => {
     navigate({ to: '/cars/$carId', params: { carId } })
@@ -168,6 +186,7 @@ export function CarsTable({
                   <TableHead>{t('vin')}</TableHead>
                   <TableHead>{t('mileage')}</TableHead>
                   <TableHead>{t('purchasePrice')}</TableHead>
+                  <TableHead>{t('totalCost')}</TableHead>
                   <TableHead>{t('sellingPrice')}</TableHead>
                   <TableHead>{t('status')}</TableHead>
                   <TableHead className='text-end'>{t('actions')}</TableHead>
@@ -176,13 +195,13 @@ export function CarsTable({
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={10} className='h-24 text-center'>
+                    <TableCell colSpan={11} className='h-24 text-center'>
                       Loading...
                     </TableCell>
                   </TableRow>
                 ) : error ? (
                   <TableRow>
-                    <TableCell colSpan={10} className='h-24 text-center'>
+                    <TableCell colSpan={11} className='h-24 text-center'>
                       Failed to load cars.
                     </TableCell>
                   </TableRow>
@@ -211,6 +230,12 @@ export function CarsTable({
                       </TableCell>
                       <TableCell>{car.mileage}</TableCell>
                       <TableCell>{money.format(car.purchasePrice)}</TableCell>
+                      <TableCell>
+                        {money.format(
+                          car.purchasePrice +
+                            (totalCostByCarId.get(car.id) ?? 0)
+                        )}
+                      </TableCell>
                       <TableCell>{money.format(car.sellingPrice)}</TableCell>
                       <TableCell>
                         <StatusBadge status={car.status} />
@@ -260,7 +285,7 @@ export function CarsTable({
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={10} className='h-24 text-center'>
+                    <TableCell colSpan={11} className='h-24 text-center'>
                       {t('noCarsFound')}
                     </TableCell>
                   </TableRow>

@@ -46,6 +46,7 @@ export type FinancialStats = {
   totalPurchasePrice: number
   totalSellingPrice: number
   totalExpenses: number
+  totalPartsCost: number
   totalCost: number
   grossRevenue: number
   totalProfit: number
@@ -140,7 +141,11 @@ async function getFinancialStatsFromContext(
     (sum, expense) => sum + expense.amount,
     0
   )
-  const totalCost = totalPurchasePrice + totalExpenses
+  const totalPartsCost = context.parts.reduce(
+    (sum, part) => sum + part.price,
+    0
+  )
+  const totalCost = totalPurchasePrice + totalExpenses + totalPartsCost
   const totalPartnerProfitShares = profitShares.reduce(
     (sum, profitShare) => sum + profitShare.partnerProfitShare,
     0
@@ -157,6 +162,7 @@ async function getFinancialStatsFromContext(
     totalPurchasePrice,
     totalSellingPrice,
     totalExpenses,
+    totalPartsCost,
     totalCost,
     grossRevenue: totalSellingPrice,
     totalProfit: totalSellingPrice - totalCost,

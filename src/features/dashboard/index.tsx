@@ -57,6 +57,7 @@ export function Dashboard() {
     totalPurchasePrice: 0,
     totalSellingPrice: 0,
     totalExpenses: 0,
+    totalPartsCost: 0,
     totalCost: 0,
     grossRevenue: 0,
     totalProfit: 0,
@@ -132,6 +133,11 @@ export function Dashboard() {
             title={t('totalExpenses')}
             value={money.format(financialStats.totalExpenses)}
             icon={<Scale className='h-4 w-4 text-muted-foreground' />}
+          />
+          <StatCard
+            title={t('totalCost')}
+            value={money.format(financialStats.totalCost)}
+            icon={<CircleDollarSign className='h-4 w-4 text-muted-foreground' />}
           />
           <StatCard
             title={t('currentCapital')}
