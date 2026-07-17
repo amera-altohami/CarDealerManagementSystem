@@ -168,6 +168,8 @@ export function PartnersTable({
                 <TableHead>{t('contact')}</TableHead>
                 <TableHead>{t('investmentPercentage')}</TableHead>
                 <TableHead>{t('totalContribution')}</TableHead>
+                <TableHead>{t('bankBalance')}</TableHead>
+                <TableHead>{t('cashBalance')}</TableHead>
                 <TableHead>{t('profit')}</TableHead>
                 <TableHead>{t('loss')}</TableHead>
                 <TableHead>{t('finalBalance')}</TableHead>
@@ -176,9 +178,9 @@ export function PartnersTable({
               </TableRow>
             </TableHeader>
             <TableBody>
-                {isLoading ? (
+              {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={9} className='h-24 text-center'>
+                  <TableCell colSpan={11} className='h-24 text-center'>
                     Loading...
                   </TableCell>
                 </TableRow>
@@ -218,6 +220,8 @@ export function PartnersTable({
                     <TableCell>
                       {money.format(partner.totalContribution)}
                     </TableCell>
+                    <TableCell>{money.format(partner.bankAmount)}</TableCell>
+                    <TableCell>{money.format(partner.cashAmount)}</TableCell>
                     <TableCell className='font-medium text-emerald-600 dark:text-emerald-400'>
                       {money.format(partner.totalProfit)}
                     </TableCell>
@@ -289,7 +293,7 @@ export function PartnersTable({
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={9} className='h-24 text-center'>
+                  <TableCell colSpan={11} className='h-24 text-center'>
                     {t('noPartnersFound')}
                   </TableCell>
                 </TableRow>

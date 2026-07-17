@@ -8,6 +8,7 @@ import {
   HandCoins,
   TrendingDown,
   TrendingUp,
+  Wallet,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { getFirestoreErrorMessage } from '@/lib/firebase-errors'
@@ -91,8 +92,10 @@ export function PartnerReport() {
       row.partnerShare < 0 ? sum + Math.abs(row.partnerShare) : sum,
     0
   )
-  const finalBalance = totalContribution + totalProfit - totalLoss
   const partner = reportSummary?.partner
+  const bankCashTotal = reportSummary?.bankCashTotal ?? 0
+  const netProfitShare = reportSummary?.netProfitShare ?? totalProfit - totalLoss
+  const overallBalance = reportSummary?.overallBalance ?? bankCashTotal + netProfitShare
 
   return (
     <>
@@ -155,6 +158,15 @@ export function PartnerReport() {
                   <Badge variant='outline'>
                     {t('investmentPercentage')}: {partner.investmentPercentage}%
                   </Badge>
+                  <Badge variant='outline'>
+                    {t('bankBalance')}: {formatCurrency(reportSummary?.bankAmount ?? 0)}
+                  </Badge>
+                  <Badge variant='outline'>
+                    {t('cashBalance')}: {formatCurrency(reportSummary?.cashAmount ?? 0)}
+                  </Badge>
+                  <Badge variant='outline'>
+                    {t('bankCashTotal')}: {formatCurrency(bankCashTotal)}
+                  </Badge>
                   <Badge variant='outline'>{partner.status}</Badge>
                 </div>
               </CardContent>
@@ -163,26 +175,41 @@ export function PartnerReport() {
             <ReportSummaryCards
               items={[
                 {
-                  label: t('totalContributions'),
-                  value: formatCurrency(totalContribution),
+                  label: t('bankBalance'),
+                  value: formatCurrency(reportSummary?.bankAmount ?? 0),
                   icon: HandCoins,
                 },
                 {
-                  label: t('totalProfit'),
-                  value: formatCurrency(totalProfit),
+                  label: t('cashBalance'),
+                  value: formatCurrency(reportSummary?.cashAmount ?? 0),
+                  icon: Wallet,
+                },
+                {
+                  label: t('bankCashTotal'),
+                  value: formatCurrency(bankCashTotal),
+                  icon: CircleDollarSign,
+                },
+                {
+                  label: t('netProfitShare'),
+                  value: formatCurrency(netProfitShare),
                   icon: TrendingUp,
                   tone: 'text-emerald-600 dark:text-emerald-400',
+                },
+                {
+                  label: t('overallBalance'),
+                  value: formatCurrency(overallBalance),
+                  icon: CircleDollarSign,
+                },
+                {
+                  label: t('totalContributions'),
+                  value: formatCurrency(totalContribution),
+                  icon: HandCoins,
                 },
                 {
                   label: t('totalLoss'),
                   value: formatCurrency(totalLoss),
                   icon: TrendingDown,
                   tone: 'text-red-600 dark:text-red-400',
-                },
-                {
-                  label: t('finalBalance'),
-                  value: formatCurrency(finalBalance),
-                  icon: CircleDollarSign,
                 },
               ]}
             />

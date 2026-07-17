@@ -185,6 +185,8 @@ export function Partners() {
                 name: editingPartner.name,
                 email: editingPartner.email,
                 phone: editingPartner.phone,
+                bankAmount: editingPartner.bankAmount,
+                cashAmount: editingPartner.cashAmount,
                 status: editingPartner.status,
                 notes: editingPartner.notes,
               }

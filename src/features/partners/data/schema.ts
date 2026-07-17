@@ -17,6 +17,8 @@ export const partnerSchema = z.object({
   name: z.string(),
   email: z.string().optional().default(''),
   phone: z.string().optional().default(''),
+  bankAmount: z.number(),
+  cashAmount: z.number(),
   investmentPercentage: z.number(),
   totalContribution: z.number(),
   totalProfit: z.number(),
@@ -67,6 +69,16 @@ export const partnerFormSchema = z.object({
   name: z.string().min(1, 'Partner Name is required.'),
   email: optionalEmailSchema,
   phone: z.string().optional().default(''),
+  bankAmount: z.coerce
+    .number()
+    .min(0, 'Bank amount must be greater than or equal to 0.')
+    .optional()
+    .default(0),
+  cashAmount: z.coerce
+    .number()
+    .min(0, 'Cash amount must be greater than or equal to 0.')
+    .optional()
+    .default(0),
   status: z.enum(partnerStatusOptions, {
     error: 'Status is required.',
   }),

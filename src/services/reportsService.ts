@@ -52,10 +52,15 @@ export type ExpensesReportResult = {
 export type PartnerReportSummary = {
   partner?: Partner
   rows: PartnerReportRow[]
+  bankAmount: number
+  cashAmount: number
+  bankCashTotal: number
   totalContribution: number
   totalProfit: number
   totalLoss: number
+  netProfitShare: number
   finalBalance: number
+  overallBalance: number
 }
 
 export type PartnerReportResult = {
@@ -441,14 +446,24 @@ function getPartnerSummaryFromRows(
       row.partnerShare < 0 ? sum + Math.abs(row.partnerShare) : sum,
     0
   )
+  const bankAmount = partner?.bankAmount ?? 0
+  const cashAmount = partner?.cashAmount ?? 0
+  const bankCashTotal = bankAmount + cashAmount
+  const netProfitShare = totalProfit - totalLoss
+  const overallBalance = bankCashTotal + netProfitShare
 
   return {
     partner,
     rows,
+    bankAmount,
+    cashAmount,
+    bankCashTotal,
     totalContribution,
     totalProfit,
     totalLoss,
+    netProfitShare,
     finalBalance: totalContribution + totalProfit - totalLoss,
+    overallBalance,
   }
 }
 

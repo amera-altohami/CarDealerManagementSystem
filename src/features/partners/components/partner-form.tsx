@@ -45,6 +45,8 @@ const defaults: PartnerFormValues = {
   name: '',
   email: '',
   phone: '',
+  bankAmount: 0,
+  cashAmount: 0,
   status: 'Active',
   notes: '',
 }
@@ -129,6 +131,34 @@ export function PartnerForm({
                     <FormLabel>{t('phone')}</FormLabel>
                     <FormControl>
                       <Input placeholder='+1 (214) 555-0177' {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <div className='grid gap-4 sm:grid-cols-2'>
+              <FormField
+                control={form.control}
+                name='bankAmount'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('bankBalance')}</FormLabel>
+                    <FormControl>
+                      <Input type='number' min={0} step='1' {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name='cashAmount'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('cashBalance')}</FormLabel>
+                    <FormControl>
+                      <Input type='number' min={0} step='1' {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

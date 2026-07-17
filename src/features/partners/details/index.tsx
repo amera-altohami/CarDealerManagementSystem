@@ -1,12 +1,13 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import type { Car } from '@/services/carsService'
 import {
   ArrowLeft,
   CircleDollarSign,
   HandCoins,
-  TrendingDown,
+  PencilLine,
   TrendingUp,
+  Wallet,
   UserRound,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -16,6 +17,16 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Table,
   TableBody,
@@ -42,6 +53,7 @@ import {
   usePartnerCarsQuery,
   usePartnerQuery,
   usePartnersQuery,
+  useUpdatePartnerMutation,
 } from '../hooks/use-partners'
 import {
   buildEqualSplitRows,
@@ -75,9 +87,13 @@ export function PartnerDetails({ partnerId }: PartnerDetailsProps) {
   const partnerQuery = usePartnerQuery(partnerId)
   const partnersQuery = usePartnersQuery()
   const carsQuery = usePartnerCarsQuery()
+  const updatePartnerMutation = useUpdatePartnerMutation()
   const partner = partnerQuery.data
   const partners = partnersQuery.data ?? []
   const cars = carsQuery.data ?? []
+  const [balanceDialogOpen, setBalanceDialogOpen] = useState(false)
+  const [bankAmount, setBankAmount] = useState(0)
+  const [cashAmount, setCashAmount] = useState(0)
   const derivedRows = useMemo(
     () => buildEqualSplitRows(partners, cars),
     [cars, partners]
@@ -125,6 +141,34 @@ export function PartnerDetails({ partnerId }: PartnerDetailsProps) {
       ...calculateEqualSplitPartnerTotals(partners, cars),
     }
   }, [cars, partner, partners])
+  const bankCashTotal = partnerWithTotals
+    ? partnerWithTotals.bankAmount + partnerWithTotals.cashAmount
+    : 0
+  const netProfitShare = partnerWithTotals
+    ? partnerWithTotals.totalProfit - partnerWithTotals.totalLoss
+    : 0
+  const overallBalance = bankCashTotal + netProfitShare
+
+  const openBalanceEditor = () => {
+    if (!partnerWithTotals) return
+
+    setBankAmount(partnerWithTotals.bankAmount)
+    setCashAmount(partnerWithTotals.cashAmount)
+    setBalanceDialogOpen(true)
+  }
+
+  const handleSaveBalances = async () => {
+    if (!partnerWithTotals) return
+
+    await updatePartnerMutation.mutateAsync({
+      id: partnerWithTotals.id,
+      data: {
+        bankAmount,
+        cashAmount,
+      },
+    })
+    setBalanceDialogOpen(false)
+  }
 
   useEffect(() => {
     if (partnerQuery.isError) toast.error('Failed to load partners.')
@@ -213,6 +257,10 @@ export function PartnerDetails({ partnerId }: PartnerDetailsProps) {
               <p className='text-muted-foreground'>{t('partnerDetails')}</p>
             </div>
           </div>
+          <Button variant='outline' onClick={openBalanceEditor}>
+            <PencilLine className='h-4 w-4' />
+            {t('editBalances')}
+          </Button>
         </div>
 
         <div className='grid gap-4 lg:grid-cols-[340px_1fr]'>
@@ -248,6 +296,18 @@ export function PartnerDetails({ partnerId }: PartnerDetailsProps) {
                   value={`${partnerWithTotals.investmentPercentage}%`}
                 />
                 <InfoRow
+                  label={t('bankBalance')}
+                  value={money.format(partnerWithTotals.bankAmount)}
+                />
+                <InfoRow
+                  label={t('cashBalance')}
+                  value={money.format(partnerWithTotals.cashAmount)}
+                />
+                <InfoRow
+                  label={t('bankCashTotal')}
+                  value={money.format(bankCashTotal)}
+                />
+                <InfoRow
                   label={t('status')}
                   value={
                     <Badge
@@ -271,32 +331,32 @@ export function PartnerDetails({ partnerId }: PartnerDetailsProps) {
             </CardContent>
           </Card>
 
-          <div className='grid gap-4 sm:grid-cols-2 xl:grid-cols-4'>
+          <div className='grid gap-4 sm:grid-cols-2 xl:grid-cols-5'>
             <MetricCard
               icon={<HandCoins className='h-4 w-4' />}
-              label={t('totalContribution')}
-              value={money.format(partnerWithTotals.totalContribution)}
+              label={t('bankBalance')}
+              value={money.format(partnerWithTotals.bankAmount)}
             />
             <MetricCard
-              icon={<TrendingUp className='h-4 w-4' />}
-              label={t('profit') }
-              value={money.format(partnerWithTotals.totalProfit)}
-              className='border-emerald-500/20 bg-emerald-500/5'
-            />
-            <MetricCard
-              icon={<TrendingDown className='h-4 w-4' />}
-              label={t('loss')}
-              value={
-                partnerWithTotals.totalLoss > 0
-                  ? `-${money.format(partnerWithTotals.totalLoss)}`
-                  : money.format(0)
-              }
-              className='border-red-500/20 bg-red-500/5'
+              icon={<Wallet className='h-4 w-4' />}
+              label={t('cashBalance')}
+              value={money.format(partnerWithTotals.cashAmount)}
             />
             <MetricCard
               icon={<CircleDollarSign className='h-4 w-4' />}
-              label={t('finalBalance')}
-              value={money.format(partnerWithTotals.finalBalance)}
+              label={t('bankCashTotal')}
+              value={money.format(bankCashTotal)}
+            />
+            <MetricCard
+              icon={<TrendingUp className='h-4 w-4' />}
+              label={t('netProfitShare')}
+              value={money.format(netProfitShare)}
+              className='border-emerald-500/20 bg-emerald-500/5'
+            />
+            <MetricCard
+              icon={<CircleDollarSign className='h-4 w-4' />}
+              label={t('overallBalance')}
+              value={money.format(overallBalance)}
             />
           </div>
         </div>
@@ -335,6 +395,61 @@ export function PartnerDetails({ partnerId }: PartnerDetailsProps) {
           </TabsContent>
         </Tabs>
       </Main>
+
+      <Dialog open={balanceDialogOpen} onOpenChange={setBalanceDialogOpen}>
+        <DialogContent className='sm:max-w-md'>
+          <DialogHeader>
+            <DialogTitle>{t('editBalances')}</DialogTitle>
+            <DialogDescription>{t('editBalancesDesc')}</DialogDescription>
+          </DialogHeader>
+
+          <div className='grid gap-4'>
+            <div className='grid gap-2'>
+              <Label htmlFor='partner-bank-balance'>{t('bankBalance')}</Label>
+              <Input
+                id='partner-bank-balance'
+                type='number'
+                min={0}
+                step='1'
+                value={bankAmount}
+                onChange={(event) =>
+                  setBankAmount(Number(event.target.value || 0))
+                }
+              />
+            </div>
+            <div className='grid gap-2'>
+              <Label htmlFor='partner-cash-balance'>{t('cashBalance')}</Label>
+              <Input
+                id='partner-cash-balance'
+                type='number'
+                min={0}
+                step='1'
+                value={cashAmount}
+                onChange={(event) =>
+                  setCashAmount(Number(event.target.value || 0))
+                }
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              type='button'
+              variant='outline'
+              onClick={() => setBalanceDialogOpen(false)}
+            >
+              {t('cancel')}
+            </Button>
+            <Button
+              type='button'
+              onClick={handleSaveBalances}
+              disabled={updatePartnerMutation.isPending}
+            >
+              {t('saveChanges')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

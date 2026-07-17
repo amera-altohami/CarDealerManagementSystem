@@ -32,6 +32,8 @@ export interface PartnerDocument {
   name: string
   email?: string | null
   phone?: string | null
+  bank_amount: number
+  cash_amount: number
   status: Partner['status']
   notes?: string | null
   investment_percentage: number
@@ -55,12 +57,14 @@ export interface PartnerDeleteCheck {
 
 export type CreatePartnerData = Pick<
   Partner,
-  'name' | 'email' | 'phone' | 'status' | 'notes'
+  'name' | 'email' | 'phone' | 'bankAmount' | 'cashAmount' | 'status' | 'notes'
 >
 export type UpdatePartnerData = Partial<CreatePartnerData> &
   Partial<
     Pick<
       Partner,
+      | 'bankAmount'
+      | 'cashAmount'
       | 'investmentPercentage'
       | 'totalContribution'
       | 'totalProfit'
@@ -118,6 +122,8 @@ function mapPartnerSnapshot(
     name: data.name,
     email: data.email ?? '',
     phone: data.phone ?? '',
+    bankAmount: data.bank_amount ?? 0,
+    cashAmount: data.cash_amount ?? 0,
     investmentPercentage: data.investment_percentage ?? 0,
     totalContribution: data.total_contribution ?? 0,
     totalProfit: data.total_profit ?? 0,
@@ -138,6 +144,8 @@ function toCreateDocumentData(
     phone: normalizeText(data.phone),
     status: data.status,
     notes: normalizeText(data.notes),
+    bank_amount: data.bankAmount ?? 0,
+    cash_amount: data.cashAmount ?? 0,
     investment_percentage: 0,
     total_contribution: 0,
     total_profit: 0,
@@ -160,6 +168,8 @@ function toUpdateDocumentData(
   if (data.phone !== undefined) documentData.phone = normalizeText(data.phone)
   if (data.status !== undefined) documentData.status = data.status
   if (data.notes !== undefined) documentData.notes = normalizeText(data.notes)
+  if (data.bankAmount !== undefined) documentData.bank_amount = data.bankAmount
+  if (data.cashAmount !== undefined) documentData.cash_amount = data.cashAmount
   if (data.investmentPercentage !== undefined) {
     documentData.investment_percentage = data.investmentPercentage
   }
